@@ -1,0 +1,10 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import {compareExperiment,createPlan} from '../app/lib/experiments.ts';
+test('increase and decrease predictions are evaluated independently of improvement',()=>{assert.equal(compareExperiment('70','75','Accuracy (%)','increase','1',true).outcome,'Consistent with hypothesis');assert.equal(compareExperiment('95','70','Accuracy (%)','decrease','1',true).outcome,'Consistent with hypothesis');});
+test('opposite direction contradicts a prediction',()=>assert.equal(compareExperiment('70','60','Accuracy (%)','increase','1',true).outcome,'Contradicts prediction'));
+test('small changes and uncontrolled comparisons are inconclusive',()=>{assert.equal(compareExperiment('70','70.1','Accuracy (%)','increase','1',true).outcome,'Inconclusive');assert.equal(compareExperiment('70','90','Accuracy (%)','increase','1',false).outcome,'Inconclusive');});
+test('reject empty, nonfinite, negative and out of range input',()=>{for(const args of [['','2','1'],['NaN','2','1'],['-1','2','1'],['1','101','1'],['1','2','0']])assert.throws(()=>compareExperiment(args[0],args[1],'Accuracy (%)','increase',args[2],true));});
+test('loss is unbounded above and uses absolute units',()=>assert.equal(compareExperiment('120','100','Loss','decrease','1',true).delta,-20));
+test('plans encode hypothesis specific predictions',()=>{assert.equal(createPlan('leakage','').expectation,'decrease');assert.equal(createPlan('imbalance','').metric,'Recall (%)');assert.equal(createPlan('possible-unstable-training','').metric,'Loss');});
+test('decimal threshold boundary is not lost to floating point rounding',()=>assert.equal(compareExperiment('0.2','0.3','Loss','increase','0.1',true).outcome,'Consistent with hypothesis'));

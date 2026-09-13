@@ -1,0 +1,59 @@
+Against the new milestone file, only Milestone 0 is complete. No implementation milestone from 1–25 fully satisfies its requirements yet. Several have useful partial foundations.
+The earlier “Implementation 1–9” labels in the README belong to the original prototype roadmap. They are different from the new Milestones 0–25.
+Your Milestone 1 implementation was interrupted before any code changes.
+Completed
+Milestone	Status	Evidence
+0 — Repository audit and implementation map	Complete	Architecture inspected, reusable functionality identified, gaps documented, and implementation sequence proposed. Baseline tests, lint, type checking, and build passed during the audit.
+
+
+“Complete” means the stated requirements were fulfilled; it does not imply software is defect-free.
+Partially implemented
+“Partial” below means relevant working code exists—not that the milestone is ready for acceptance.
+Milestone	What already exists	What remains
+1 — Canonical model and tool contracts	Types for evidence, datasets, diagnoses, experiments, and saved cases; some runtime validation.	Unified domain schemas, stable provenance IDs, explicit units and relationships, diagnostic tool contracts, and contract tests.
+2 — Evaluation CSV ingestion	CSV parser, malformed-input handling, limits, missing-value detection, mapping, and worker ingestion.	Required evaluation-column validation, classification labels, probability validation, normalized evaluation records, and corresponding tests.
+3 — Dataset profiler	Missingness, distinct counts, inferred types, numeric ranges, and class-frequency summaries.	Complete structured profiler output, column roles, metadata/slice availability, full class counts/prevalence, and tool integration.
+7 — Leakage suspicion scanner	Exact target-copy checks, identifier warnings, split-overlap checks, and cautious interpretations.	Structured observation/suspicion/confirmation categories, richer applicable checks, provenance, and dedicated scanner contracts/tests.
+9 — Distribution-shift diagnostics	Missingness, category, class-share, and numeric-mean comparisons.	Defensible statistical methods, structured measurements, sample sizes, method-specific limitations, and tests.
+10 — Falsification engine	Editable experiment plans, directional predictions, and comparison of manually entered results.	Deterministic execution, reproducible accuracy-paradox experiment, and evidence-linked support/weaken/reject outcomes.
+11 — Astra/OpenAI foundation	Server-only credentials, configurable model, structured output, timeout/error handling, reference validation, and mocked integration tests.	Clean provider-service abstraction, safe debugging diagnostics, and verification of the intended integration configuration.
+13 — Structured diagnosis	Hypothesis IDs, supporting/conflicting text, missing evidence, review priority, and proposed experiments.	Validated final investigation object, stable evidence references, consistent hypothesis statuses, executed tests, verification, and repair candidates.
+20 — Incident report export	Markdown reports and versioned JSON case exports.	Full incident schema, severity, policy details, measured repair comparisons, unresolved/rejected hypotheses, and retained measurement provenance.
+25 — Expanded educational features	Seven interactive lessons, beginner/advanced explanations, simulations, and quizzes.	The requested expansion remains unspecified and unimplemented. Existing lessons are a reusable foundation, not completion of this later milestone.
+
+
+These findings are grounded primarily in [evidence.ts](C:/Users/varun/OneDrive/Desktop/whylab/app/lib/evidence.ts), [dataset.ts](C:/Users/varun/OneDrive/Desktop/whylab/app/lib/dataset.ts), [experiments.ts](C:/Users/varun/OneDrive/Desktop/whylab/app/lib/experiments.ts), [cases.ts](C:/Users/varun/OneDrive/Desktop/whylab/app/lib/cases.ts), [explanations.ts](C:/Users/varun/OneDrive/Desktop/whylab/app/lib/explanations.ts), and the [explanation API](C:/Users/varun/OneDrive/Desktop/whylab/app/api/explain/route.ts).
+Completely remaining
+Existing UI or related heuristics do not implement the core functionality of these milestones.
+Milestone	Missing core functionality
+4 — Classification diagnostics	Calculate confusion matrices, accuracy, balanced accuracy, precision, recall, F1, and AUC from predictions. Currently these metrics are extracted from supplied logs.
+5 — Threshold sweep	Recompute predictions and metrics across decision thresholds; calculate cost-sensitive operating points.
+6 — Calibration	Brier score, calibration bins, and justified calibration-error calculations.
+8 — Slice evaluation	Evaluate classifier performance by group, site, environment, device, or time.
+12 — Astra investigator loop	Model-selected diagnostic tools, validated execution, evidence collection, deduplication, and bounded iteration.
+14 — Autonomous investigation workflow	Connected ingestion → Astra → tools → verification workflow with actual observable execution events.
+15 — Repair candidate engine	Structured, verifiable threshold/policy repair candidates. Existing retraining suggestions do not satisfy this.
+16 — Repair application and reevaluation	Apply a policy and recompute before/after results on the same data and acceptance criteria.
+17 — Flagship melanoma case	Reproducible prediction fixture driving the full investigation, repair, and measured comparison.
+18 — Evidence graph	Provenance-linked observation, hypothesis, experiment, result, and repair nodes.
+19 — Repair Lab UX	User cost policies, computed operating points, apply controls, and live measured trade-offs.
+21 — Reliability profile	Transparent, evidence-linked reliability dimensions or a mathematically justified aggregate.
+22 — Adversarial review	A separate review pass that challenges assumptions and can weaken conclusions. Existing conflicting-context rules are not this workflow.
+23 — GitHub/CI integration	Incident publishing or reliability-policy integration. Local test scripts do not constitute CI integration.
+24 — Additional case studies	Additional reproducible investigations beyond the flagship. The current illustrative classifier example does not fulfill this milestone.
+
+
+Overall assessment
+Classification	Count
+Complete	1
+Partial foundations	10
+Core implementation remaining	15
+Total, including Milestone 0	26
+
+
+P0 is not complete. The largest missing pieces are prediction-based measurements, Astra tool calling, reproducible falsification, and measured policy repairs.
+The last audit validation passed 70 tests, lint, TypeScript, and production build. Those checks validate existing functionality; they do not establish completion of missing milestones. I did not rerun them for this read-only classification.
+Next implementation: Milestone 1 — Canonical investigation data model and typed diagnostic tool contracts. No files changed during this review.
+
+
+7:18 PM

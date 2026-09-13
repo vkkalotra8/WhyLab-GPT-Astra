@@ -1,0 +1,18 @@
+﻿export type ExperimentPlan = { change: string; fixed: string; metric: string; expectation: 'increase'|'decrease'; threshold: string; reason: string };
+export type ExperimentResult = { before: number; after: number; delta: number; outcome: 'Consistent with hypothesis'|'Contradicts prediction'|'Inconclusive'; explanation: string };
+export function createPlan(id: string, fallback: string): ExperimentPlan {
+  const common={fixed:'Keep the evaluation holdout, metric definition, random seed, model architecture, and all other settings fixed unless the intervention explicitly requires a change.',metric:'Accuracy (%)',expectation:'increase' as const,threshold:'1',reason:'Specify the minimum meaningful change before comparing results.'};
+  const changes: Record<string,string>={imbalance:'Retrain with class-weighted loss; evaluate minority-class recall on the same holdout.',shift:'Evaluate the same frozen model on labeled studio and production-source holdouts with identical preprocessing.',leakage:'Remove the suspect feature or re-split by entity, then rerun evaluation. Change only one suspected leakage pathway.',missing:'Fit an imputer on training data only, retrain, and evaluate on the unchanged holdout.','possible-overfitting':'Compare the checkpoint with best validation loss against the final checkpoint on an untouched test set.','possible-stalled-learning':'Compare the baseline learning rate with one preselected alternative; keep the training budget fixed.','possible-unstable-training':'Repeat training at a lower learning rate with the same seed, data, optimizer, and batch size.'};
+  return {...common,change:changes[id]??fallback,...(id==='imbalance'?{metric:'Recall (%)'}:{}),...(id==='shift'||id==='leakage'?{expectation:'decrease' as const,reason:'A lower score after changing evaluation source or removing leakage is the predicted direction here; it is not a model improvement.'}:{}),...(id==='possible-unstable-training'?{metric:'Loss',expectation:'decrease' as const,threshold:'0.01'}:{})};
+}
+export function compareExperiment(beforeText:string,afterText:string,metric:string,expectation:string,thresholdText:string,controlled:boolean): ExperimentResult {
+  if(!beforeText.trim()||!afterText.trim()||!thresholdText.trim())throw new Error('Enter baseline, experiment result, and a minimum meaningful change.');
+  const before=Number(beforeText),after=Number(afterText),threshold=Number(thresholdText);
+  if(![before,after,threshold].every(Number.isFinite)||before<0||after<0||threshold<=0)throw new Error('Use finite nonnegative results and a positive minimum change.');
+  if(metric.includes('(%)')&&(before>100||after>100||threshold>100))throw new Error('Percentage metrics must be between 0 and 100; the minimum change is in percentage points.');
+  const delta=after-before;
+  const signed=expectation==='increase'?delta:-delta;
+  if(!controlled)return {before,after,delta,outcome:'Inconclusive',explanation:'Evaluation conditions were not confirmed comparable. The difference cannot reliably test the prediction.'};
+  if(Math.abs(delta)+Number.EPSILON*Math.max(1,Math.abs(before),Math.abs(after),threshold)*4<threshold)return {before,after,delta,outcome:'Inconclusive',explanation:'The observed change is smaller than your preselected minimum meaningful change.'};
+  return {before,after,delta,outcome:signed>0?'Consistent with hypothesis':'Contradicts prediction',explanation:signed>0?'The result matches the specified directional prediction. Repeat across seeds and check alternative explanations; this does not prove the cause.':'The result moves opposite to the specified prediction. Revisit the hypothesis and experiment design; this does not rule the cause out.'};
+}

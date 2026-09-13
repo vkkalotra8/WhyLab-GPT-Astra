@@ -1,0 +1,11 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import {profileDataset,compareDatasets} from '../app/lib/dataset.ts';
+const data={name:'train',headers:['id','x','label','copy'],rows:[['a','1','yes','yes'],['b','','yes','yes'],['c','3','no','no']]};
+test('profiles infer types and count missing values',()=>{const p=profileDataset(data,'label','classification');assert.equal(p[1].missing,1);assert.equal(p[1].mean,2);assert.equal(p[0].type,'Categorical / text');});
+test('identifier and target-copy checks are review signals',()=>{const p=profileDataset(data,'label','classification');assert.match(p[0].warnings[0],/identifier/);assert.match(p[3].warnings[0],/target copy/);});
+test('regression rejects text target and suppresses class imbalance',()=>{const p=profileDataset(data,'label','regression');assert.match(p[2].warnings[0],/nonnumeric/);});
+test('overlap matches reordered feature columns and excludes labels',()=>{const other={name:'val',headers:['copy','label','x','id'],rows:[['yes','changed','1','a']]};assert.ok(compareDatasets(data,other,'label').some(s=>s.startsWith('1 of 1 rows match')));});
+test('schema differences do not fabricate overlap',()=>{assert.ok(compareDatasets(data,{name:'val',headers:['x'],rows:[['8']]},'label').some(s=>s.includes('not checked')));});
+test('numeric mean shifts and missingness are reported',()=>{const a={name:'a',headers:['x'],rows:[['1'],['2']]},b={name:'b',headers:['x'],rows:[['10'],['']]};const m=compareDatasets(a,b,'');assert.ok(m.some(s=>s.includes('mean changes')));assert.ok(m.some(s=>s.includes('missingness')));});
+test('numeric classification labels get split-share comparisons',()=>{const a={name:'a',headers:['label'],rows:[['0'],['0'],['1']]},b={name:'b',headers:['label'],rows:[['1'],['1']]};assert.ok(compareDatasets(a,b,'label').some(s=>s.includes('Target class')));assert.equal(compareDatasets(a,b,'label','regression').some(s=>s.includes('Target class')),false);});

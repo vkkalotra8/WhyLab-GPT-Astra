@@ -1,0 +1,11 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import { diagnose } from '../app/lib/dataset.ts';
+const train={name:'train.csv',headers:['x','label'],rows:[['1','a'],['2','b'],['3','a'],['4','b']]};
+const logs={source:'logs',findings:[{title:'Possible class imbalance',evidence:'majority=90%',strength:'Supported',experiment:'Check recall'}]};
+test('empty evidence does not create diagnoses',()=>assert.deepEqual(diagnose(null,{},'','classification'),[]));
+test('conflicting class proportions are surfaced',()=>{const f=diagnose(logs,{Training:train},'label','classification')[0];assert.equal(f.id,'imbalance');assert.ok(f.conflicts.some(s=>s.includes('below 70%')));assert.equal(f.score,1);});
+test('cross-split overlap is grounded in file names',()=>{const f=diagnose(null,{Training:train,Validation:{...train,name:'val.csv'}},'label','classification')[0];assert.equal(f.id,'leakage');assert.match(f.support[0],/val.csv/);assert.equal(f.score,3);});
+test('unrelated runs reduce priority and preserve the caveat',()=>{const f=diagnose(logs,{Training:train},'label','classification',{sameRun:'no'})[0];assert.ok(f.conflicts.some(s=>s.includes('different experiments')));});
+test('unknown context stays missing; answered context is not fabricated support',()=>{const a=diagnose(logs,{},'','classification')[0];assert.ok(a.missing.some(s=>s.includes('comparability')));const b=diagnose(logs,{},'','classification',{comparable:'yes'})[0];assert.equal(b.support.length,1);assert.equal(b.missing.some(s=>s.includes('comparability')),false);});
+test('multiple signals merge without inflating priority',()=>{const f=diagnose({source:'logs',findings:[{title:'Possible data leakage',evidence:'reported overlap',experiment:'audit',strength:'Suggested'}]},{Training:train,Validation:train},'label','classification')[0];assert.equal(f.support.length,2);assert.equal(f.score,3);});

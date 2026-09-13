@@ -1,0 +1,41 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import { ingestEvaluationCsv, ingestEvaluationFile, EvaluationValidationError, EVALUATION_LIMITS } from '../app/lib/investigation/evaluation-ingestion.ts';
+import { datasetMetadataSchema } from '../app/lib/investigation/types.ts';
+const header='y_true,y_pred,y_probability';
+const csv=(rows)=>header+'\n'+rows;
+const ingest=(text,options)=>ingestEvaluationCsv(text,'evaluation.csv',options);
+const invalid=(text,code)=>assert.throws(()=>ingest(text),e=>e instanceof EvaluationValidationError && e.issues.some(i=>i.code===code));
+
+test('evaluation fixture yields canonical metadata and normalized values without computing metrics',async()=>{
+ const raw=await fs.readFile(new URL('./fixtures/evaluation.csv',import.meta.url),'utf8');
+ const v=ingest(raw,{datasetId:'dataset_fixture',sourceId:'source_fixture'});
+ assert.equal(v.metadata.id,'dataset_fixture');assert.equal(v.metadata.sourceId,v.source.id);assert.equal(v.metadata.rowCount,4);
+ assert.deepEqual(datasetMetadataSchema.parse(v.metadata),v.metadata);
+ assert.deepEqual(v.rows.map(r=>[r.actual,r.predicted,r.positiveProbability]),[['0','0',.1],['1','1',.9],['1','0',.4],['0','1',.7]]);
+ assert.deepEqual(v.rows.map(r=>r.sourceRow),[1,2,3,4]);assert.equal(v.rows[2].attributes.timestamp,null);assert.equal(v.rows[2].attributes.feature_brightness,null);
+ assert.equal(v.rows[0].attributes.feature_brightness,'12');assert.ok(v.warnings.some(w=>w.includes('2 missing optional')));assert.equal('metrics' in v,false);
+ assert.deepEqual(JSON.parse(JSON.stringify(v)),v);
+});
+test('explicit text labels identify positive probability without guessing order',()=>{const v=ingest(csv('benign,malignant,.8\nmalignant,benign,.2'),{labels:{positive:'malignant',negative:'benign'}});assert.equal(v.metadata.positiveLabel,'malignant');assert.equal(v.rows[0].positiveProbability,.8);invalid(csv('benign,malignant,.8'),'label');});
+test('single-class data is retained with explicit limitations',()=>{const v=ingest(csv('1,1,1\n1,0,0'));assert.equal(v.rows.length,2);assert.ok(v.warnings.some(w=>w.includes('Only one true class')));});
+test('both true and predicted labels must belong to the configured case-sensitive pair',()=>{for(const rows of ['2,0,.5','0,2,.5','0,true,.5','01,0,.5'])invalid(csv(rows),'label');assert.throws(()=>ingest(csv('YES,no,.5'),{labels:{positive:'yes',negative:'no'}}));});
+test('probabilities require finite decimal syntax and range, allowing endpoints and exponents',()=>{const v=ingest(csv('0,0,0\n1,1,1\n1,0,1e-3'));assert.deepEqual(v.rows.map(r=>r.positiveProbability),[0,1,.001]);for(const p of ['-0.1','1.1','80%','Infinity','0x1','1,2','true'])invalid(csv('1,1,'+p),p==='1,2'?'csv':'probability');});
+test('missing labels or probabilities reject the entire file instead of dropping rows',()=>{for(const [row,column] of [[',1,.5','y_true'],['1,,.5','y_pred'],['1,1,','y_probability'],['NA,1,.5','y_true'],['1,1,NaN','y_probability'],[',,','y_true']])assert.throws(()=>ingest(csv('0,0,.1\n'+row)),e=>e instanceof EvaluationValidationError&&e.issues.some(i=>i.row===2&&i.column===column&&i.code==='missing_value'));});
+test('missing required headers produce structured actionable column errors',()=>{assert.throws(()=>ingest('actual,predicted,score\n0,0,.2'),e=>e.issues.length===3&&e.issues.every(i=>i.code==='required_column'&&i.row===null));invalid('Y_TRUE,y_pred,y_probability\n0,0,.2','required_column');});
+test('reuse parser behavior for BOM, CRLF, reordered columns, escaped quotes and multiline fields',()=>{const v=ingest('\uFEFFsite,y_probability,y_pred,y_true\r\n"a,b",.2,0,0\r\n"a""b\nc",.8,1,1');assert.equal(v.rows[0].attributes.site,'a,b');assert.equal(v.rows[1].attributes.site,'a"b\nc');assert.equal(v.rows[1].sourceRow,2);});
+test('physical blank lines are ignored but all-empty delimited records are invalid',()=>{assert.equal(ingest(csv('\n0,0,.2\n\n1,1,.8\n')).rows.length,2);invalid(csv('0,0,.2\n,,\n1,1,.8'),'missing_value');});
+test('malformed, duplicate-header, header-only and empty CSV fail clearly',()=>{for(const raw of ['',header,header+'\n0,0',header+'\n"0,0,.2','y_true,y_true,y_probability\n0,0,.2',header+'\n"0"junk,0,.2'])invalid(raw,'csv');});
+test('optional missing sentinels normalize to null and unknown columns are preserved safely',()=>{const v=ingest(header+',group,feature_x,notes,__proto__,constructor\n0,0,.2,NA,null,hello,safe,value');assert.equal(v.rows[0].attributes.group,null);assert.equal(v.rows[0].attributes.feature_x,null);assert.equal(v.rows[0].attributes.notes,'hello');assert.equal(Object.hasOwn(v.rows[0].attributes,'__proto__'),true);assert.equal(v.rows[0].attributes.__proto__,'safe');assert.equal({}.safe,undefined);});
+test('does not reinterpret predictions using an assumed 0.5 threshold',()=>{const v=ingest(csv('1,0,.9'));assert.equal(v.rows[0].predicted,'0');assert.equal(v.rows[0].positiveProbability,.9);assert.ok(v.warnings.some(w=>w.includes('no decision threshold')));});
+test('issue collection is bounded but total errors are reported accurately',()=>{assert.throws(()=>ingest(csv(Array(100).fill('bad,bad,2').join('\n'))),e=>e.issues.length===EVALUATION_LIMITS.issues&&e.totalIssues===300&&e.message.includes('50 of 300'));});
+test('row and column limits reject inputs beyond dataset workspace limits',()=>{invalid(csv(Array(10001).fill('0,0,.2').join('\n')),'limit');const extra=Array.from({length:98},(_,i)=>'feature_'+i);invalid(header+','+extra.join(',')+'\n0,0,.2,'+extra.map(()=>1).join(','),'limit');assert.equal(ingest(csv(Array(10000).fill('0,0,.2').join('\n'))).rows.length,10000);});
+test('UTF-8 byte limit is enforced rather than JavaScript string length',()=>{invalid(csv('0,0,.2')+'\n'+'x'.repeat(2000001),'limit');invalid(header+',notes\n0,0,.2,'+'é'.repeat(1000000),'limit');});
+test('binary and replacement characters are rejected',()=>{invalid(csv('0,0,.2')+'\0','encoding');invalid(header+',notes\n0,0,.2,\uFFFD','encoding');});
+test('invalid label configurations and IDs are rejected without inference',()=>{for(const labels of [{positive:'1',negative:'1'},{positive:'',negative:'0'},{positive:' NA',negative:'0'},{positive:'NA',negative:'0'},{positive:'1'},{positive:'1',negative:'0',third:'2'}])assert.throws(()=>ingest(csv('0,0,.2'),{labels}),EvaluationValidationError);assert.throws(()=>ingest(csv('0,0,.2'),{datasetId:'source_wrong'}),EvaluationValidationError);});
+test('file boundary checks filename and byte limit before reading and decodes UTF-8 strictly',async()=>{const v=await ingestEvaluationFile(new File([csv('0,0,.2')],'evaluation.csv'));assert.equal(v.rows.length,1);await assert.rejects(ingestEvaluationFile(new File([csv('0,0,.2')],'data.txt')),EvaluationValidationError);await assert.rejects(ingestEvaluationFile(new File([new Uint8Array([0xff,0xfe])],'data.csv')),e=>e.issues[0].code==='encoding');await assert.rejects(ingestEvaluationFile({name:'data.csv',size:2000001,arrayBuffer:()=>{throw new Error('Must not read oversized file');}}),e=>e.issues[0].code==='limit');});
+test('CSV options and provided IDs survive ingestion without mutation',()=>{const options={datasetId:'dataset_stable',sourceId:'source_stable',labels:{positive:'1',negative:'0'}};const original=structuredClone(options);const a=ingest(csv('0,0,.2'),options);assert.deepEqual(options,original);assert.equal(a.metadata.id,options.datasetId);assert.notEqual(a.labels,options.labels);});
+
+test('invalid supplied identifiers are rejected instead of silently regenerated',()=>{for(const options of [{datasetId:null},{sourceId:null},{datasetId:''}])assert.throws(()=>ingest(csv('0,0,.2'),options),EvaluationValidationError);});
+test('shared cell ceiling includes headers and rejects excess without accepting a partial dataset',()=>{const extras=Array.from({length:97},(_,i)=>'feature_'+i);const h=header+','+extras.join(',');const r='0,0,.2,'+extras.map(()=>0).join(',');invalid(h+'\n'+Array(10000).fill(r).join('\n'),'limit');});
