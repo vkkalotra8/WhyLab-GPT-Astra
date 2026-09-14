@@ -1,0 +1,18 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import { ingestEvaluationCsv } from '../app/lib/investigation/evaluation-ingestion.ts';
+import { runCounterfactualTest } from '../app/lib/investigation/counterfactual.ts';
+const data = (tn, fp, fn, tp) => ingestEvaluationCsv('y_true,y_pred,y_probability\n' + [[tn,'0,0,.1'],[fp,'0,1,.9'],[fn,'1,0,.1'],[tp,'1,1,.9']].flatMap(([n,row])=>Array(n).fill(row)).join('\n'),'test.csv');
+const context = {experimentId:'experiment_test',evidenceId:'evidence_test',callId:'call_test'};
+const input = d => ({datasetId:d.metadata.id,positiveLabel:'1',hypothesisId:'hypothesis_imbalance',method:'accuracy_paradox',seed:42,criterion:{metric:'accuracy_paradox_gap',operator:'at_least',value:10,unit:'percentage_points'}});
+const run = d => runCounterfactualTest(d,input(d),context);
+const value = (r,name) => r.output.comparison.find(m=>m.name===name).value;
+test('majority-only classifier supports accuracy paradox with hand-computed gaps',()=>{const r=run(data(90,0,10,0));assert.equal(r.output.outcome,'supports');assert.equal(value(r,'equal_class_weight_accuracy'),.5);assert.equal(value(r,'accuracy_paradox_gap'),40);assert.equal(value(r,'accuracy_minus_minority_recall'),90);});
+test('perfect imbalanced classifier rejects the declared prediction',()=>assert.equal(run(data(90,0,0,10)).output.outcome,'rejects'));
+test('only one passing gap weakens the joint prediction',()=>assert.equal(run(data(90,0,2,8)).output.outcome,'weakens'));
+test('equal counts and absent classes are inconclusive',()=>{for(const d of [data(10,0,10,0),data(10,0,0,0)])assert.equal(run(d).output.outcome,'inconclusive');});
+test('minority can be the negative class',()=>assert.equal(run(data(0,10,0,90)).output.outcome,'supports'));
+test('criterion boundary is inclusive and policy changes the result',()=>{const d=data(90,0,10,0),i=input(d);i.criterion.value=40;assert.equal(runCounterfactualTest(d,i,context).output.outcome,'supports');i.criterion.value=41;assert.equal(runCounterfactualTest(d,i,context).output.outcome,'weakens');});
+test('replay is deterministic, preserves inputs, and links experiment evidence',()=>{const d=data(90,0,10,0),before=structuredClone(d),r=run(d);assert.deepEqual(run(d),r);assert.deepEqual(d,before);assert.deepEqual(JSON.parse(JSON.stringify(r)),r);assert.equal(r.evidence.provenance.experimentId,r.experiment.id);assert.deepEqual(r.output.evidenceIds,[r.evidence.id]);assert.equal(r.experiment.hypothesisId,input(d).hypothesisId);});
+test('exact reweighting is seed independent',()=>{const d=data(90,0,10,0),i=input(d);i.seed=123;assert.deepEqual(runCounterfactualTest(d,i,context).output,run(d).output);});
+test('unsupported criteria and mismatched dataset or class mapping fail explicitly',()=>{const d=data(90,0,10,0);for(const patch of [{metric:'accuracy'},{operator:'at_most'},{unit:'ratio'},{value:0},{value:101}]){const i=input(d);Object.assign(i.criterion,patch);assert.throws(()=>runCounterfactualTest(d,i,context));}for(const patch of [{datasetId:'dataset_other'},{positiveLabel:'0'}])assert.throws(()=>runCounterfactualTest(d,{...input(d),...patch},context));});

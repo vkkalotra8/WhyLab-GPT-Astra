@@ -1124,3 +1124,26 @@ footer {
 .explanation-assistant .experiment-check { display: flex; align-items: baseline; gap: 10px; font-size: 12px; }
 .explanation-assistant section > p { margin: 12px 0; font-size: 12px; line-height: 1.8; color: var(--muted); }
 .explanation-assistant h4 { color: var(--cyan); margin-top: 16px; }
+
+.astra-lab { margin: 0 0 40px; padding: 28px; border-top: 2px solid var(--cyan); }
+.astra-lab h2 { margin-top: 8px; }
+.astra-inputs { border: 0; padding: 0; margin: 24px 0; min-width: 0; }
+.astra-inputs legend { margin-bottom: 16px; font-weight: 600; }
+.astra-inputs label { display: block; font-size: 13px; margin: 16px 0; }
+.astra-inputs input:not([type=checkbox]), .astra-inputs textarea { display: block; width: 100%; margin-top: 8px; padding: 10px; color: var(--foreground); background: #0c131d; border: 1px solid var(--line); }
+.astra-inputs textarea { min-height: 135px; resize: vertical; font-family: monospace; }
+.astra-settings { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 16px; }
+.astra-inputs .astra-consent { display: flex; align-items: baseline; gap: 10px; line-height: 1.7; }
+.astra-consent input { accent-color: var(--cyan); }
+.astra-warning { border-left: 2px solid #e5b66e; padding: 12px; line-height: 1.6; }
+.astra-activity, .astra-result { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 20px; }
+.astra-activity ol { max-height: 240px; overflow-y: auto; padding-left: 24px; font: 12px/1.9 monospace; }
+.astra-result p, .astra-result li { font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.astra-result h4 { margin-top: 20px; color: var(--cyan); }
+.astra-result details { margin: 18px 0; }
+.astra-result summary { cursor: pointer; }
+.astra-result pre { max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.6 monospace; }
+.astra-result button { padding: 10px 16px; border: 1px solid var(--line); }
+.astra-lab :focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
+.astra-lab button:disabled { opacity: .55; cursor: not-allowed; }
+@media(max-width:700px) { .astra-lab { padding: 18px; } .astra-settings { grid-template-columns: 1fr; gap: 0; } .astra-lab .panel-heading { flex-wrap: wrap; gap: 14px; } }
