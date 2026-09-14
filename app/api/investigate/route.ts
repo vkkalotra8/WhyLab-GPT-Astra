@@ -16,8 +16,12 @@ export async function POST(request:Request){
   let payload;
   try{
     const reader=request.body?.getReader();if(!reader)throw new Error('Empty body');
-    const timer=setTimeout(()=>void reader.cancel(),15000);let size=0;const parts:Uint8Array[]=[];
-    try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>12000000){await reader.cancel();throw new Error('Too large');}parts.push(value);}}finally{clearTimeout(timer);reader.releaseLock();}
+    let timedOut=false;
+    const cancel=()=>{void reader.cancel().catch(()=>{});};
+    request.signal.addEventListener('abort',cancel,{once:true});
+    const timer=setTimeout(()=>{timedOut=true;cancel();},15000);let size=0;const parts:Uint8Array[]=[];
+    try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>12000000){await reader.cancel();throw new Error('Too large');}parts.push(value);}}finally{clearTimeout(timer);request.signal.removeEventListener('abort',cancel);reader.releaseLock();}
+    if(timedOut||request.signal.aborted)throw new Error('Upload interrupted');
     const bytes=new Uint8Array(size);let offset=0;for(const p of parts){bytes.set(p,offset);offset+=p.length;}
     payload=investigationUploadSchema.parse(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)));
   }catch{release();return error('Provide consent, valid settings, and one to three CSV files up to 2 MB each.',400);}

@@ -4,7 +4,7 @@ Updated: 2026-09-14
 This checklist supersedes the original Milestone 0 audit snapshot. The original
 prototype Implementation 1-9 labels are separate from these Milestones 0-25.
 Complete means the milestone scope was implemented and tested; it does not mean
-production readiness or defect-free software. Statuses 0-12 reflect the completed
+production readiness or defect-free software. Statuses 0-14 reflect the completed
 milestone work; this update is not a fresh line-by-line audit of every module.
 
 IMPLEMENTED
@@ -28,6 +28,12 @@ IMPLEMENTED
 13 Validated final investigation and deterministic diagnosis; evidence-linked
    hypothesis statuses, verification integrity, conservative summaries and failure states.
    See docs/FINAL_DIAGNOSIS.md. Repairs remain empty until Milestone 15.
+14 Connected evaluation ingestion, Astra investigator, streamed observable activity,
+   final diagnosis UI, cancellation, failure handling and JSON download.
+   See docs/AUTONOMOUS_WORKFLOW.md.
+15 Deterministic repair candidate selection from measured threshold sweeps, with
+   explicit performance/cost criteria and retained policy/evidence references.
+   See docs/REPAIR_CANDIDATES.md. Application and re-evaluation remain Milestone 16.
 
 PARTIAL FOUNDATIONS; MILESTONE REQUIREMENTS REMAIN
 20 Incident report export: existing Markdown/JSON exports are reusable; full incident
@@ -35,8 +41,6 @@ PARTIAL FOUNDATIONS; MILESTONE REQUIREMENTS REMAIN
 25 Expanded education: existing lessons and quizzes are reusable; later expansion remains.
 
 CORE IMPLEMENTATION REMAINING
-14 Autonomous ingestion -> investigator -> tools -> verification workflow/UI.
-15 Structured repair candidate engine.
 16 Apply repair policy and reevaluate on the same data and acceptance criteria.
 17 Reproducible flagship melanoma case and complete investigation/repair path.
 18 Interactive evidence graph.
@@ -46,17 +50,16 @@ CORE IMPLEMENTATION REMAINING
 23 GitHub/CI integration.
 24 Additional reproducible case studies.
 
-Milestone 13 validation:
-- Tests: PASS, 236 total. Provider stubs exist only in tests.
-- Lint: PASS. Type check: PASS. Production build: PASS on retry.
-- The combined check hit a Windows EPERM on a stale .next artifact; removing that
-  generated artifact allowed the separate production build to complete successfully.
-
+Milestone 15 validation:
+- Tests: PASS, 255 total.
+- Lint: PASS. Type check: PASS. Production build: PASS.
+- Full sequential npm run check: PASS.
+- Browser checks were not rerun for this deterministic engine-only change.
 - Live OpenAI/model access: not exercised. OPENAI_MODEL remains configurable;
   configuration presence does not establish account access. No model is substituted.
 
-P0 remains incomplete: connected workflow, repairs and
-flagship end-to-end verification still remain. Deterministic engines do not yet
-constitute the autonomous product experience.
+P0 remains incomplete: repair application, measured before/after verification and
+flagship end-to-end verification remain. The repair selection engine is implemented;
+its application and workflow integration remain Milestone 16.
 
-Next implementation: Milestone 14, only after explicit user approval.
+Next implementation: Milestone 16, only after explicit user approval.
