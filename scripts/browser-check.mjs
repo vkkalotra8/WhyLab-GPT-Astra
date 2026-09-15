@@ -27,7 +27,7 @@ try{
  const target=await(await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'})).json();socket=new WebSocket(target.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
  socket.onmessage=event=>{const message=JSON.parse(event.data);if(message.id){const entry=pending.get(message.id);pending.delete(message.id);if(message.error)entry?.reject(new Error(message.error.message));else entry?.resolve(message.result);}if(message.method==='Runtime.exceptionThrown')errors.push(message.params.exceptionDetails.exception?.description||message.params.exceptionDetails.text);if(message.method==='Page.javascriptDialogOpening')void command('Page.handleJavaScriptDialog',{accept:true});};
  await command('Page.enable');await command('Runtime.enable');await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
- const fixtureDataset=ingestEvaluationCsv('y_true,y_pred,y_probability\n'+Array.from({length:100},(_,i)=>(i<90?'0':'1')+',0,.1').join('\n'),'browser-example.csv');let fixtureTurn=0;
+ const fixtureDataset=ingestEvaluationCsv('y_true,y_pred,y_probability,site\n'+Array.from({length:100},(_,i)=>(i<90?'0':'1')+',0,0.1,'+(i%2?'A':'B')).join('\n'),'pasted-evaluation.csv');let fixtureTurn=0;
  const fixtureRun=await runInvestigator({objective:'Browser workflow test',datasets:[fixtureDataset],consent:true,accuracyParadoxGap:10},async history=>{fixtureTurn++;const last=fixtureTurn===1?null:JSON.parse(history.at(-1).output);return {status:'completed',output:[{type:'function_call',call_id:'fixture_'+fixtureTurn,name:fixtureTurn===1?'compute_classification_metrics':'finish_investigation',arguments:JSON.stringify(fixtureTurn===1?{datasetId:fixtureDataset.metadata.id,positiveLabel:'1'}:{reason:'insufficient_evidence',evidenceIds:last.evidence.map(e=>e.id),missingEvidence:['Verification experiment']})}]};},new AbortController().signal);
  const fixture=buildFinalInvestigation(fixtureRun);
  await command('Page.addScriptToEvaluateOnNewDocument',{source:`window.astraMode='success';const originalFetch=window.fetch.bind(window);window.fetch=async function(url,options={}){if(url!='/api/investigate')return originalFetch(url,options);if(!options.method)return Response.json({available:true});if(window.astraMode==='pending')return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true}));if(window.astraMode==='error')return Response.json({error:'Test provider unavailable'},{status:503});return new Response(JSON.stringify({type:'progress',message:'Classification metrics measured'})+'\\n'+JSON.stringify({type:'result',investigation:${JSON.stringify(fixture)}})+'\\n',{headers:{'content-type':'application/x-ndjson'}});};`});
@@ -35,6 +35,16 @@ try{
  await command('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});await command('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab'});assert.equal(await evaluate('document.activeElement.className'),'skip-link');pass('Skip link is the first keyboard stop');
  await waitFor(()=>evaluate("document.querySelector('.astra-lab .local-note').textContent==='AI CONFIGURED'"),'Astra configured');
  await button('Load synthetic prediction example');await click('.astra-consent input');await click('.astra-lab .investigate-button');await waitFor(()=>evaluate("Boolean(document.querySelector('.astra-result'))"),'Astra result');assert.ok(await evaluate("document.querySelector('.astra-measurements').textContent.includes('90.0%')"));assert.ok(await evaluate("document.querySelector('.astra-activity').textContent.includes('Classification metrics measured')"));pass('Astra streamed diagnosis and measured metrics');
+ await waitFor(()=>evaluate("Boolean(document.querySelector('#linked-repair-lab'))"),'linked repair data binding');
+ await fill('#linked-repair-lab input[type=number]:nth-of-type(1)','50');
+ await evaluate("(()=>{const e=document.querySelectorAll('#linked-repair-lab input[type=number]')[2];Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'100');e.dispatchEvent(new Event('input',{bubbles:true}));})()");
+ await button('Measure local candidates',"document.querySelector('#linked-repair-lab')");
+ await waitFor(()=>evaluate("document.querySelector('#linked-repair-lab').textContent.includes('Candidate ready')"),'linked candidate');
+ await button('Apply recommended policy',"document.querySelector('#linked-repair-lab')");
+ await waitFor(()=>evaluate("document.querySelector('.astra-result').textContent.includes('Recorded repair comparisons: 1')"),'linked parent comparison');
+ assert.ok(await evaluate("document.querySelector('#linked-repair-lab').textContent.includes('Re-test: passed')"));
+ pass('Astra diagnosis continues into repair with parent comparison updates');
+
  await button('Clear evidence');assert.ok(await evaluate("document.querySelector('.astra-lab .investigate-button').disabled"));await button('Load synthetic prediction example');await click('.astra-consent input');await evaluate("window.astraMode='pending'");await click('.astra-lab .investigate-button');await button('Cancel investigation');await waitFor(()=>evaluate("document.querySelector('.astra-lab').textContent.includes('Investigation cancelled')"),'Astra cancellation');pass('Astra cancellation and consent reset');
  await evaluate("window.astraMode='error'");await click('.astra-lab .investigate-button');await waitFor(()=>evaluate("document.querySelector('.astra-lab').textContent.includes('Test provider unavailable')"),'Astra error');await evaluate("window.astraMode='success'");await click('.astra-lab .investigate-button');await waitFor(()=>evaluate("Boolean(document.querySelector('.astra-result'))"),'Astra retry');pass('Astra error feedback and retry');
  await click('.new-button');await waitFor(()=>evaluate("!document.querySelector('.astra-result')&&document.querySelector('.astra-lab textarea').value===''"),'Astra new investigation reset');pass('New investigation resets Astra evidence and results');
@@ -55,6 +65,92 @@ try{
  await command('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:artifacts});await button('Export JSON');await waitFor(async()=>{try{return(await fs.stat(path.join(artifacts,'whylab-case.json'))).size>0;}catch{return false;}},'JSON export');await upload('.case-manager input[type=file]',[path.join(artifacts,'whylab-case.json')]);await waitFor(()=>evaluate(`document.querySelectorAll('.case-list li').length===2`),'JSON import');pass('JSON export/import round trip');
  await upload('.extended-file input',['tests/fixtures/metrics.csv','tests/fixtures/production.log']);await waitFor(()=>evaluate(`document.querySelectorAll('.mapping-file').length===2`),'multi-file preview');await evaluate(`document.querySelector('.mapping-file').open=true;const selects=document.querySelectorAll('.mapping-grid select');selects[0].value='epoch';selects[0].dispatchEvent(new Event('change',{bubbles:true}));`);await evaluate(`const select=document.querySelectorAll('.mapping-grid select')[1];select.value='val_loss';select.dispatchEvent(new Event('change',{bubbles:true}));`);await button('Analyze selected evidence');await waitFor(()=>evaluate(`document.querySelector('.results')?.textContent.includes('Evidence bundle')`),'mapped bundle');assert.ok(await evaluate(`document.querySelector('.results').textContent.includes('metrics.csv / Validation loss')`));pass('Mapped multi-file upload through worker');
  await command('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});assert.equal(await evaluate(`getComputedStyle(document.documentElement).scrollBehavior`),'auto');pass('Reduced-motion preference');
+ await button('Run flagship investigation');
+ await waitFor(()=>evaluate("document.querySelector('.flagship-results')?.textContent.includes('92.0%')"),'flagship measured baseline');
+ await button('Show measured repair');
+ await waitFor(()=>evaluate("document.querySelector('#flagship-comparison')?.textContent.includes('Simulated impact under the supplied cost model.')"),'flagship repair');
+ assert.ok(await evaluate("document.querySelector('#flagship-comparison').textContent.includes('100.0%')"));
+ assert.ok(await evaluate("document.querySelector('#flagship-comparison').textContent.includes('passed')"));
+ await button('Run flagship again');
+ await waitFor(()=>evaluate("document.querySelector('.flagship-results')?.textContent.includes('92.0%')"),'repeat flagship');
+ assert.equal(await evaluate("Boolean(document.querySelector('#flagship-comparison'))"),false);
+ await button('Show measured repair');
+ pass('Flagship clean-session run, measured repair and deterministic replay');
+ await evaluate("document.querySelector('#flagship .graph-node').focus()");
+ assert.ok(await evaluate("document.activeElement.classList.contains('graph-node')"));
+ await command('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r'});
+ await command('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+ await waitFor(()=>evaluate("document.querySelector('#flagship .graph-inspector pre')!==null"),'keyboard graph inspection');
+ assert.ok(await evaluate("document.activeElement===document.querySelector('#flagship .graph-inspector h4')"));
+ await fill('#flagship .graph-controls input','hypothesis_paradox');
+ assert.equal(await evaluate("document.querySelectorAll('#flagship .graph-node').length"),1);
+ await click('#flagship .graph-node');
+ assert.ok(await evaluate("document.querySelector('#flagship .graph-inspector').textContent.includes('tested by')"));
+ await evaluate("[...document.querySelectorAll('#flagship .graph-inspector button')].find(b=>b.textContent.startsWith('Experiment:')).click()");
+ assert.ok(await evaluate("document.querySelector('#flagship .graph-inspector h4').textContent.startsWith('Experiment:')"));
+ await fill('#flagship .graph-controls input','no-such-node');
+ assert.ok(await evaluate("document.querySelector('#flagship .graph-nodes').textContent.includes('No nodes match')"));
+ await button('Clear filters',"document.querySelector('#flagship .evidence-graph')");
+ assert.ok(await evaluate("document.querySelectorAll('#flagship .graph-node').length>10"));
+ pass('Evidence graph keyboard selection, search, edge traversal and empty-filter recovery');
+ await button('Load repair example');
+ await waitFor(()=>evaluate("document.querySelector('#repair-lab textarea').value.includes('y_true')"),'repair example');
+ await button('Measure local candidates');
+ await waitFor(()=>evaluate("document.querySelector('.repair-results')?.textContent.includes('Recommended threshold: 0.2')"),'repair candidate');
+ assert.ok(await evaluate("document.querySelector('.repair-results').textContent.includes('Original baseline')"));
+ await button('Apply recommended policy');
+ await waitFor(()=>evaluate("document.querySelector('.repair-results')?.textContent.includes('Re-test: passed')"),'repair application');
+ assert.ok(await evaluate("document.querySelector('.repair-results').textContent.includes('Applied to evaluation copy')"));
+ await button('Restore baseline preview');
+ assert.ok(await evaluate("document.querySelector('.repair-results').textContent.includes('Original baseline')"));
+ await fill('#repair-lab input[type=number]','0.01');
+ assert.equal(await evaluate("Boolean(document.querySelector('.repair-results'))"),false);
+ assert.equal(await evaluate("document.querySelector('#repair-lab input[type=checkbox]').checked"),false);
+ await button('Measure local candidates');
+ await waitFor(()=>evaluate("document.querySelector('.repair-results')?.textContent.includes('Recommended threshold: 0.4')"),'changed cost recommendation');
+ pass('Repair Lab local cost policy, explicit application, restore and stale-result reset');
+ await button('Export incident JSON',"document.querySelector('#flagship .incident-export')");
+ await waitFor(async()=>{try{const r=JSON.parse(await fs.readFile(path.join(artifacts,'whylab-incident-report.json'),'utf8'));return r.reportVersion===1&&r.investigation.comparisons.length===1;}catch{return false;}},'incident JSON export');
+ await button('Export incident Markdown',"document.querySelector('#flagship .incident-export')");
+ await waitFor(async()=>{try{return (await fs.readFile(path.join(artifacts,'whylab-incident-report.md'),'utf8')).includes('Complete canonical provenance snapshot');}catch{return false;}},'incident Markdown export');
+ pass('Incident report JSON and Markdown downloads retain comparison and provenance');
+ assert.equal(await evaluate("document.querySelectorAll('#flagship .reliability-profile article').length"),6);
+ assert.ok(await evaluate("[...document.querySelectorAll('#flagship .reliability-profile article')].some(a=>a.querySelector('h4').textContent.startsWith('Calibration')&&a.querySelector('h4').textContent.includes('Not assessed'))"));
+ await evaluate("document.querySelector('#flagship .reliability-profile article details').open=true");
+ assert.ok(await evaluate("document.querySelector('#flagship .reliability-profile article').textContent.includes('Result:')"));
+ await evaluate("const s=document.querySelector('#flagship .reliability-profile select');s.value=s.options[1].value;s.dispatchEvent(new Event('change',{bubbles:true}))");
+ assert.ok(await evaluate("document.querySelector('#flagship .reliability-profile').textContent.includes('Baseline for')"));
+ pass('Reliability profile dimensions, missing evidence, provenance and dataset filtering');
+ await button('Challenge this investigation',"document.querySelector('#flagship .challenge-review')");
+ await waitFor(()=>evaluate("document.querySelector('#flagship .challenge-review').textContent.includes('Review complete:')"),'challenge review');
+ assert.ok(await evaluate("document.querySelector('#flagship .challenge-review').textContent.includes('moderate')"));
+ assert.ok(await evaluate("document.querySelector('#flagship .challenge-review').textContent.includes('References:')"));
+ await button('Run challenge again',"document.querySelector('#flagship .challenge-review')");
+ assert.ok(await evaluate("document.querySelector('#flagship .challenge-review').textContent.includes('hypothesis confidence reductions')"));
+ pass('Challenge review confidence reduction, referenced findings and replay');
+ await button('Run selected case');
+ await waitFor(()=>evaluate("document.querySelector('.case-study-results')?.textContent.includes('Measured accuracy: 80%')"),'calibration case');
+ assert.ok(await evaluate("document.querySelector('.case-study-results').textContent.includes('check_calibration')"));
+ await evaluate("(()=>{const select=document.querySelector('#case-studies select');select.value='site';select.dispatchEvent(new Event('change',{bubbles:true}));})()");
+ assert.equal(await evaluate("Boolean(document.querySelector('.case-study-results'))"),false);
+ await button('Run selected case');
+ await waitFor(()=>evaluate("document.querySelector('.case-study-results')?.textContent.includes('Measured accuracy: 90%')"),'site case');
+ assert.ok(await evaluate("document.querySelector('.case-study-results').textContent.includes('slice_evaluation')"));
+ pass('Additional calibration and site case execution with stale-result reset');
+ await fill('#case-studies .classroom-lesson input','90');
+ await evaluate("(()=>{const el=document.querySelector('#case-studies .classroom-lesson select');el.value='1';el.dispatchEvent(new Event('change',{bubbles:true}));})()");
+ await button('Check worksheet answers',"document.querySelector('#case-studies .classroom-lesson')");
+ assert.ok(await evaluate("document.querySelector('#case-studies .classroom-lesson').textContent.includes('Correct within the stated rounding tolerance')"));
+ await button('Reset worksheet',"document.querySelector('#case-studies .classroom-lesson')");
+ assert.equal(await evaluate("document.querySelector('#case-studies .classroom-lesson input').value"),'');
+ pass('Measured classroom answers, feedback and reset');
+
+
+
+
+
+
+
  await screenshot('desktop.png');
  for(const width of [375,768]){await command('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:true});await pause(200);assert.ok(await evaluate(`document.documentElement.scrollWidth<=innerWidth+1`),`Horizontal overflow at ${width}px`);await screenshot(`viewport-${width}.png`);}pass('Mobile and tablet horizontal-overflow checks');
  const unnamed=await evaluate("[...document.querySelectorAll('input,textarea,select')].filter(e=>!e.labels?.length&&!e.getAttribute('aria-label')&&!e.getAttribute('aria-labelledby')).map(e=>e.outerHTML)");assert.deepEqual(unnamed,[]);pass('All form controls have associated labels');

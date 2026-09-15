@@ -1,0 +1,9 @@
+﻿{
+  "version": 1,
+  "name": "Synthetic flagship regression policy",
+  "checks": [
+    { "stage": "after", "metric": "recall", "operator": "at_least", "value": 0.9, "unit": "ratio" },
+    { "stage": "after", "metric": "precision", "operator": "at_least", "value": 0.7, "unit": "ratio" },
+    { "stage": "after", "metric": "expected_cost", "operator": "at_most", "value": 10, "unit": "cost" }
+  ]
+}

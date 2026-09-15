@@ -1,0 +1,39 @@
+﻿name: WhyLab CI
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: whylab-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WHYLAB_AI_ENABLED: 'false'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Test, lint, type check and build
+        run: npm run check
+      - name: Flagship reliability policy
+        if: ${{ !cancelled() }}
+        run: npm run check:reliability
+      - name: Upload measured incident artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: whylab-incident-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/ci/
+          if-no-files-found: error
+          retention-days: 14

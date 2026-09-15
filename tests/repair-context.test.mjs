@@ -1,0 +1,11 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {investigateMelanoma} from '../app/lib/investigation/flagship-melanoma.ts';
+import {buildRepairContext} from '../app/lib/investigation/repair-context.ts';
+const csv=readFileSync(new URL('../public/fixtures/melanoma-synthetic.csv',import.meta.url),'utf8');
+const request=()=>{const investigation=investigateMelanoma(csv).investigation;return {investigation,datasetId:investigation.datasets[0].id};};
+test('repair context retains diagnosis, opposing relationships and history without raw rows',()=>{const r=request();r.investigation.hypotheses[0].evidence.push({evidenceId:'evidence_sweep',relationship:'weakens',rationale:'Counter evidence'});const before=structuredClone(r),c=buildRepairContext(r,csv);assert.deepEqual(r,before);assert.deepEqual(c.diagnosis,r.investigation.diagnosis);assert.deepEqual(c.hypotheses,r.investigation.hypotheses);assert.deepEqual(c.priorComparisons,r.investigation.comparisons);assert.equal(c.selectedDataset.id,r.datasetId);assert.ok(!('rows' in c));assert.ok(!c.toolRecords.some(r=>'output' in r));});
+test('unknown dataset, changed CSV and malformed references are rejected',()=>{const r=request();assert.throws(()=>buildRepairContext({...r,datasetId:'dataset_unknown'},csv));assert.throws(()=>buildRepairContext(r,csv.replace('0,0,0.1','0,1,0.9')));r.investigation.evidence[1].provenance.resultId='result_missing';assert.throws(()=>buildRepairContext(r,csv));});
+test('oversized context is rejected rather than silently losing contradictory evidence',()=>{const r=request();for(let i=0;i<20;i++)r.investigation.hypotheses.push({id:'hypothesis_extra'+i,statement:'x'.repeat(4000),status:'proposed',confidence:{kind:'evidence_strength',level:'unassessed',rationale:'Unresolved'},evidence:[],unresolvedQuestions:[]});assert.throws(()=>buildRepairContext(r,csv),/64 KB/);});
+test('missing diagnosis remains explicit and unmeasured data cannot borrow another dataset',()=>{const r=request();r.investigation.status='running';r.investigation.diagnosis=null;assert.equal(buildRepairContext(r,csv).diagnosis,null);assert.throws(()=>buildRepairContext(r,'y_true,y_pred,y_probability\n0,0,.1'),/row count/);});

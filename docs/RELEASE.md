@@ -44,3 +44,43 @@ Case data is saved only when the user chooses Save. Browser storage can be clear
 ## Local rollout and rollback
 
 Build with `npm.cmd run build`, then serve with `npm.cmd run start`. Keep the preceding source/build release and export important cases before updating. Roll back the source/build together; do not silently migrate or delete browser case data. Version-1 JSON imports remain explicitly validated.
+
+## Milestone 17: reproducible flagship case
+
+The homepage now includes a local synthetic melanoma investigation, with measured accuracy-paradox verification, cost-sensitive repair, complete operating-point comparisons, replay, and CSV/canonical JSON downloads. See [the flagship protocol](FLAGSHIP_MELANOMA.md) for the fixture, declared assumptions and limitations. All 269 tests, lint, type checking, production build, and 21 browser checks passed. Live provider access and independent holdout performance were not validated. Milestone 18 remains gated on explicit P0 review.
+
+## Milestone 18: evidence graph
+
+Flagship and Astra results now include a searchable, keyboard-accessible evidence explorer with directed reference traversal and original-record inspection. It preserves relationship semantics, cost assumptions and separate before/after evidence. See [Evidence graph](EVIDENCE_GRAPH.md). Validation: 274 tests, lint, type checking, production build and 22 browser checks passed. No live provider call was required.
+
+## Milestone 19: Repair Lab
+
+The homepage now includes explicit cost-policy entry, local candidate measurements, optional Astra optimization selection and validated trade-off interpretation, user-triggered policy application and live re-test metrics. See [Repair Lab](REPAIR_LAB.md) for supported inputs and limitations. Validation: 282 tests, lint, type checking, production build and 23 browser checks passed. Provider tests used mocked fetch; live model/account access was not exercised.
+
+## Milestone 20: incident report export
+
+Flagship, Astra and applied Repair Lab investigations export structured Markdown/JSON incident reports with full canonical provenance, explicit model/severity annotations, hypotheses, tests, remediation and before/after verification. Monitoring and CI/CD suggestions are clearly distinguished from executed checks. See [Incident reports](INCIDENT_REPORT.md). Validation: 288 tests, lint, type checking, production build and 24 browser checks passed.
+
+## Milestone 21: reliability profile
+
+Flagship, Astra and applied Repair Lab investigations now show six evidence-linked reliability dimensions with explicit missing/undefined evidence, dataset filtering and separate policy scopes. Incident reports embed the same profile. No aggregate score or safety certification is inferred. See [Reliability profile](RELIABILITY_PROFILE.md). Validation: 294 tests, lint, type checking, production build and 25 browser checks passed.
+
+## Milestone 22: Challenge WhyLab
+
+Canonical investigations now support a deterministic second-pass review with referenced findings and separate confidence reductions. Original diagnosis/evidence remains intact; review JSON includes the complete source snapshot. See [Challenge review](CHALLENGE_REVIEW.md). Validation: 300 tests, lint, type checking, production build and 26 browser checks passed. This review does not execute new experiments or call a model.
+
+## Milestone 23: GitHub/CI integration
+
+Added a GitHub Actions workflow, explicit flagship regression policy and local `npm run check:reliability` command. The check emits measured policy results and incident reports, fails on missing/undefined or unmet measurements, and clears stale artifacts. See [CI integration](CI_INTEGRATION.md). Validation: 304 tests, lint, type checking, production build, local passing policy and failure-path cleanup passed. Hosted workflow execution and branch-protection configuration remain unverified; no remote publication was performed.
+
+## Milestone 24: additional case studies
+
+Added reproducible synthetic calibration and site-specific failure investigations with committed CSVs, local measured diagnostics, case selection and canonical evidence/report integration. See [Case studies](CASE_STUDIES.md). Validation: 308 tests, lint, type checking, production build and 27 browser checks passed. The cases describe measured failures without claiming verified causal diagnoses or repairs.
+
+## Milestone 25: classroom activities
+
+The flagship and additional case studies now include measured classroom exercises, formula hints, feedback, an evidence-interpretation question, verification-plan reflection, instructor guidance and local JSON worksheet export. See [Classroom activities](CLASSROOM_ACTIVITIES.md). Validation: 312 tests, lint, type checking, production build and 28 browser checks passed. Responses are session-only unless downloaded; this is not a certified grading system.
+
+## Strategy follow-up: connected investigation and repair
+
+Astra results now retain matching submitted evaluation data and expose an embedded Repair Lab. Application appends assumptions, tools, evidence, repairs and comparisons to the original investigation; parent graphs and exports update together. Repeated repairs preserve history. See [Connected repair](CONNECTED_REPAIR.md). Validation: 316 tests, lint, type checking, production build and 29 browser checks passed. Browser provider responses were mocked and the test server had AI disabled; no paid API call was made. Persistent model context and live model validation remain separate follow-ups.

@@ -1,0 +1,11 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {investigateMelanoma} from '../app/lib/investigation/flagship-melanoma.ts';
+import {evaluateCiPolicy} from '../app/lib/investigation/ci-policy.ts';
+const run=()=>investigateMelanoma(readFileSync(new URL('../public/fixtures/melanoma-synthetic.csv',import.meta.url),'utf8'));
+const policy=()=>JSON.parse(readFileSync(new URL('../policies/flagship-reliability.json',import.meta.url),'utf8').replace(/^\uFEFF/,''));
+test('declared flagship policy passes measured repaired metrics with provenance',()=>{const r=run(),p=evaluateCiPolicy(policy(),r);assert.equal(p.passed,true);assert.equal(p.checks.length,3);for(const c of p.checks){assert.deepEqual(c.evidenceIds,r.comparison.afterEvidenceIds);assert.equal(c.datasetId,r.comparison.datasetId);assert.equal(c.measurement.status,'measured');}});
+test('baseline failure and stricter precision target fail the policy',()=>{const r=run(),p=policy();p.checks[0].stage='baseline';assert.equal(evaluateCiPolicy(p,r).passed,false);p.checks[0].stage='after';p.checks[1].value=.99;assert.equal(evaluateCiPolicy(p,r).checks[1].status,'failed');});
+test('missing, mismatched-unit and undefined values fail closed as inconclusive',()=>{for(const patch of [{metric:'unknown'},{unit:'loss'}]){const p=policy();Object.assign(p.checks[0],patch);const result=evaluateCiPolicy(p,run());assert.equal(result.passed,false);assert.equal(result.checks[0].status,'inconclusive');}const r=run();r.after.metrics[0]={...r.after.metrics[0],status:'undefined',reason:'Unavailable'};const p=policy();p.checks[0].metric=r.after.metrics[0].name;p.checks[0].unit=r.after.metrics[0].unit;assert.equal(evaluateCiPolicy(p,r).checks[0].status,'inconclusive');});
+test('empty, unknown-field and nonfinite policies are rejected',()=>{for(const patch of [{checks:[]},{extra:true},{checks:[{...policy().checks[0],value:Infinity}]}])assert.throws(()=>evaluateCiPolicy({...policy(),...patch},run()));});

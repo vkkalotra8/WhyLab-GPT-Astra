@@ -1,0 +1,13 @@
+﻿# Connected Astra diagnosis → repair → re-test
+
+This follow-up closes the separate-investigation gap between Astra results and Repair Lab. After a completed Astra response, the browser rebinds its retained submission CSVs to matching canonical dataset/source IDs. Uniquely named, metadata-matching datasets become available in **Dataset to repair**. Original bytes stay in this page session; they are not reconstructed from aggregate metrics. Ambiguous or unmatched files do not enable linked repair.
+
+The embedded Repair Lab uses the chosen original dataset. It appends a new explicit cost assumption, threshold sweep, evidence-linked operating-policy hypothesis and candidate to the original investigation. Policy optimization does not promote or replace the existing causal diagnosis. The application action re-evaluates the policy using the existing engine and updates the parent investigation, diagnosis references, evidence graph, reliability profile and incident/JSON exports. Repeated repairs keep historical comparisons and allocate fresh IDs.
+
+Only applied repairs are committed to the parent UI state; candidate previews do not change it. Editing policy inputs clears the preview, not historical comparisons. Standalone Repair Lab remains available. A linked repair has no restore-history action; baseline measurements remain preserved in its comparison. Selecting another dataset discards that panel's draft.
+
+The existing optional **Ask Astra for repair** endpoint still performs bounded tool selection and validates measured trade-off directions. Its binary evaluation copy is normalized to 1/0 for provider compatibility; canonical original labels and dataset IDs are retained locally. This follow-up does not claim that the model has a persistent conversation across investigation and repair. Full structured diagnostic context, richer logs, additional falsification protocols and deployment/demo work remain separate follow-ups.
+
+No paid provider calls were made during implementation. Provider behavior remains covered by mocked tests. Live configured model execution needs a separate deliberate validation run. The metadata binding is a session-level association, not cryptographic authentication of arbitrary imported historical investigations.
+
+Tests cover original ID/history preservation, unchanged primary diagnosis, comparison-reference updates, repeated repairs, invalid dataset/baseline inputs, no eligible candidate and label normalization. The browser test runs a mocked streamed diagnosis into local repair and checks that the original parent result gains its comparison.

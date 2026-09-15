@@ -1,0 +1,10 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runCaseStudy} from '../app/lib/investigation/case-studies.ts';
+import {buildClassroomLesson,gradePercentage} from '../app/lib/investigation/classroom-lesson.ts';
+const csv=readFileSync(new URL('../public/fixtures/site-failure.csv',import.meta.url),'utf8');
+test('worksheet answers come from measured metrics and retain provenance',()=>{const v=runCaseStudy('site',csv),before=structuredClone(v),l=buildClassroomLesson(v);assert.equal(l.exercises.find(e=>e.metric==='accuracy').expectedPercent,90);assert.equal(l.exercises.length,2);for(const e of l.exercises){assert.ok(v.toolResults.some(r=>r.id===e.resultId));assert.ok(e.evidenceIds.every(id=>v.evidence.some(x=>x.id===id)));}assert.deepEqual(v,before);});
+test('grading distinguishes blank, invalid, incorrect and rounded correct percentages',()=>{for(const a of ['',' ','NaN','Infinity','-1','101'])assert.equal(gradePercentage(a,90).status,'invalid');assert.equal(gradePercentage('80',90).status,'retry');assert.equal(gradePercentage('90.05',90).status,'correct');assert.equal(gradePercentage('90.06',90).status,'retry');});
+test('changed case data changes answer key rather than forcing fixture answers',()=>{const changed=csv.replaceAll('0,1,0.8,B','0,0,0.2,B');const l=buildClassroomLesson(runCaseStudy('site',changed));assert.equal(l.exercises.find(e=>e.metric==='accuracy').expectedPercent,95);});
+test('undefined measurements are excluded and malformed evidence is rejected',()=>{const v=runCaseStudy('site',csv);v.toolResults[0].output.metrics=v.toolResults[0].output.metrics.map(m=>m.name==='accuracy'?{name:m.name,status:'undefined',reason:'No defined value',unit:m.unit,sampleSize:m.sampleSize}:m);assert.ok(!buildClassroomLesson(v).exercises.some(e=>e.metric==='accuracy'));v.evidence[0].provenance.resultId='result_missing';assert.throws(()=>buildClassroomLesson(v));});

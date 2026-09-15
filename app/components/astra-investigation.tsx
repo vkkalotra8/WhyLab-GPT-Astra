@@ -1,9 +1,16 @@
 ﻿'use client';
+import RepairLab from './repair-lab';
+import { ingestEvaluationCsv, type EvaluationDataset } from '../lib/investigation/evaluation-ingestion';
+import ChallengeReview from './challenge-review';
+import ReliabilityProfile from './reliability-profile';
+import IncidentReportExport from './incident-report-export';
+import EvidenceGraph from './evidence-graph';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { readInvestigationStream } from '../lib/investigation-workflow';
 import type { Investigation } from '../lib/investigation/types';
 const sample='y_true,y_pred,y_probability,site\n'+Array.from({length:100},(_,i)=>`${i<90?0:1},0,0.1,${i%2?'A':'B'}`).join('\n');
 export default function AstraInvestigation(){
+  const [repairDatasets,setRepairDatasets]=useState<EvaluationDataset[]>([]),[repairDatasetId,setRepairDatasetId]=useState('');
   const [available,setAvailable]=useState<boolean|null>(null),[configError,setConfigError]=useState(false);
   const [csv,setCsv]=useState(''),[files,setFiles]=useState<File[]>([]),[positive,setPositive]=useState('1'),[negative,setNegative]=useState('0');
   const [objective,setObjective]=useState('Investigate why classification accuracy may be misleading.'),[gap,setGap]=useState('10'),[consent,setConsent]=useState(false);
@@ -11,10 +18,10 @@ export default function AstraInvestigation(){
   const controller=useRef<AbortController|null>(null),generation=useRef(0),heading=useRef<HTMLHeadingElement>(null),fileInput=useRef<HTMLInputElement>(null);
   const cancelActive=useCallback(()=>{controller.current?.abort();generation.current++;},[]);
   useEffect(()=>{const c=new AbortController();fetch('/api/investigate',{signal:c.signal,cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error();const body=await r.json();if(typeof body.available!=='boolean')throw new Error();setAvailable(body.available);}).catch(()=>{if(!c.signal.aborted)setConfigError(true);});return()=>{c.abort();cancelActive();};},[cancelActive]);
-  function clear(){controller.current?.abort();generation.current++;setBusy(false);setResult(null);setEvents([]);setNotice('');setConsent(false);}
+  function clear(){controller.current?.abort();generation.current++;setBusy(false);setResult(null);setRepairDatasets([]);setRepairDatasetId('');setEvents([]);setNotice('');setConsent(false);}
   async function start(){
     if(!consent||!Number.isFinite(Number(gap))||Number(gap)<.001||Number(gap)>100){setNotice('Confirm consent and enter a gap between 0.001 and 100 percentage points.');return;}
-    const id=++generation.current,c=new AbortController();controller.current=c;setBusy(true);setNotice('');setEvents([]);setResult(null);
+    const id=++generation.current,c=new AbortController();controller.current=c;setBusy(true);setNotice('');setEvents([]);setResult(null);setRepairDatasets([]);setRepairDatasetId('');
     try{
       const selected=files.length?await Promise.all(files.map(async f=>{if(f.size>2000000||!f.name.toLowerCase().endsWith('.csv'))throw new Error('Choose CSV files up to 2 MB each.');return {name:f.name,text:await f.text()};})):[{name:'pasted-evaluation.csv',text:csv}];
       if(c.signal.aborted)return;
@@ -23,7 +30,20 @@ export default function AstraInvestigation(){
       const response=await fetch('/api/investigate',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({objective,files:selected,labels:{positive,negative},accuracyParadoxGap:Number(gap),consent:true})});
       await readInvestigationStream(response,event=>{if(generation.current!==id)return;if(event.type==='progress')setEvents(items=>[...items,event.message]);else if(event.type==='error')throw new Error(event.message);else completed.push(event.investigation);});
       const final=completed[0];
-      if(generation.current===id&&final){setResult(final);setNotice(final.status==='failed'?'Investigation stopped. Available evidence is shown below.':final.diagnosis?.status==='inconclusive'?'Investigation is inconclusive. Review the missing evidence below.':'Investigation finished. Review the evidence and verification below.');requestAnimationFrame(()=>heading.current?.focus());}
+      if(generation.current===id&&final){
+        // Bind only retained submission bytes to matching server-registered metadata.
+        const bound:EvaluationDataset[]=[];
+        for(const metadata of final.datasets){
+          const matches=selected.filter(file=>file.name===metadata.name);
+          if(matches.length!==1)continue;
+          try {
+            const parsed=ingestEvaluationCsv(matches[0].text,matches[0].name,{labels:{positive,negative},datasetId:metadata.id,sourceId:metadata.sourceId});
+            if(JSON.stringify(parsed.metadata)!==JSON.stringify(metadata))continue;
+            const source=final.sources.find(source=>source.id===metadata.sourceId);if(!source)continue;
+            bound.push({...parsed,source});
+          } catch { /* Diagnosis stays available when a dataset cannot safely be rebound. */ }
+        }
+        setRepairDatasets(bound);setRepairDatasetId(bound[0]?.metadata.id??'');setResult(final);setNotice(final.status==='failed'?'Investigation stopped. Available evidence is shown below.':final.diagnosis?.status==='inconclusive'?'Investigation is inconclusive. Review the missing evidence below.':'Investigation finished. Review the evidence and verification below.');requestAnimationFrame(()=>heading.current?.focus());}
     }catch(error){if(generation.current===id)setNotice(c.signal.aborted?'Investigation cancelled. No completed diagnosis was received.':error instanceof Error?error.message:'Investigation failed. Try again.');}
     finally{if(generation.current===id)setBusy(false);}
   }
@@ -50,10 +70,13 @@ export default function AstraInvestigation(){
       {result.toolResults.filter(r=>r.status==='completed'&&r.tool==='compute_classification_metrics').map(r=>r.status==='completed'&&r.tool==='compute_classification_metrics'&&<div key={r.id} className="astra-measurements"><h4>{result.datasets.find(d=>d.id===r.datasetIds[0])?.name}: measured evaluation</h4><dl>{[['accuracy','Accuracy'],['balanced_accuracy','Balanced accuracy'],['minority_recall','Minority recall']].map(([name,label])=>{const metric=r.output.metrics.find(m=>m.name===name);return <div key={name}><dt>{label}</dt><dd>{metric?.status==='measured'?`${(metric.value*100).toFixed(1)}%`:'Undefined'}</dd>{metric?.status==='undefined'&&<small>{metric.reason}</small>}</div>;})}</dl><p className="description">{r.output.sampleSize} evaluation rows ? Supplied predictions</p></div>)}
       {result.hypotheses.map(h=><article key={h.id}><h4>{h.statement}</h4><p>Status: <strong>{h.status}</strong></p><p>{h.confidence.rationale}</p></article>)}
       <h4>Verification</h4>{result.experiments.length?result.experiments.map(e=><article key={e.id}><p>{e.prediction}</p><p>Outcome: <strong>{e.outcome??e.status}</strong></p></article>):<p>No verification experiment completed.</p>}
+      <EvidenceGraph investigation={result} /><ReliabilityProfile investigation={result} /><ChallengeReview investigation={result} /><IncidentReportExport investigation={result} />
       <h4>Unresolved questions</h4><ul>{result.diagnosis!.unresolvedQuestions.map(q=><li key={q}>{q}</li>)}</ul>
       <details><summary>Measured results and evidence provenance</summary><pre>{JSON.stringify({results:result.toolResults,evidence:result.evidence},null,2)}</pre></details>
       <details><summary>Limitations</summary><ul>{result.diagnosis!.limitations.map(l=><li key={l}>{l}</li>)}</ul></details>
-      <p>No repair or re-evaluation has been performed.</p><button onClick={download}>Download investigation JSON</button>
+      <p>{result.comparisons.length ? `Recorded repair comparisons: ${result.comparisons.length}.` : 'No repair or re-evaluation has been performed.'}</p>
+      {repairDatasets.length>0&&<><label>Dataset to repair<select value={repairDatasetId} onChange={e=>setRepairDatasetId(e.target.value)}>{repairDatasets.map(d=><option key={d.metadata.id} value={d.metadata.id}>{d.metadata.name}</option>)}</select></label>{repairDatasets.filter(d=>d.metadata.id===repairDatasetId).map(dataset=><RepairLab key={dataset.metadata.id} linked={{investigation:result,dataset,onApply:setResult}} />)}</>}
+      {!repairDatasets.length&&<p>Linked repair requires the original matching upload retained in this session. Re-run with uniquely named CSV files to continue.</p>}<button onClick={download}>Download investigation JSON</button>
     </section>}
   </section>;
 }

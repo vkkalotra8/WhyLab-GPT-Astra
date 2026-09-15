@@ -1,10 +1,10 @@
-﻿WhyLab milestone implementation status
-Updated: 2026-09-14
+WhyLab milestone implementation status
+Updated: 2026-09-15
 
 This checklist supersedes the original Milestone 0 audit snapshot. The original
 prototype Implementation 1-9 labels are separate from these Milestones 0-25.
 Complete means the milestone scope was implemented and tested; it does not mean
-production readiness or defect-free software. Statuses 0-14 reflect the completed
+production readiness or defect-free software. Statuses 0-24 reflect the completed
 milestone work; this update is not a fresh line-by-line audit of every module.
 
 IMPLEMENTED
@@ -33,33 +33,66 @@ IMPLEMENTED
    See docs/AUTONOMOUS_WORKFLOW.md.
 15 Deterministic repair candidate selection from measured threshold sweeps, with
    explicit performance/cost criteria and retained policy/evidence references.
-   See docs/REPAIR_CANDIDATES.md. Application and re-evaluation remain Milestone 16.
+   See docs/REPAIR_CANDIDATES.md.
+16 Same-data repair application and re-evaluation engine, explicit baseline policy,
+   separate measured evidence, preserved criteria and before/after comparisons.
+   See docs/REPAIR_REEVALUATION.md. Dedicated Repair Lab UI was added in Milestone 19.
+17 Reproducible synthetic melanoma flagship: actual CSV measurements, competing
+   hypotheses, deterministic verification, policy repair and measured re-test.
+   Fresh-session local UI, replay and evidence downloads. See docs/FLAGSHIP_MELANOMA.md.
+18 Interactive evidence graph for flagship and Astra results, built from canonical
+   provenance references, with node inspection, relationship traversal, search and
+   keyboard controls. See docs/EVIDENCE_GRAPH.md.
+19 Repair Lab UX: explicit objective/cost policy, local measured candidates, bounded
+   Astra tool selection and validated trade-off interpretation, user application,
+   live metrics/confusion and evidence graph. See docs/REPAIR_LAB.md.
+20 Structured ML incident report in Markdown/JSON: model/severity annotations,
+   canonical evidence, hypotheses, tests, policies, comparisons and clearly labeled
+   monitoring/CI suggestions. See docs/INCIDENT_REPORT.md.
+21 Transparent six-dimension reliability profile with measured provenance, dataset
+   filtering, explicit missing evidence and incident export integration; no aggregate
+   score. See docs/RELIABILITY_PROFILE.md.
+22 Challenge WhyLab: deterministic second-pass review of alternatives, counter-
+   evidence, assumptions and verification gaps, with separate confidence reductions
+   and canonical review JSON export. See docs/CHALLENGE_REVIEW.md.
+23 GitHub Actions validation, declared flagship reliability policy, failing check
+   exit codes and provenance-preserving incident artifacts. See docs/CI_INTEGRATION.md.
+24 Additional synthetic calibration and site-failure cases with downloadable CSVs,
+   measured diagnostics, case selector and canonical reports. See docs/CASE_STUDIES.md.
+25 Expanded classroom worksheets: measured exercises, hints, feedback, interpretation
+   question, verification-plan reflection, instructor key and local JSON export.
+   See docs/CLASSROOM_ACTIVITIES.md.
 
 PARTIAL FOUNDATIONS; MILESTONE REQUIREMENTS REMAIN
-20 Incident report export: existing Markdown/JSON exports are reusable; full incident
-   severity, verified repair comparisons and complete provenance remain.
-25 Expanded education: existing lessons and quizzes are reusable; later expansion remains.
+None recorded in the implemented Milestones 0-25 scope.
 
 CORE IMPLEMENTATION REMAINING
-16 Apply repair policy and reevaluate on the same data and acceptance criteria.
-17 Reproducible flagship melanoma case and complete investigation/repair path.
-18 Interactive evidence graph.
-19 Repair Lab UX with cost policies and measured trade-offs.
-21 Evidence-linked reliability profile.
-22 Adversarial review pass.
-23 GitHub/CI integration.
-24 Additional reproducible case studies.
+None recorded in Milestones 0-25; deployment/live-service validation remains separate.
 
-Milestone 15 validation:
-- Tests: PASS, 255 total.
-- Lint: PASS. Type check: PASS. Production build: PASS.
-- Full sequential npm run check: PASS.
-- Browser checks were not rerun for this deterministic engine-only change.
+Milestone 25 validation:
+- Tests: PASS, 312 total.
+- Lint, type check and production build: PASS (full sequential npm run check).
+- Browser checks: PASS, 28 checks, including measured worksheet feedback/reset
+  and mobile/tablet overflow checks. Hosted GitHub workflow has not been run.
 - Live OpenAI/model access: not exercised. OPENAI_MODEL remains configurable;
   configuration presence does not establish account access. No model is substituted.
 
-P0 remains incomplete: repair application, measured before/after verification and
-flagship end-to-end verification remain. The repair selection engine is implemented;
-its application and workflow integration remain Milestone 16.
+Milestones 0-25 are implemented. The user authorized Phase 1 by requesting
+Milestone 18 after the P0 review gate. This is not a declaration of production readiness. The flagship is a deterministic synthetic
+teaching protocol; live provider/account access and independent holdout validation
+are not established by these checks. Repair Lab supports binary 1/0 CSV evaluation
+with same-data threshold optimization; no retraining or durable repair history.
 
-Next implementation: Milestone 16, only after explicit user approval.
+STRATEGY FOLLOW-UP (beyond the scoped milestone checklist)
+- Connected diagnosis/repair history: implemented and validated.
+  316 tests, lint, type check, build and 29 browser checks passed; no paid calls.
+  Embedded Repair Lab retains original dataset and investigation IDs and appends
+  candidate, assumption, measurement and comparison records. See docs/CONNECTED_REPAIR.md.
+- Live GPT-6 Astra investigation and repair demonstration: not yet validated.
+- Persistent structured Astra context across diagnosis and repair: remains.
+- Training-log/richer-artifact ingestion into the autonomous loop: remains.
+- Broader falsification protocols beyond the accuracy-paradox test: remains.
+- Public deployment, paid-endpoint access/usage controls and hosted CI: remain.
+- Product positioning, launch assets and final submission-rule verification: remain.
+
+Next step: structured diagnosis context in Astra repair planning, then deliberate live-demo validation.

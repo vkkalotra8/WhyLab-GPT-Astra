@@ -1,0 +1,10 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {caseStudies,runCaseStudy} from '../app/lib/investigation/case-studies.ts';
+import {parseInvestigation,serializeInvestigation} from '../app/lib/investigation/validation.ts';
+const csv=id=>readFileSync(new URL('../public/fixtures/'+caseStudies.find(c=>c.id===id).file,import.meta.url),'utf8');
+test('calibration case measures actual overconfidence rather than hard-coded display values',()=>{const v=runCaseStudy('calibration',csv('calibration')),r=v.toolResults.find(r=>r.tool==='check_calibration');assert.equal(v.toolResults[0].output.metrics.find(m=>m.name==='accuracy').value,.8);assert.ok(r.output.metrics.some(m=>m.status==='measured'&&Math.abs(m.value-.1961)<1e-8));assert.equal(v.diagnosis.status,'inconclusive');});
+test('site case reveals minority site errors behind aggregate accuracy',()=>{const v=runCaseStudy('site',csv('site')),r=v.toolResults.find(r=>r.tool==='slice_evaluation');assert.equal(v.toolResults[0].output.metrics.find(m=>m.name==='accuracy').value,.9);assert.equal(r.output.slices.find(s=>s.value==='A').metrics.find(m=>m.name==='accuracy').value,1);assert.equal(r.output.slices.find(s=>s.value==='B').metrics.find(m=>m.name==='accuracy').value,0);});
+test('both cases preserve full canonical provenance and replay measurements',()=>{for(const c of caseStudies){const a=runCaseStudy(c.id,csv(c.id)),b=runCaseStudy(c.id,csv(c.id));assert.deepEqual(parseInvestigation(serializeInvestigation(a)),a);assert.deepEqual(a.toolResults.map(r=>r.output),b.toolResults.map(r=>r.output));assert.equal(a.sources[0].kind,'fixture');assert.equal(a.repairs.length,0);}});
+test('changed probabilities alter calibration and invalid case input fails',()=>{const a=runCaseStudy('calibration',csv('calibration')),b=runCaseStudy('calibration',csv('calibration').replaceAll('0.99','0.8').replaceAll('0.01','0.2'));assert.notDeepEqual(a.toolResults[1].output.metrics,b.toolResults[1].output.metrics);assert.throws(()=>runCaseStudy('site','invalid'));assert.throws(()=>runCaseStudy('unknown',csv('site')));});
