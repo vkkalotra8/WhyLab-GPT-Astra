@@ -5,6 +5,7 @@ import { runInvestigator, INVESTIGATOR_LIMITS } from '../app/lib/investigation/i
 import { executeDiagnostic } from '../app/lib/investigation/tool-registry.ts';
 import { investigatorTools } from '../app/lib/investigation/investigator-tools.ts';
 import { toolNames } from '../app/lib/investigation/tool-contracts.ts';
+import { buildFinalInvestigation, validateFinalInvestigation } from '../app/lib/investigation/final-diagnosis.ts';
 const dataset = () => ingestEvaluationCsv('y_true,y_pred,y_probability,feature_x,site\n'+Array.from({length:100},(_,i)=>`${i<90?0:1},0,0.1,${i},${i%2?'A':'B'}`).join('\n'),'fixture.csv');
 const signal = () => new AbortController().signal;
 const request = d => ({objective:'Investigate misleading accuracy',datasets:[d],consent:true,accuracyParadoxGap:10});
@@ -19,6 +20,20 @@ test('model-selected metrics -> hypothesis -> falsification -> explicit completi
  const run=await runInvestigator(request(d),scripted([metrics(d),h=>['propose_hypothesis',{kind:'accuracy_paradox',statement:'Potential imbalance',evidenceIds:last(h).evidence.map(e=>e.id),missingEvidence:['Controlled comparison']}],h=>['run_counterfactual_test',{datasetId:d.metadata.id,positiveLabel:'1',hypothesisId:last(h).hypothesis.id,method:'accuracy_paradox',seed:42,criterion:{metric:'accuracy_paradox_gap',operator:'at_least',value:10,unit:'percentage_points'}}],finish]),signal());
  assert.equal(run.status,'completed');assert.equal(run.toolResults.length,2);assert.equal(run.experiments[0].outcome,'supports');assert.equal(run.hypotheses[0].status,'proposed');assert.equal(run.experiments[0].hypothesisId,run.hypotheses[0].id);assert.deepEqual(d,before);assert.deepEqual(JSON.parse(JSON.stringify(run)),run);
  for(const id of run.completion.evidenceIds)assert.ok(run.evidence.some(e=>e.id===id));
+});
+test('non-accuracy drift hypothesis is falsified, linked and replayed in the final report',async()=>{
+ const reference=ingestEvaluationCsv('y_true,y_pred,y_probability,feature_x\n'+Array.from({length:100},(_,i)=>`0,0,0.1,${i}`).join('\n'),'reference.csv');
+ const comparison=ingestEvaluationCsv('y_true,y_pred,y_probability,feature_x\n'+Array.from({length:100},(_,i)=>`0,0,0.1,${i+1000}`).join('\n'),'comparison.csv');
+ let driftResultId;
+ const run=await runInvestigator({...request(reference),objective:'Investigate possible feature shift',datasets:[reference,comparison]},scripted([
+  ['run_drift_tests',{referenceDatasetId:reference.metadata.id,comparisonDatasetId:comparison.metadata.id,columns:['feature_x'],method:'psi',bins:5}],
+  h=>{driftResultId=last(h).result.id;return ['propose_hypothesis',{kind:'other',statement:'Feature shift may explain the observed behavior.',evidenceIds:last(h).evidence.map(e=>e.id),missingEvidence:['Test whether PSI reaches 0.1']}];},
+  h=>['evaluate_diagnostic_falsification',{hypothesisId:last(h).hypothesis.id,resultId:driftResultId,prediction:'The feature_x PSI will be at least 0.1.',criterion:{metric:'psi',operator:'at_least',value:.1,unit:'unitless'}}],
+  h=>['finish_investigation',{reason:'sufficient_evidence',evidenceIds:[last(h).evidence.id],missingEvidence:[]}],
+ ]),signal());
+ assert.equal(run.status,'completed',JSON.stringify({stopReason:run.stopReason,events:run.events,experiments:run.experiments}));assert.equal(run.experiments.length,1);assert.equal(run.experiments[0].outcome,'supports');
+ assert.equal(run.experiments[0].callIds[0],run.toolCalls[0].id);assert.equal(run.evidence.at(-1).provenance.experimentId,run.experiments[0].id);
+ const final=buildFinalInvestigation(run);assert.equal(final.diagnosis.status,'completed');assert.equal(final.hypotheses[0].status,'supported');assert.deepEqual(validateFinalInvestigation(final),final);
 });
 test('all eight allowlisted diagnostics execute and retain canonical outputs',()=>{
  const d=dataset(),other=dataset(),map=new Map([[d.metadata.id,d],[other.metadata.id,other]]),evaluation={datasetId:d.metadata.id,positiveLabel:'1'};

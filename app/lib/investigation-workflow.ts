@@ -4,12 +4,14 @@ import { validateFinalInvestigation } from './investigation/final-diagnosis.ts';
 const csv = schema<string>((v) => { if (typeof v !== 'string' || !v.trim() || new TextEncoder().encode(v).length > 2000000) throw new Error('Each CSV must contain at most 2 MB of UTF-8 text.'); return v; });
 const uploadSchema = object({
   objective: text, consent: literal(true), accuracyParadoxGap: number(0.001, 100),
+  steering: schema<string | null>(value => value === null || value === undefined ? null : text.parse(value)),
+  specialist: schema<'general'|'metrics'|'data_quality'|'shift'|'leakage'|null>(value => value === null || value === undefined ? null : (['general','metrics','data_quality','shift','leakage'] as const).includes(value as 'general'|'metrics'|'data_quality'|'shift'|'leakage') ? value as 'general'|'metrics'|'data_quality'|'shift'|'leakage' : (() => { throw new Error('Invalid specialist.'); })()),
   trainingLogs: array(trainingLogSchema, 0, 1),
   labels: object({ positive: text, negative: text }), files: array(object({ name: text, text: csv }), 1, 3),
 });
 export const investigationUploadSchema = schema(value => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return uploadSchema.parse(value);
-  return uploadSchema.parse({ trainingLogs: [], ...value });
+  return uploadSchema.parse({ trainingLogs: [], steering: null, specialist: null, ...value });
 });
 export const activityLabels: Record<string, string> = {
   profile_dataset: 'Dataset profile and prevalence measured', compute_classification_metrics: 'Classification metrics measured',
@@ -19,6 +21,7 @@ export const activityLabels: Record<string, string> = {
 export function activityMessage(kind: string, code: string): string | null {
   if (kind === 'tool_requested' && Object.hasOwn(activityLabels, code)) return `Diagnostic requested: ${code.replaceAll('_', ' ')}`;
   if (kind === 'tool_completed' && Object.hasOwn(activityLabels, code)) return activityLabels[code];
+  if (kind === 'experiment_completed' && ['supports', 'weakens', 'rejects', 'inconclusive'].includes(code)) return 'Hypothesis prediction tested against measured diagnostic evidence';
   const labels: Record<string,string> = { tool_failed: 'Diagnostic could not run on this input', hypothesis_registered: 'Evidence-linked hypothesis registered', duplicate_reused: 'Existing result reused', operation_rejected: 'Invalid operation rejected', completed: 'Investigation loop completed', stopped: 'Investigation stopped; retaining available evidence' };
   return Object.hasOwn(labels,kind)?labels[kind]:null;
 }

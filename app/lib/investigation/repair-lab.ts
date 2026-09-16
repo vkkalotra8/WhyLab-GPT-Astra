@@ -1,11 +1,14 @@
 ﻿import { object, text, number, type Infer } from './schema.ts';
 import { ingestEvaluationCsv } from './evaluation-ingestion.ts';
+import { array } from './schema.ts';
 import { runThresholdSweep } from './threshold-sweep.ts';
 import { generateRepairCandidate } from './repair-candidates.ts';
 import { reevaluateRepair } from './repair-reevaluation.ts';
 import { validateInvestigation } from './validation.ts';
 
 export const repairLabSchema = object({ csv: text, objective: text, falseNegativeCost: number(0, 1000000), falsePositiveCost: number(0, 1000000), maximumCost: number(0, 10000000000), baselineThreshold: number(0, 1) });
+export const repairPolicyProposalSchema = object({ falseNegativeCost: number(0, 1000000), falsePositiveCost: number(0, 1000000), maximumCost: number(0, 10000000000), rationale: text, assumptions: array(text, 1, 6) });
+export type RepairPolicyProposal = Infer<typeof repairPolicyProposalSchema>;
 export type RepairLabInput = Infer<typeof repairLabSchema>;
 // CSV has a separate byte bound; canonical text intentionally has a smaller limit.
 export function validateRepairLabInput(value: unknown): RepairLabInput {
@@ -14,6 +17,17 @@ export function validateRepairLabInput(value: unknown): RepairLabInput {
   if (!value.csv.trim()) throw new Error('Provide evaluation rows.');
   if (checked.falseNegativeCost + checked.falsePositiveCost === 0) throw new Error('At least one error cost must be positive.');
   return { ...checked, csv: value.csv };
+}
+export function validateRepairPolicyRequest(value: unknown) {
+  if (!value || typeof value !== 'object') throw new Error('Provide a policy request.');
+  const record=value as Record<string,unknown>;
+  if(Object.keys(record).some(key=>!['csv','objective','baselineThreshold'].includes(key)))throw new Error('Unknown policy request field.');
+  return validateRepairLabInput({ ...record, falseNegativeCost:1, falsePositiveCost:1, maximumCost:10000000000 });
+}
+export function validateRepairPolicyProposal(value: unknown): RepairPolicyProposal {
+  const proposal=repairPolicyProposalSchema.parse(value);
+  if(proposal.falseNegativeCost+proposal.falsePositiveCost===0)throw new Error('At least one proposed error cost must be positive.');
+  return proposal;
 }
 export function prepareRepair(value: RepairLabInput) {
   const input = validateRepairLabInput(value);

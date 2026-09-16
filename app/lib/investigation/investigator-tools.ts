@@ -9,6 +9,7 @@ const object = (properties: Record<string, JsonSchema>): JsonSchema => ({ type: 
 const evaluation = { datasetId: string, positiveLabel: string };
 const columns = list(string, 10, 1);
 const criterion = object({ metric: choice('accuracy_paradox_gap'), operator: choice('at_least'), value: number(0.001, 100), unit: choice('percentage_points') });
+const diagnosticCriterion = object({ metric: string, operator: choice('at_least','at_most'), value: number(-1000000000000,1000000000000), unit: choice('ratio','count','percentage_points','loss','cost','feature_units','unitless') });
 const definitions = {
   profile_dataset: [object({ datasetId: string, targetColumn: nullable(string) }), 'Inspect missingness, feature types, class counts and available metadata before choosing diagnostics.'],
   compute_classification_metrics: [object(evaluation), 'Compute confusion matrix and classification rates from supplied predictions.'],
@@ -18,6 +19,7 @@ const definitions = {
   run_drift_tests: [object({ referenceDatasetId: string, comparisonDatasetId: string, columns, method: choice('ks', 'psi', 'wasserstein'), bins: nullable(number(2, 20, true)) }), 'Compare two distinct registered datasets. Select compatible features and one named method; PSI needs bins.'],
   slice_evaluation: [object({ ...evaluation, columns, minimumSampleSize: number(1, 1000000, true) }), 'Evaluate group/site/environment/device/timestamp slices, preserving limitations.'],
   run_counterfactual_test: [object({ ...evaluation, hypothesisId: string, method: choice('accuracy_paradox'), seed: number(0, 4294967295, true), criterion }), 'Falsify a registered accuracy-paradox hypothesis. Use the caller-declared criterion exactly; seed is retained but exact weighting is deterministic.'],
+  evaluate_diagnostic_falsification: [object({ hypothesisId:string,resultId:string,prediction:string,criterion:diagnosticCriterion }), 'Evaluate a registered non-accuracy hypothesis against exactly one measured metric from a completed diagnostic result. Declare the prediction and threshold before evaluation. Ambiguous, absent or undefined metrics are inconclusive.'],
   propose_hypothesis: [object({ kind: choice('accuracy_paradox', 'other'), statement: string, evidenceIds: list(string, 20, 1), missingEvidence: list(string, 10) }), 'Register a proposed hypothesis grounded in existing evidence. The application assigns its ID. Proposals are not confirmed facts.'],
   finish_investigation: [object({ reason: choice('sufficient_evidence', 'insufficient_evidence'), evidenceIds: list(string, 20, 1), missingEvidence: list(string, 10) }), 'Explicitly stop after diagnostics. Cite only registered evidence IDs. Final diagnosis is a separate stage.'],
 } satisfies Record<string, [JsonSchema, string]>;

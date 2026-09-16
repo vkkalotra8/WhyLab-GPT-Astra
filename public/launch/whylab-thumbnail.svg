@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1270" height="760" viewBox="0 0 1270 760" role="img" aria-labelledby="title desc">
+  <title id="title">WhyLab — investigate why your ML model failed</title>
+  <desc id="desc">A dark launch thumbnail showing the accuracy paradox, an evidence graph, and a repair outcome.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#122b42"/></linearGradient><linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#46e0c0"/><stop offset="1" stop-color="#7aa7ff"/></linearGradient></defs>
+  <rect width="1270" height="760" rx="36" fill="url(#bg)"/>
+  <circle cx="1080" cy="110" r="190" fill="#46e0c0" opacity=".08"/><circle cx="1200" cy="650" r="270" fill="#7aa7ff" opacity=".08"/>
+  <text x="90" y="115" fill="#46e0c0" font-family="Arial,sans-serif" font-size="28" font-weight="700" letter-spacing="4">WHyLAB / GPT-6 ASTRA</text>
+  <text x="90" y="215" fill="white" font-family="Arial,sans-serif" font-size="68" font-weight="700">Investigate the</text>
+  <text x="90" y="290" fill="white" font-family="Arial,sans-serif" font-size="68" font-weight="700">failure. Prove the why.</text>
+  <text x="94" y="350" fill="#b8c9d9" font-family="Arial,sans-serif" font-size="25">Evidence-linked diagnosis → measurable repair → retained re-test</text>
+  <rect x="90" y="425" width="340" height="190" rx="18" fill="#102238" stroke="#24435b" stroke-width="2"/>
+  <text x="120" y="470" fill="#91a9bc" font-family="Arial,sans-serif" font-size="21">HEADLINE ACCURACY</text><text x="120" y="545" fill="white" font-family="Arial,sans-serif" font-size="64" font-weight="700">92%</text><text x="120" y="585" fill="#ff9b8b" font-family="Arial,sans-serif" font-size="22">but malignant recall: 20%</text>
+  <path d="M500 520 C575 430 630 580 700 490 S820 430 885 510" fill="none" stroke="url(#accent)" stroke-width="5"/><circle cx="500" cy="520" r="9" fill="#46e0c0"/><circle cx="700" cy="490" r="9" fill="#7aa7ff"/><circle cx="885" cy="510" r="9" fill="#46e0c0"/>
+  <text x="495" y="590" fill="#b8c9d9" font-family="Arial,sans-serif" font-size="20">evidence graph</text><text x="675" y="590" fill="#b8c9d9" font-family="Arial,sans-serif" font-size="20">diagnosis</text><text x="860" y="590" fill="#b8c9d9" font-family="Arial,sans-serif" font-size="20">repair</text>
+  <rect x="930" y="425" width="250" height="190" rx="18" fill="#102238" stroke="#24435b" stroke-width="2"/><text x="960" y="470" fill="#91a9bc" font-family="Arial,sans-serif" font-size="20">RE-TEST</text><text x="960" y="540" fill="#46e0c0" font-family="Arial,sans-serif" font-size="51" font-weight="700">linked</text><text x="960" y="580" fill="#b8c9d9" font-family="Arial,sans-serif" font-size="19">same evidence history</text>
+  <text x="90" y="700" fill="#91a9bc" font-family="Arial,sans-serif" font-size="20">WhyLab — bounded tools, measured claims, auditable decisions</text>
+</svg>

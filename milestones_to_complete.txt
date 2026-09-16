@@ -99,9 +99,70 @@ STRATEGY FOLLOW-UP (beyond the scoped milestone checklist)
   Richer artifact uploads, structured epoch diagnostics and log-only runs remain.
   327 tests, lint, type checking, build and 30 browser checks passed; no paid calls.
   See docs/TRAINING_LOGS.md.
-- Broader falsification protocols beyond the accuracy-paradox test: remains.
+- Broader falsification protocols beyond the accuracy-paradox test: implemented.
+  Astra can declare a metric, unit, direction and threshold for any completed
+  non-counterfactual diagnostic. The runtime evaluates exactly one matching
+  measurement, fails closed on ambiguity, and final validation replays the
+  result. A full distribution-shift path is covered by integration tests.
+  See docs/GENERAL_FALSIFICATION.md.
+- Domain objective to confirmed numeric repair policy: implemented.
+  Astra produces a bounded review-only proposal from prose and dataset summaries;
+  strict validation requires numeric error weights, a target, rationale and
+  assumptions. Only explicit user confirmation copies it into authoritative
+  Repair Lab fields. See docs/REPAIR_LAB.md.
+- Active adversarial investigation: implemented as a bounded challenge pass.
+  With retained datasets, Challenge WhyLab selects one unrun allowlisted
+  diagnostic, executes the canonical deterministic engine, and appends its
+  call/result/evidence/events to the same investigation without changing the
+  diagnosis. It remains intentionally bounded and does not invent causal
+  explanations or use a provider search loop. See docs/CHALLENGE_REVIEW.md.
+- Richer artifacts and autonomous log analysis: implemented for the bounded
+  investigator path. The UI accepts TXT/LOG/JSON/CSV artifacts; Astra receives
+  source-linked observations plus structured local epoch history, heuristic
+  findings and parser warnings in the same investigation context. Evaluation
+  CSVs remain required and log claims remain unverified. See docs/TRAINING_LOGS.md.
+- Optional investigator steering and specialist lenses: implemented.
+  Requests can provide a bounded steering note and one prioritization lens;
+  Astra must still follow the same allowlisted tools and evidence rules.
+  Async fan-out, specialist sub-agent handoffs, and durable continuation need
+  deployment-backed job/session infrastructure and remain deferred.
 - Public deployment, paid-endpoint access/usage controls and hosted CI: remain.
+- Deployment readiness probe and repeatable HTTPS smoke check: implemented.
+  `/api/health` reports non-secret liveness/configuration booleans and
+  `/api/health?ready=1` fails closed until access control, shared quota and AI
+  configuration are present. `npm run check:deployment` validates a deployed
+  origin without spending provider credits. Actual public deployment and a
+  hosted GitHub Actions run still require external credentials.
 - Product positioning, launch assets and final submission-rule verification: remain.
+- Product positioning and repository launch kit: implemented.
+  Final tagline, Open Graph metadata, 1270x760 thumbnail, four gallery
+  illustrations, launch-kit usage notes and `npm run check:launch-assets` are
+  now committed. Production screenshots, video recording and current external
+  challenge-rule confirmation remain release-time actions.
+- Challenge-rule verification: checked against the official Product Hunt page
+  and announcement on 2026-09-16; recorded in docs/CHALLENGE_RULES_VERIFICATION.md.
+  Date, prize summary, Astra objective and linked resources are confirmed.
+  The linked submission guide was not fetchable, so final form/eligibility
+  review remains a human action immediately before submission.
+- Release-browser validation: runner hardened with an explicit configurable CDP
+  port and isolated headless browser flags. Re-run `npm run test:browser` against
+  the production server; this environment's first attempt was blocked by a
+  browser CDP startup/reset issue before assertions ran.
+- Release-browser validation completed: production server on port 3110 passed
+  all 30 browser checks, including responsive overflow and screenshot capture.
+  Artifacts are local/git-ignored; the run used mocked provider responses and
+  is not evidence of a public deployment or live Astra access.
 
 Next step: deliberate live-demo validation when API usage is authorized;
-structured epoch diagnostics and richer artifacts remain implementation follow-ups.
+durable async continuation remains an infrastructure follow-up.
+
+2026-09-16 submission follow-up:
+- Corrected the ignored local OPENAI_MODEL value to gpt-6-astra.
+- A bounded live request reached OpenAI but failed with insufficient_quota /
+  credit_balance_exhausted. No successful live investigation is claimed.
+- Added `npm run check:astra`, a sanitized bounded access check.
+- Added **Load flagship for Astra** so the committed fixture and synthetic log
+  artifact enter the autonomous diagnosis -> linked repair -> re-test history.
+- Added docs/SUBMISSION_READINESS.md with positioning, a 60-90 second demo,
+  launch assets, current Product Hunt schedule, and explicit release gates.
+- GitHub CLI authentication is invalid locally; hosted CI remains unverified.

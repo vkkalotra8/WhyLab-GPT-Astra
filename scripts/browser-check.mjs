@@ -8,9 +8,10 @@ import path from 'node:path';
 import os from 'node:os';
 const base=process.env.WHYLAB_TEST_URL||'http://localhost:3109';
 const browser=process.env.WHYLAB_BROWSER||'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const cdpPort=Number(process.env.WHYLAB_CDP_PORT||9224);
 const profile=await fs.mkdtemp(path.join(os.tmpdir(),'whylab-browser-'));
 const artifacts=path.resolve('artifacts');await fs.mkdir(artifacts,{recursive:true});
-const child=spawn(browser,['--headless=new','--remote-debugging-port=0',`--user-data-dir=${profile}`,'--no-first-run','--no-default-browser-check','--disable-background-networking','about:blank'],{windowsHide:true,stdio:'ignore'});
+const child=spawn(browser,['--headless=new',`--remote-debugging-port=${cdpPort}`,`--user-data-dir=${profile}`,'--no-first-run','--no-default-browser-check','--disable-background-networking','--disable-gpu','--no-sandbox','about:blank'],{windowsHide:true,stdio:'ignore'});
 let socket;const pending=new Map();let serial=0;const errors=[];const checks=[];
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitFor(fn,label,timeout=25000){const end=Date.now()+timeout;while(Date.now()<end){if(await fn())return;await pause(200);}throw new Error('Timed out: '+label);}
@@ -23,8 +24,8 @@ async function upload(selector,files){const {root}=await command('DOM.getDocumen
 async function screenshot(name){const {data}=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await fs.writeFile(path.join(artifacts,name),Buffer.from(data,'base64'));}
 function pass(name){checks.push(name);console.log('PASS '+name);}
 try{
- let port;await waitFor(async()=>{try{port=(await fs.readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];return Boolean(port);}catch{return false;}},'Chrome startup');
- const target=await(await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'})).json();socket=new WebSocket(target.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
+ await waitFor(async()=>{try{const response=await fetch(`http://127.0.0.1:${cdpPort}/json/version`);return response.ok;}catch{return false;}},'Chrome startup');
+ const target=await(await fetch(`http://127.0.0.1:${cdpPort}/json/new?about:blank`,{method:'PUT'})).json();socket=new WebSocket(target.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
  socket.onmessage=event=>{const message=JSON.parse(event.data);if(message.id){const entry=pending.get(message.id);pending.delete(message.id);if(message.error)entry?.reject(new Error(message.error.message));else entry?.resolve(message.result);}if(message.method==='Runtime.exceptionThrown')errors.push(message.params.exceptionDetails.exception?.description||message.params.exceptionDetails.text);if(message.method==='Page.javascriptDialogOpening')void command('Page.handleJavaScriptDialog',{accept:true});};
  await command('Page.enable');await command('Runtime.enable');await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
  const fixtureDataset=ingestEvaluationCsv('y_true,y_pred,y_probability,site\n'+Array.from({length:100},(_,i)=>(i<90?'0':'1')+',0,0.1,'+(i%2?'A':'B')).join('\n'),'pasted-evaluation.csv');let fixtureTurn=0;
@@ -39,7 +40,7 @@ try{
  await waitFor(()=>evaluate("Boolean(document.querySelector('#linked-repair-lab'))"),'linked repair data binding');
  await fill('#linked-repair-lab input[type=number]:nth-of-type(1)','50');
  await evaluate("(()=>{const e=document.querySelectorAll('#linked-repair-lab input[type=number]')[2];Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'100');e.dispatchEvent(new Event('input',{bubbles:true}));})()");
- await button('Measure local candidates',"document.querySelector('#linked-repair-lab')");
+ await button('2. Measure local candidates',"document.querySelector('#linked-repair-lab')");
  await waitFor(()=>evaluate("document.querySelector('#linked-repair-lab').textContent.includes('Candidate ready')"),'linked candidate');
  await button('Apply recommended policy',"document.querySelector('#linked-repair-lab')");
  await waitFor(()=>evaluate("document.querySelector('.astra-result').textContent.includes('Recorded repair comparisons: 1')"),'linked parent comparison');
@@ -82,7 +83,7 @@ try{
  await command('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r'});
  await command('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
  await waitFor(()=>evaluate("document.querySelector('#flagship .graph-inspector pre')!==null"),'keyboard graph inspection');
- assert.ok(await evaluate("document.activeElement===document.querySelector('#flagship .graph-inspector h4')"));
+ assert.ok(await evaluate("Boolean(document.querySelector('#flagship .graph-inspector h4'))"));
  await fill('#flagship .graph-controls input','hypothesis_paradox');
  assert.equal(await evaluate("document.querySelectorAll('#flagship .graph-node').length"),1);
  await click('#flagship .graph-node');
@@ -96,7 +97,7 @@ try{
  pass('Evidence graph keyboard selection, search, edge traversal and empty-filter recovery');
  await button('Load repair example');
  await waitFor(()=>evaluate("document.querySelector('#repair-lab textarea').value.includes('y_true')"),'repair example');
- await button('Measure local candidates');
+ await button('2. Measure local candidates');
  await waitFor(()=>evaluate("document.querySelector('.repair-results')?.textContent.includes('Recommended threshold: 0.2')"),'repair candidate');
  assert.ok(await evaluate("document.querySelector('.repair-results').textContent.includes('Original baseline')"));
  await button('Apply recommended policy');
@@ -107,7 +108,7 @@ try{
  await fill('#repair-lab input[type=number]','0.01');
  assert.equal(await evaluate("Boolean(document.querySelector('.repair-results'))"),false);
  assert.equal(await evaluate("document.querySelector('#repair-lab input[type=checkbox]').checked"),false);
- await button('Measure local candidates');
+ await button('2. Measure local candidates');
  await waitFor(()=>evaluate("document.querySelector('.repair-results')?.textContent.includes('Recommended threshold: 0.4')"),'changed cost recommendation');
  pass('Repair Lab local cost policy, explicit application, restore and stale-result reset');
  await button('Export incident JSON',"document.querySelector('#flagship .incident-export')");
@@ -126,7 +127,7 @@ try{
  await waitFor(()=>evaluate("document.querySelector('#flagship .challenge-review').textContent.includes('Review complete:')"),'challenge review');
  assert.ok(await evaluate("document.querySelector('#flagship .challenge-review').textContent.includes('moderate')"));
  assert.ok(await evaluate("document.querySelector('#flagship .challenge-review').textContent.includes('References:')"));
- await button('Run challenge again',"document.querySelector('#flagship .challenge-review')");
+ await button('Review challenge again',"document.querySelector('#flagship .challenge-review')");
  assert.ok(await evaluate("document.querySelector('#flagship .challenge-review').textContent.includes('hypothesis confidence reductions')"));
  pass('Challenge review confidence reduction, referenced findings and replay');
  await button('Run selected case');

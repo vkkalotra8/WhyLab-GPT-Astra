@@ -48,6 +48,8 @@ Confidence means **ordinal evidence strength**, never calibrated causal probabil
 | `run_drift_tests` | Distinct reference/comparison datasets, columns, method and explicit PSI bins | Feature/method/sample-size/statistic records |
 | `run_counterfactual_test` | Dataset, hypothesis, accuracy-paradox method, seed and criterion | Baseline/comparison measurements and explicit outcome |
 
+The autonomous orchestrator additionally exposes `evaluate_diagnostic_falsification`. It references a completed non-counterfactual result and a proposed hypothesis, then compares one exact named measurement/unit with a declared `at_least` or `at_most` threshold. It creates experiment-linked measurement evidence; ambiguity or unavailable measurements produce an explicit inconclusive outcome. See `GENERAL_FALSIFICATION.md`.
+
 Calls identify their investigation, tool, version, timestamp and typed input. Results identify the call, version, datasets, timestamp, generated evidence and limitations. A result is `completed` with tool-specific output, or `error` / `unsupported` / `insufficient_data` with a code, message and retryability. A failure cannot carry success output or generated measurement evidence. There is no executable registry or Astra tool exposure yet.
 
 Training recommendations explicitly require an external experiment. Operating-policy candidates identify the dataset, policy and criterion. Before/after records preserve separate evidence, the same dataset, positive label, cost assumptions and acceptance criterion. These contracts do not claim a repair was executed or verify the truth of supplied numeric values; later deterministic engines will produce those values.
