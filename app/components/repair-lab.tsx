@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { buildRepairContext } from '../lib/investigation/repair-context';
 import ChallengeReview from './challenge-review';
 import ReliabilityProfile from './reliability-profile';
@@ -68,27 +68,234 @@ export default function RepairLab({ linked, accessToken: inheritedAccessToken }:
   function confirmPolicy(){if(!policyProposal)return;setFn(String(policyProposal.falseNegativeCost));setFp(String(policyProposal.falsePositiveCost));setTarget(String(policyProposal.maximumCost));setPolicyConfirmed(true);setPrepared(null);setApplied(null);setInterpretation([]);setNotice('Numeric policy confirmed by user. It is now authoritative for measurement and repair.');}
   function apply() { if (!prepared) return; try { const result = applyPreparedRepair(prepared); setApplied(result); linked?.onApply(result.investigation); setNotice('Policy applied to an evaluation copy and re-tested. Original CSV unchanged.'); } catch (e) { setNotice(e instanceof Error ? e.message : 'Application failed.'); } }
   const live = applied?.after ?? prepared?.baseline;
-  return <section id={linked ? "linked-repair-lab" : "repair-lab"} className="panel flagship" aria-labelledby={linked ? "linked-repair-title" : "repair-title"}><div className="eyebrow cyan">MEASURE → REVIEW → APPLY</div><h2 id={linked ? "linked-repair-title" : "repair-title"}>{linked ? "Continue this investigation: repair and re-test" : "Repair Lab"}</h2><p>State your objective and error costs, inspect the operating-point trade-offs, then apply a recommendation to an evaluation copy.</p>
-    <fieldset disabled={busy} className="astra-inputs"><legend>Repair evidence and policy</legend>
-      {linked ? <p>Using original dataset: {linked.dataset.metadata.name} ? {linked.dataset.metadata.id}. Application appends evidence to investigation {linked.investigation.id}.</p> : <><label>Repair evaluation CSV<textarea value={csv} onChange={e => { clear(); setCsv(e.target.value); }} placeholder="y_true,y_pred,y_probability" /></label><p>Binary labels 1/0; probability refers to label 1. Paste up to 2 MB. Baseline threshold must reproduce the supplied predictions.</p>
-      <button onClick={sample}>Load repair example</button></>}
-      <label>Repair objective<input value={objective} maxLength={3000} onChange={e => { clear(); setObjective(e.target.value); }} /></label>
-      <div className="astra-settings">{[['False-negative cost', fn, setFn], ['False-positive cost', fp, setFp], ['Maximum total cost', target, setTarget], ['Baseline threshold', threshold, setThreshold]].map(([label, value, setter]) => <label key={label as string}>{label as string}<input type="number" min="0" step="any" value={value as string} onChange={e => { invalidateConfirmedPolicy(); if(label==='Baseline threshold')setPolicyProposal(null); (setter as (v: string) => void)(e.target.value); }} /></label>)}</div>
-      <p>Numeric costs are authoritative only after you enter or confirm them; Astra proposals never apply automatically. Total cost = FN × false-negative cost + FP × false-positive cost. Sweep 0–1 in steps of 0.01, retaining the baseline; choose minimum eligible cost, highest threshold on ties.</p>
-      {!linked&&<label>Deployment access token<input type="password" value={accessToken} maxLength={512} autoComplete="current-password" onChange={e=>setAccessToken(e.target.value)}/></label>}
-      <label className="astra-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />I agree to send the CSV to the server. OpenAI receives the objective and bounded dataset summaries for policy translation, or the confirmed cost policy, measured summaries and linked diagnosis context for repair.</label>
+  return <section id={linked ? "linked-repair-lab" : "repair-lab"} className="panel flagship repair-lab" aria-labelledby={linked ? "linked-repair-title" : "repair-title"}>
+    <div className="eyebrow cyan">MEASURE → REVIEW → APPLY</div>
+    <h2 id={linked ? "linked-repair-title" : "repair-title"}>{linked ? "Continue this investigation: repair and re-test" : "Repair Lab"}</h2>
+    <p className="description">State your objective and error costs, inspect the operating-point trade-offs, then apply a recommendation to an evaluation copy.</p>
+    
+    <fieldset disabled={busy} className="astra-inputs">
+      <legend>Repair Evidence & Cost Matrix</legend>
+      {linked ? (
+        <p className="field-hint">Using original dataset: <strong>{linked.dataset.metadata.name}</strong> ({linked.dataset.metadata.id}). Application appends evidence to investigation <code>{linked.investigation.id}</code>.</p>
+      ) : (
+        <>
+          <div className="form-group">
+            <label>Repair evaluation CSV</label>
+            <textarea aria-label="Repair evaluation CSV" value={csv} onChange={e => { clear(); setCsv(e.target.value); }} placeholder="y_true,y_pred,y_probability" />
+            <p className="field-hint">Binary labels 1/0; probability refers to label 1. Paste up to 2 MB. Baseline threshold must reproduce the supplied predictions.</p>
+          </div>
+          <div className="repair-sample-action">
+            <button type="button" className="load-example-btn" onClick={sample}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+              </svg>
+              Load repair example
+            </button>
+          </div>
+        </>
+      )}
+
+      <div className="form-group">
+        <label>Repair objective</label>
+        <input aria-label="Repair objective" value={objective} maxLength={3000} onChange={e => { clear(); setObjective(e.target.value); }} />
+      </div>
+
+      <div className="cost-matrix-grid">
+        {[
+          ['False-negative cost', fn, setFn, 'Weight for missing true positive cases (e.g. 50x)'],
+          ['False-positive cost', fp, setFp, 'Weight for false alarms (e.g. 1x)'],
+          ['Maximum total cost', target, setTarget, 'Target acceptance ceiling'],
+          ['Baseline threshold', threshold, setThreshold, 'Current decision boundary (default 0.5)']
+        ].map(([label, value, setter, hint]) => (
+          <div key={label as string} className="cost-matrix-cell">
+            <label>{label as string}</label>
+            <input
+              aria-label={label as string}
+              type="number"
+              min="0"
+              step="any"
+              value={value as string}
+              onChange={e => {
+                invalidateConfirmedPolicy();
+                if (label === 'Baseline threshold') setPolicyProposal(null);
+                (setter as (v: string) => void)(e.target.value);
+              }}
+            />
+            <span className="matrix-hint">{hint as string}</span>
+          </div>
+        ))}
+      </div>
+
+      <p className="field-hint">Numeric costs are authoritative only after you enter or confirm them; Astra proposals never apply automatically. Total cost = FN × false-negative cost + FP × false-positive cost. Sweep 0–1 in steps of 0.01, retaining the baseline; choose minimum eligible cost, highest threshold on ties.</p>
+      
+      {!linked && (
+        <div className="form-group">
+          <label>Deployment access token</label>
+          <input aria-label="Deployment access token" type="password" value={accessToken} maxLength={512} autoComplete="current-password" onChange={e => setAccessToken(e.target.value)} placeholder="Required for Astra translation & repair requests" />
+        </div>
+      )}
+
+      <label className="astra-consent">
+        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
+        <span>I agree to send the CSV to the server. OpenAI receives the objective and bounded dataset summaries for policy translation, or the confirmed cost policy, measured summaries and linked diagnosis context for repair.</span>
+      </label>
     </fieldset>
-    <div className="flagship-actions"><button disabled={busy||!consent} onClick={proposePolicy}>1. Ask Astra to translate objective</button><button className="new-button" disabled={busy} onClick={() => calculate(false)}>2. Measure local candidates</button><button className="new-button" disabled={busy || !consent} onClick={() => calculate(true)}>3. Ask Astra for repair</button>{busy && <button onClick={() => controller.current?.abort()}>Cancel request</button>}</div>
-    <p role="status">{notice}</p>
-    {policyProposal&&<div className="repair-results"><h3>Proposed numeric policy — not yet authoritative</h3><p>False-negative cost: <strong>{policyProposal.falseNegativeCost}</strong> · False-positive cost: <strong>{policyProposal.falsePositiveCost}</strong> · Maximum total cost: <strong>{policyProposal.maximumCost}</strong></p><p>{policyProposal.rationale}</p><h4>Assumptions to confirm</h4><ul>{policyProposal.assumptions.map(item=><li key={item}>{item}</li>)}</ul><div className="flagship-actions"><button className="new-button" disabled={policyConfirmed} onClick={confirmPolicy}>{policyConfirmed?'Policy confirmed':'Confirm this numeric policy'}</button><button onClick={()=>{setPolicyProposal(null);setPolicyConfirmed(false);setNotice('Astra policy proposal discarded.');}}>Discard proposal</button></div></div>}
-    {interpretation.length > 0 && <div><h3>Astra interpretation of measured trade-offs</h3><ul>{interpretation.map(s => <li key={s}>{s}</li>)}</ul></div>}
-    {prepared && <div className="repair-results"><h3>Current evaluation policy</h3><p>Active threshold: <strong>{live?.threshold}</strong> · {applied ? 'Applied to evaluation copy' : 'Original baseline'}</p>
-      <p>Simulated impact under the supplied cost model.</p><div className="flagship-table"><table><caption>Live metrics and candidate preview</caption><thead><tr><th>Metric</th><th>Current</th><th>Candidate</th></tr></thead><tbody>{live?.metrics.map(m => { const candidate = prepared.suggested?.metrics.find(c => c.name === m.name); const format = (v: typeof m | undefined) => !v ? 'Unavailable' : v.status === 'undefined' ? 'Undefined: ' + v.reason : v.unit === 'ratio' ? (v.value * 100).toFixed(1) + '%' : v.value.toFixed(2); return <tr key={m.name}><th scope="row">{m.name.replaceAll('_', ' ')}</th><td>{format(m)}</td><td>{format(candidate)}</td></tr>; })}</tbody></table></div>
-      <h4>Live confusion matrix</h4><div className="flagship-metrics">{live && Object.entries(live.confusion).map(([name, value]) => <div key={name}><span>{name.replace(/([A-Z])/g, ' $1')}</span><strong>{value}</strong></div>)}</div>
-      {prepared.suggested && <p>Recommended threshold: {prepared.suggested.threshold}. Acceptance: total cost ≤ {prepared.input.maximumCost}.</p>}
-      <div className="flagship-actions"><button className="new-button" disabled={!prepared.suggested || !!applied} onClick={apply}>Apply recommended policy</button>{applied && !linked && <button onClick={() => { setApplied(null); setNotice('Restored baseline preview.'); }}>Restore baseline preview</button>}</div>
-      <p>Reliability context: balanced accuracy and specificity appear above. Same-data tuning does not establish holdout reliability; probabilities are unchanged and no model was retrained.</p>
-      {applied && <><p>Re-test: {applied.comparison.status} · {applied.improvement}</p><EvidenceGraph investigation={applied.investigation} /><ReliabilityProfile investigation={applied.investigation} /><ChallengeReview investigation={applied.investigation} /><IncidentReportExport investigation={applied.investigation} /></>}
-    </div>}
+
+    <div className="repair-step-actions">
+      <button
+        type="button"
+        disabled={busy || !consent}
+        onClick={proposePolicy}
+        className="step-btn step-astra"
+      >
+        <span className="step-badge badge-astra">1.</span> Ask Astra to translate objective
+      </button>
+      <button
+        type="button"
+        className="step-btn step-local"
+        disabled={busy}
+        onClick={() => calculate(false)}
+      >
+        <span className="step-badge badge-local">2.</span> Measure local candidates
+      </button>
+      <button
+        type="button"
+        className="step-btn step-astra"
+        disabled={busy || !consent}
+        onClick={() => calculate(true)}
+      >
+        <span className="step-badge badge-astra">3.</span> Ask Astra for repair
+      </button>
+      {busy && (
+        <button
+          type="button"
+          className="cancel-btn"
+          onClick={() => controller.current?.abort()}
+        >
+          Cancel request
+        </button>
+      )}
+    </div>
+
+    {notice && <p role="status" className="notice-banner">{notice}</p>}
+
+    {policyProposal && (
+      <div className="repair-results policy-proposal-card">
+        <h3>Proposed Numeric Policy — Review Before Confirming</h3>
+        <div className="proposal-parameters">
+          <div><span>False-negative cost:</span> <strong>{policyProposal.falseNegativeCost}</strong></div>
+          <div><span>False-positive cost:</span> <strong>{policyProposal.falsePositiveCost}</strong></div>
+          <div><span>Maximum total cost:</span> <strong>{policyProposal.maximumCost}</strong></div>
+        </div>
+        <p className="description">{policyProposal.rationale}</p>
+        <h4>Assumptions to confirm</h4>
+        <ul>
+          {policyProposal.assumptions.map(item => <li key={item}>{item}</li>)}
+        </ul>
+        <div className="flagship-actions">
+          <button className="new-button" disabled={policyConfirmed} onClick={confirmPolicy}>
+            {policyConfirmed ? 'Policy confirmed' : 'Confirm this numeric policy'}
+          </button>
+          <button onClick={() => { setPolicyProposal(null); setPolicyConfirmed(false); setNotice('Astra policy proposal discarded.'); }}>
+            Discard proposal
+          </button>
+        </div>
+      </div>
+    )}
+
+    {interpretation.length > 0 && (
+      <div className="stage-block">
+        <h3>Astra interpretation of measured trade-offs</h3>
+        <ul>
+          {interpretation.map(s => <li key={s}>{s}</li>)}
+        </ul>
+      </div>
+    )}
+
+    {prepared && (
+      <div className="repair-results">
+        <div className="policy-comparison-header">
+          <div>
+            <span className="eyebrow cyan">POLICY COMPARISON</span>
+            <h3>Operating Policy: Baseline vs Proposed Candidate</h3>
+          </div>
+          <div className="threshold-pill-group">
+            <span className="threshold-pill">Active: <strong>{live?.threshold}</strong> · {applied ? 'Applied to evaluation copy' : 'Original baseline'}</span>
+            {prepared.suggested && (
+              <span className="threshold-pill candidate-pill">Proposed: <strong>{prepared.suggested.threshold}</strong></span>
+            )}
+          </div>
+        </div>
+
+        <div className="flagship-table">
+          <table>
+            <caption>Live metrics and candidate preview (evaluated on unchanged rows)</caption>
+            <thead>
+              <tr>
+                <th scope="col">Metric</th>
+                <th scope="col">Current Policy</th>
+                <th scope="col">Candidate Recommendation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {live?.metrics.map(m => {
+                const candidate = prepared.suggested?.metrics.find(c => c.name === m.name);
+                const format = (v: typeof m | undefined) => !v ? 'Unavailable' : v.status === 'undefined' ? 'Undefined: ' + v.reason : v.unit === 'ratio' ? (v.value * 100).toFixed(1) + '%' : v.value.toFixed(2);
+                return (
+                  <tr key={m.name}>
+                    <th scope="row">{m.name.replaceAll('_', ' ')}</th>
+                    <td>{format(m)}</td>
+                    <td className="repaired-val">{format(candidate)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Confusion Matrix at Active Operating Point</h4>
+        <div className="flagship-metrics">
+          {live && Object.entries(live.confusion).map(([name, value]) => (
+            <div key={name}>
+              <span>{name.replace(/([A-Z])/g, ' $1')}</span>
+              <strong>{value}</strong>
+            </div>
+          ))}
+        </div>
+
+        {prepared.suggested && (
+          <div className="policy-acceptance-callout">
+            <span className="status-dot" />
+            Recommended threshold: <strong>{prepared.suggested.threshold}</strong> · Cost acceptance ceiling: ≤ <strong>{prepared.input.maximumCost}</strong>
+          </div>
+        )}
+
+        <div className="flagship-actions">
+          <button className="new-button primary-action-btn" disabled={!prepared.suggested || !!applied} onClick={apply}>
+            {applied ? 'Policy Applied' : 'Apply recommended policy'}
+          </button>
+          {applied && !linked && (
+            <button onClick={() => { setApplied(null); setNotice('Restored baseline preview.'); }}>
+              Restore baseline preview
+            </button>
+          )}
+        </div>
+
+        <p className="description">Reliability context: balanced accuracy and specificity appear above. Same-data tuning does not establish holdout reliability; probabilities are unchanged and no model was retrained.</p>
+
+        {applied && (
+          <div className="applied-policy-section">
+            <div className="policy-delta-banner">
+              <span>Re-test: <strong>{applied.comparison.status}</strong></span>
+              <span className="status-pill status-verified">{applied.improvement}</span>
+            </div>
+            <EvidenceGraph investigation={applied.investigation} />
+            <ReliabilityProfile investigation={applied.investigation} />
+            <ChallengeReview investigation={applied.investigation} />
+            <IncidentReportExport investigation={applied.investigation} />
+          </div>
+        )}
+      </div>
+    )}
   </section>;
 }

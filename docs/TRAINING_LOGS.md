@@ -9,3 +9,5 @@ Consent explicitly includes artifact text. The autonomous investigator now recei
 Clear evidence removes the artifact and editing resets consent/results. No paid calls are needed to exercise the controls. Artifact parsing is bounded and deterministic; parser limitations and experiment identity are retained as limitations rather than silently inferred.
 
 Validation (2026-09-16): 327 tests, lint, type checking, production build and 30 browser checks passed. Browser checks used an AI-disabled production server and mocked provider responses; no paid calls were made. An initial development-server browser run timed out during cold compilation; the production retry passed.
+
+Structured epoch validation (2026-09-16): CSV and JSON metric histories, reported loss divergence, malformed/restarted epochs, warning propagation, UI preview, and clear/reset behavior are covered. 358 tests, lint, type checking, production build, and 30 browser checks passed.

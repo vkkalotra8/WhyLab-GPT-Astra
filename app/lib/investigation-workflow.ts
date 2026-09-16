@@ -25,10 +25,16 @@ export function activityMessage(kind: string, code: string): string | null {
   const labels: Record<string,string> = { tool_failed: 'Diagnostic could not run on this input', hypothesis_registered: 'Evidence-linked hypothesis registered', duplicate_reused: 'Existing result reused', operation_rejected: 'Invalid operation rejected', completed: 'Investigation loop completed', stopped: 'Investigation stopped; retaining available evidence' };
   return Object.hasOwn(labels,kind)?labels[kind]:null;
 }
-export type WorkflowMessage = { type: 'progress'; message: string } | { type: 'error'; message: string } | { type: 'result'; investigation: ReturnType<typeof validateFinalInvestigation> };
+export type WorkflowMessage = { type: 'progress'; message: string } | { type: 'error'; message: string } | { type: 'result'; investigation: ReturnType<typeof validateFinalInvestigation>; sessionId: string | null };
 export function parseWorkflowMessage(value: unknown): WorkflowMessage {
   if (!value || typeof value !== 'object') throw new Error('Invalid investigation stream.');
-  if ('type' in value && value.type === 'result') return object({ type: literal('result'), investigation: schema(validateFinalInvestigation) }).parse(value);
+  if ('type' in value && value.type === 'result') {
+    const record = value as Record<string, unknown>;
+    const { sessionId: rawSessionId, ...result } = record;
+    const parsed = object({ type: literal('result'), investigation: schema(validateFinalInvestigation) }).parse(result);
+    if (rawSessionId !== undefined && rawSessionId !== null && (typeof rawSessionId !== 'string' || !/^[a-f0-9]{32}$/.test(rawSessionId))) throw new Error('Invalid investigation session.');
+    return { ...parsed, sessionId: typeof rawSessionId === 'string' ? rawSessionId : null };
+  }
   return object({ type: schema<'progress'|'error'>(v=>{if(v!=='progress'&&v!=='error')throw new Error('Invalid event');return v;}), message: text }).parse(value);
 }
 /** Incremental NDJSON reader handles split UTF-8 chunks and rejects truncated/oversized responses. */

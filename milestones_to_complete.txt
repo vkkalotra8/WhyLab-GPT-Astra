@@ -94,10 +94,11 @@ STRATEGY FOLLOW-UP (beyond the scoped milestone checklist)
   (2026-09-16); existing Node module-type warning persists.
   Both repair provider turns receive validated diagnosis, evidence, hypotheses
   and verification history; no paid calls. This is not persistent hidden reasoning.
-- Training-log ingestion into the autonomous loop: partially implemented.
-  Optional bounded pasted logs become source-linked unverified observations.
-  Richer artifact uploads, structured epoch diagnostics and log-only runs remain.
-  327 tests, lint, type checking, build and 30 browser checks passed; no paid calls.
+- Training/log artifact ingestion and structured epoch diagnostics: implemented for the bounded investigator path.
+  TXT, LOG, JSON and CSV artifacts become source-linked unverified observations.
+  Structured epoch history, heuristic findings and parser warnings are passed explicitly
+  to Astra and previewed locally. Log-only runs remain intentionally unsupported.
+  358 tests, lint, type checking, production build and 30 browser checks passed; no paid calls.
   See docs/TRAINING_LOGS.md.
 - Broader falsification protocols beyond the accuracy-paradox test: implemented.
   Astra can declare a metric, unit, direction and threshold for any completed
@@ -124,8 +125,10 @@ STRATEGY FOLLOW-UP (beyond the scoped milestone checklist)
 - Optional investigator steering and specialist lenses: implemented.
   Requests can provide a bounded steering note and one prioritization lens;
   Astra must still follow the same allowlisted tools and evidence rules.
-  Async fan-out, specialist sub-agent handoffs, and durable continuation need
-  deployment-backed job/session infrastructure and remain deferred.
+  Batched diagnostic fan-out is implemented. Explicit local draft recovery now
+  survives reload without retaining consent or tokens. Specialist sub-agent handoffs
+  and durable cross-process continuation still need deployment-backed job/session infrastructure.
+  See docs/LOCAL_DRAFT_RECOVERY.md.
 - Public deployment, paid-endpoint access/usage controls and hosted CI: remain.
 - Deployment readiness probe and repeatable HTTPS smoke check: implemented.
   `/api/health` reports non-secret liveness/configuration booleans and
