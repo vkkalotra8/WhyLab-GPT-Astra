@@ -19,6 +19,9 @@ npm.cmd run test:browser
 
 The browser runner uses installed Chrome and the Chrome DevTools Protocol. Override `WHYLAB_BROWSER` with an installed Chromium/Edge executable and `WHYLAB_TEST_URL` with a running local server URL if needed. It creates an isolated temporary browser profile, cleans it up, and writes screenshots and a JSON report to `artifacts/` (git-ignored). The runner does not download browser binaries or testing packages. Avoid pointing it at a shared live deployment: it exercises local case creation and imports.
 
+The runner uses an explicit CDP port (`WHYLAB_CDP_PORT`, default `9224`) and
+safe headless flags. Set a different free port when running checks in parallel.
+
 ## Coverage
 
 - Parser rules, CSV quoting/mapping, multiple evidence files, regression metrics, and missing/ambiguous evidence.
@@ -96,3 +99,13 @@ Browser validation: all 29 checks passed against an AI-disabled local server wit
 Optional bounded pasted training logs now enter the autonomous investigation as unverified source-linked observations. Line references and source IDs survive diagnosis, export and repair context. Consent includes raw log text; evaluation CSVs remain required. Richer artifact uploads and structured epoch diagnostics remain pending. See [Training logs](TRAINING_LOGS.md).
 
 Validation (2026-09-16): 327 tests, lint, type checking, production build and 30 browser checks passed. Browser checks used an AI-disabled production server and mocked provider responses; no paid calls were made. An initial development-server browser run timed out during cold compilation; the production retry passed.
+
+## Strategy follow-up: release browser validation
+
+On 2026-09-16 the production server was validated on port 3110 with the
+installed Chrome CDP runner: **30 browser checks passed**, including the
+linked Astra-to-Repair workflow, flagship replay, evidence graph, incident
+exports, responsive overflow, form labels, storage-quota recovery and the
+built local API route. Screenshots and `browser-report.json` were written to
+the ignored `artifacts/` directory. The run used mocked browser provider
+responses and did not make paid calls; a deployed-host run remains separate.

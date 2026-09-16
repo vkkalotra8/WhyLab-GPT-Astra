@@ -3,10 +3,11 @@ import { validateInvestigation } from './validation.ts';
 import type { Investigation, Hypothesis, VerificationExperiment } from './types.ts';
 import type { InvestigatorRun } from './investigator.ts';
 import { fail } from './schema.ts';
+import { evaluateDiagnosticFalsification } from './diagnostic-falsification.ts';
 
 const accuracyStatement = 'Class imbalance is making raw accuracy misleading.';
 const alternativeStatement = 'An alternative explanation proposed during investigation remains unverified.';
-const summaryFor = (status: string) => status === 'failed' ? 'Investigation stopped before a final conclusion. Available diagnostic evidence is retained.' : status === 'completed' ? 'The accuracy-paradox prediction is supported by the recorded verification experiment on the supplied evaluation data.' : 'The available evidence does not establish a supported final explanation. Review the recorded hypothesis outcomes and unresolved questions.';
+const summaryFor = (status: string) => status === 'failed' ? 'Investigation stopped before a final conclusion. Available diagnostic evidence is retained.' : status === 'completed' ? 'A recorded hypothesis prediction is supported by a validated verification experiment on the supplied evaluation data.' : 'The available evidence does not establish a supported final explanation. Review the recorded hypothesis outcomes and unresolved questions.';
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Final-boundary validation adds verified outcome/provenance requirements to the canonical graph. */
@@ -24,6 +25,15 @@ export function validateFinalInvestigation(value: unknown): Investigation {
     if (experiment.callIds.length !== 1) fail(experiment.id, 'verification requires one matching counterfactual call');
     const call = v.toolCalls.find(c => c.id === experiment.callIds[0]);
     const result = v.toolResults.find(r => r.callId === experiment.callIds[0]);
+    if(experiment.method.startsWith('diagnostic_falsification_v1:')) {
+      if(!call||!result||result.status!=='completed'||result.tool==='run_counterfactual_test')fail(experiment.id,'diagnostic falsification lacks its completed diagnostic result');
+      const assessment=evaluateDiagnosticFalsification(result,{hypothesisId:experiment.hypothesisId,resultId:result.id,prediction:experiment.prediction,criterion:experiment.criterion});
+      if(assessment.outcome!==experiment.outcome)fail(experiment.id,'diagnostic falsification outcome disagrees with its measured criterion');
+      if(experiment.seed!==null)fail(experiment.id,'diagnostic falsification is deterministic and requires a null seed');
+      if(experiment.method!==`diagnostic_falsification_v1:${result.tool}:${result.id}`)fail(experiment.id,'diagnostic falsification method does not identify its result');
+      for(const eid of experiment.evidenceIds){const evidence=v.evidence.find(e=>e.id===eid)!;const expected=assessment.measurement?[assessment.measurement]:[];if(evidence.kind!=='measurement'||evidence.provenance.kind!=='experiment'||evidence.provenance.experimentId!==experiment.id||!equal(evidence.measurements,expected))fail(eid,'diagnostic falsification evidence differs from its measured result');}
+      continue;
+    }
     if (!call || call.tool !== 'run_counterfactual_test' || !result || result.status !== 'completed' || result.tool !== 'run_counterfactual_test') fail(experiment.id, 'verification lacks a completed counterfactual result');
     if (call.input.hypothesisId !== experiment.hypothesisId || result.output.hypothesisId !== experiment.hypothesisId || !equal(call.input.criterion, experiment.criterion) || call.input.seed !== experiment.seed || result.output.outcome !== experiment.outcome || !equal(result.output.evidenceIds, experiment.evidenceIds)) fail(experiment.id, 'experiment differs from executed call/result');
     if (experiment.criterion.metric !== 'accuracy_paradox_gap' || experiment.criterion.operator !== 'at_least' || experiment.criterion.unit !== 'percentage_points' || experiment.criterion.value <= 0 || experiment.criterion.value > 100) fail(experiment.id, 'unsupported verification criterion');
@@ -87,7 +97,7 @@ export function buildFinalInvestigation(run: InvestigatorRun): Investigation {
     const links = new Map(h.evidence.map(e => [e.evidenceId, { ...e }]));
     for (const experiment of experiments) {
       if (experiment.outcome === 'inconclusive') continue;
-      for (const evidenceId of experiment.evidenceIds) links.set(evidenceId, { evidenceId, relationship: experiment.outcome!, rationale: 'Relationship follows the executed counterfactual rule on this evaluation dataset.' });
+      for (const evidenceId of experiment.evidenceIds) links.set(evidenceId, { evidenceId, relationship: experiment.outcome!, rationale: 'Relationship follows the executed falsification rule on this evaluation dataset.' });
     }
     const unresolvedQuestions = status === 'proposed' ? ['The proposed explanation remains unresolved by consistent verification.'] : ['Does this finding generalize to an independent evaluation dataset?'];
     return { ...h, statement: h.statement === accuracyStatement ? accuracyStatement : alternativeStatement, status, evidence: [...links.values()], confidence: { kind: 'evidence_strength' as const, level: status === 'proposed' ? 'unassessed' as const : 'limited' as const, rationale: 'Descriptive verification on supplied data; not calibrated probability or confirmed causality.' }, unresolvedQuestions };
@@ -96,7 +106,7 @@ export function buildFinalInvestigation(run: InvestigatorRun): Investigation {
   const status = run.status === 'stopped' ? 'failed' : run.completion?.reason === 'sufficient_evidence' && primary ? 'completed' : 'inconclusive';
   const limitations = [...new Set([
     'Numerical findings are retained in validated tool outputs and experiment measurement evidence; no model-authored numerical summary is accepted.',
-    'Verification tests a dataset-specific prediction, not causality. No hypothesis is automatically confirmed.',
+    'Verification tests a dataset-specific prediction against a declared numerical criterion, not causality. No hypothesis is automatically confirmed.',
     'Untested model proposals are preserved in the run audit; their prose is not promoted to final findings.',
     'No repair candidates or before/after verification have been generated at this milestone.',
     ...(run.status === 'stopped' ? ['Investigation stopped before explicit completion; partial evidence is retained.'] : []),

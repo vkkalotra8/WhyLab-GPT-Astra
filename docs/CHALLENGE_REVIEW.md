@@ -1,6 +1,6 @@
 ﻿# Challenge WhyLab (Milestone 22)
 
-A local deterministic second-pass review is available in flagship, Astra and applied Repair Lab results. Select **Challenge this investigation** to inspect alternatives, contradictory relationships, weak assumptions and insufficient verification. This is a review panel, not a chatbot. No provider call or new experiment is performed.
+A local deterministic second-pass review is available in flagship, Astra and applied Repair Lab results. Select **Challenge this investigation** to inspect alternatives, contradictory relationships, weak assumptions and insufficient verification. When the original evaluation data is still retained in the session, **Run adversarial diagnostic** also executes one previously unrun allowlisted diagnostic and appends its result/evidence/events to the same investigation. This bounded pass is deterministic and does not use a provider call.
 
 ## Rules and confidence
 
@@ -15,10 +15,10 @@ These are explicit conservative review rules, not a statistical confidence calcu
 
 ## Provenance and preservation
 
-Every finding names the canonical hypothesis, evidence, experiment or comparison IDs it concerns. Original statuses, confidence, evidence and measurements remain unchanged. The reviewed assessment is displayed separately, including original/reviewed strength, reduction flag and rationale. JSON export includes the full canonical snapshot, all findings, rules version and limitations. Re-running the same snapshot is deterministic. A changed investigation invalidates the prior displayed review.
+Every finding names the canonical hypothesis, evidence, experiment or comparison IDs it concerns. An adversarial diagnostic adds only a new canonical tool call/result and linked observation evidence; original statuses, confidence, diagnosis and prior measurements remain unchanged. The reviewed assessment is displayed separately, including original/reviewed strength, reduction flag and rationale. JSON export includes the full canonical snapshot, all findings, rules version and limitations. Re-running the same snapshot is deterministic. A changed investigation invalidates the prior displayed review.
 
 ## Verification
 
-Tests cover actual confidence reduction, opposing evidence, insufficient verification, unchanged well-supported hypotheses, no promotion, input immutability, replay, reference integrity, missing diagnosis and rejected invalid provenance. Browser checks cover review execution, reduction display, reference visibility and repeat execution. Run `npm run check`, then the production browser suite.
+Tests cover actual confidence reduction, opposing evidence, insufficient verification, unchanged well-supported hypotheses, no promotion, input immutability, replay, reference integrity, missing diagnosis, rejected invalid provenance, and one appended adversarial diagnostic with matching dataset provenance. Browser checks cover review execution, reduction display, reference visibility and repeat execution. Run `npm run check`, then the production browser suite.
 
-Manual review: run the flagship and challenge it. Its strong primary hypothesis becomes moderate in the reviewed assessment because its recorded scope question remains unresolved. Proposed alternatives stay unassessed. Inspect assumption and independent-verification findings, then export the review JSON. Original diagnosis and incident exports remain the original assessment; the challenge export carries the separate second-pass review.
+Manual review: run the flagship and challenge it. Its strong primary hypothesis becomes moderate in the reviewed assessment because its recorded scope question remains unresolved. Use **Run adversarial diagnostic** while the retained upload is available, inspect the appended result in the evidence graph, then export the review JSON. Proposed alternatives stay unassessed. Original diagnosis and incident exports remain the original assessment; the challenge export carries the separate second-pass review.

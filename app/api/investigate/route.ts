@@ -3,6 +3,9 @@ import { isAIConfigured } from '../../lib/server/openai-service.ts';
 import { createBudget } from '../../lib/explanations.ts';
 import { ingestEvaluationCsv, EvaluationValidationError } from '../../lib/investigation/evaluation-ingestion.ts';
 import { investigationUploadSchema, activityMessage } from '../../lib/investigation-workflow.ts';
+import { authorizePaidRequest } from '../../lib/server/access-control.ts';
+import { enforceSharedQuota } from '../../lib/server/shared-quota.ts';
+import { AIServiceError, publicAIError } from '../../lib/server/openai-service.ts';
 export const runtime='nodejs';
 export const maxDuration=150;
 const headers={'Cache-Control':'no-store'};
@@ -12,6 +15,11 @@ export async function POST(request:Request){
   const error=(message:string,status:number)=>Response.json({error:message},{status,headers});
   if(request.headers.get('origin')!==new URL(request.url).origin)return error('Only same-origin requests are accepted.',403);
   if(!request.headers.get('content-type')?.toLowerCase().startsWith('application/json'))return error('Use application/json.',415);
+  const authorization=authorizePaidRequest(request);
+  if(authorization==='not_configured')return error('Paid endpoint access control is not configured.',503);
+  if(authorization)return error('A valid access token is required.',401);
+  const quota=await enforceSharedQuota(request,'investigate');
+  if(!quota.allowed)return Response.json({error:quota.reason==='limited'?'Shared investigation limit reached. Try again later.':'Shared usage controls are unavailable.'},{status:quota.reason==='limited'?429:503,headers:{...headers,'Retry-After':String(quota.retryAfter)}});
   const release=budget.acquire();if(!release)return error('Investigation request limit reached. Try again later.',429);
   let payload;
   try{
@@ -37,9 +45,9 @@ export async function POST(request:Request){
         for(const d of datasets)send({type:'progress',message:`Dataset parsed: ${d.metadata.rowCount} evaluation rows`});
         if(payload.trainingLogs.length)send({type:'progress',message:'Training log observations registered (unverified)'});
         send({type:'progress',message:'Astra investigation started'});
-        const run=await investigateWithOpenAI({objective:payload.objective,consent:true,accuracyParadoxGap:payload.accuracyParadoxGap,datasets,trainingLogs:payload.trainingLogs},active,event=>{const message=activityMessage(event.kind,event.code);if(message)send({type:'progress',message});});
+        const run=await investigateWithOpenAI({objective:payload.objective,steering:payload.steering,specialist:payload.specialist,consent:true,accuracyParadoxGap:payload.accuracyParadoxGap,datasets,trainingLogs:payload.trainingLogs},active,event=>{const message=activityMessage(event.kind,event.code);if(message)send({type:'progress',message});});
         send({type:'result',investigation:run.finalInvestigation});
-      }catch{send({type:'error',message:'Investigation was unavailable or failed validation. Check configuration or try again.'});}
+      }catch(cause){send({type:'error',message:cause instanceof AIServiceError?publicAIError(cause.code):'Investigation was unavailable or failed validation. Check configuration or try again.'});}
       finally{release();if(!closed){closed=true;try{output.close();}catch{}}}};
       void task();
     },cancel(){controller.abort();},

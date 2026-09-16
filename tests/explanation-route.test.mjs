@@ -6,7 +6,7 @@ import ts from 'typescript';
 import {localExplanation} from '../app/lib/explanations.ts';
 const require=createRequire(import.meta.url);
 const source=fs.readFileSync(new URL('../app/api/explain/route.ts',import.meta.url),'utf8');
-function load(source){const testModule={exports:{}};const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;new Function('module','exports','require',js)(testModule,testModule.exports,name=>{if(name==='server-only')return {};if(name.includes('openai-service'))return service();return require('../app/lib/explanations.ts');});return testModule.exports;}
+function load(source){const testModule={exports:{}};const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;new Function('module','exports','require',js)(testModule,testModule.exports,name=>{if(name==='server-only')return {};if(name.includes('openai-service'))return service();if(name.includes('access-control'))return {authorizePaidRequest:()=>null};if(name.includes('shared-quota'))return {enforceSharedQuota:async()=>({allowed:true})};return require('../app/lib/explanations.ts');});return testModule.exports;}
 function service(){return load(fs.readFileSync(new URL('../app/lib/server/openai-service.ts',import.meta.url),'utf8'));}
 function route(){return load(source);}
 const hypothesis={id:'shift',title:'Possible shift',evidence:[{id:'E1',text:'A reported validation/production gap'}],conflicts:[],missing:['Matched holdout'],experiment:'Compare environments.'};

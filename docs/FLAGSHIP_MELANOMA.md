@@ -36,4 +36,10 @@ The UI preserves every operating-point metric and all confusion counts, includin
 
 Manual review: run the flagship in a fresh browser session, inspect competing hypotheses and the reweighting criterion, select **Show measured repair**, inspect all metrics and evidence IDs, download the CSV and evidence JSON, and select **Run flagship again**. A failed fixture request presents an error and permits retry. There are no timed visual animations, so this component also works with reduced motion enabled.
 
-Milestone 18 remains gated on explicit P0 review/confirmation. This demonstration adds neither the general evidence graph nor the dedicated Repair Lab UX.
+## Live Astra flagship path
+
+In **Investigate with Astra**, select **Load flagship for Astra**. This loads the same committed evaluation fixture plus explicitly synthetic training-log observations and a case-specific objective into the autonomous workflow. After reviewing the evidence, confirm consent and run Astra. Astra selects the diagnostic sequence; successful results retain the uploaded bytes in the browser so the embedded Repair Lab can append its candidate, application, and measured re-test to the same investigation history.
+
+Run `npm run check:astra` before the demonstration. This makes one deliberately small paid Responses request and prints only model/status/usage or sanitized provider error classification. A successful check establishes account/model access, not correctness of the full investigation. The full live run and its downloaded investigation JSON remain required demonstration evidence.
+
+The fixed local protocol remains available for deterministic replay; the live path is the submission demonstration because it records Astra's diagnostic choices and continues into linked repair.
