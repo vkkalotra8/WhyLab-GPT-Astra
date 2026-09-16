@@ -1,0 +1,1406 @@
+You are the lead frontend engineer and product designer for my existing project:
+
+WHYLAB — an AI incident investigator for machine-learning systems.
+
+You are operating directly inside the project repository through the terminal.
+
+============================================================
+PRIMARY OBJECTIVE
+============================================================
+
+Redesign and polish the ENTIRE existing WhyLab frontend so it becomes:
+
+- modern
+- beautiful
+- professional
+- beginner-friendly
+- easy to scan
+- ML/AI focused
+- Product-Hunt-quality
+- responsive
+- consistent
+
+while preserving ALL existing functionality exactly.
+
+THIS IS A TIME-CONSTRAINED TASK.
+
+Target:
+Complete the useful frontend redesign within approximately ONE OR TWO 5-HOUR WORK SESSIONS.
+
+Optimize for:
+
+HIGH IMPACT
++
+LOW RISK
++
+FAST IMPLEMENTATION
++
+FUNCTIONAL SAFETY
+
+Do not overengineer.
+
+============================================================
+AUTONOMOUS EXECUTION MODE — VERY IMPORTANT
+============================================================
+
+WORK AUTONOMOUSLY FROM START TO FINISH.
+
+DO NOT repeatedly ask me:
+
+- "Should I continue?"
+- "Would you like me to implement this?"
+- "Which option do you prefer?"
+- "Should I use A or B?"
+- "Can I edit this file?"
+- "Do you want light or dark?"
+- "Should I proceed to the next component?"
+- "Do you want me to run the build?"
+- "Would you like me to fix this?"
+- "Should I choose the recommended option?"
+
+Instead:
+
+MAKE THE DECISION YOURSELF.
+
+When multiple reasonable choices exist:
+
+1. choose the safest option
+2. prefer the recommended/default option
+3. prefer the option consistent with the existing project
+4. prefer fewer dependencies
+5. prefer smaller diffs
+6. prefer simpler implementation
+7. prefer preserving existing functionality
+8. prefer the option most suitable for a polished Product Hunt launch
+
+DO NOT wait for my approval between stages.
+
+Continue automatically:
+
+inspect
+→ plan internally
+→ implement
+→ validate
+→ fix
+→ continue
+→ final verification
+→ report
+
+Only stop and ask me if proceeding would require one of these:
+
+- deleting important project/user data
+- exposing or requesting a secret/API key
+- destructive Git operations
+- force pushing
+- publishing/deploying somewhere without authorization
+- spending money
+- making an irreversible external action
+- resolving genuinely missing information where guessing could break core functionality
+
+For ordinary frontend/design/implementation decisions:
+
+DO NOT ASK.
+
+DECIDE AND CONTINUE.
+
+============================================================
+CLI / TERMINAL DECISION RULE
+============================================================
+
+If a command or development tool presents safe choices and one is clearly:
+
+- Recommended
+- Default
+- Standard
+- Yes / Continue
+- Keep existing configuration
+
+choose the SAFE RECOMMENDED choice automatically when possible.
+
+Use supported non-interactive command options when appropriate and safe.
+
+However:
+
+DO NOT automatically approve destructive actions.
+
+DO NOT delete user files.
+
+DO NOT reset Git history.
+
+DO NOT use:
+
+git reset --hard
+git clean -fd
+git push --force
+
+unless I explicitly request it.
+
+============================================================
+NO PRE-IMPLEMENTATION ESSAY
+============================================================
+
+Do NOT spend a large portion of the session explaining what you are going to do.
+
+Do NOT return only recommendations.
+
+Do NOT stop after repository analysis.
+
+Briefly inspect the project and then EDIT THE CODE.
+
+You may maintain an internal implementation plan, but the goal is execution.
+
+============================================================
+ABSOLUTE FUNCTIONAL SAFETY RULE
+============================================================
+
+THIS TASK IS FRONTEND/UI/UX ONLY.
+
+Treat the existing application as a WORKING MACHINE.
+
+You are redesigning its CONTROL PANEL.
+
+You are NOT redesigning its engine.
+
+DO NOT intentionally change:
+
+- APIs
+- API routes
+- OpenAI integration
+- Astra integration
+- Astra prompts
+- tool schemas
+- investigation orchestration
+- ML logic
+- statistical calculations
+- metric calculations
+- threshold calculations
+- Repair Lab algorithms
+- dataset parsing
+- CSV parsing
+- CSV validation
+- evidence generation
+- state-management behavior
+- server logic
+- backend code
+- database behavior
+- environment variables
+- authentication
+- routes
+- form submission behavior
+- button behavior
+- event-handler behavior
+- investigation workflow
+- existing metric values
+- case-study values
+- chart data
+- application outputs
+
+If something currently works:
+
+IT MUST STILL WORK AFTER THE REDESIGN.
+
+Never replace working functionality with mock functionality.
+
+Never hardcode dynamic results.
+
+Never fabricate ML metrics.
+
+Never fabricate Astra responses.
+
+Never delete a feature simply because redesigning it is inconvenient.
+
+============================================================
+SAFE FILE-EDITING STRATEGY
+============================================================
+
+Before editing, quickly determine:
+
+- framework
+- package manager
+- main routes/pages
+- global CSS
+- Tailwind setup if present
+- layout components
+- reusable frontend components
+- main page
+- investigation components
+- Repair Lab
+- Dataset Investigation
+- forms
+- charts
+- result components
+- frontend files containing functional logic
+
+Then distinguish:
+
+PRESENTATIONAL CODE
+vs
+FUNCTIONAL/BUSINESS LOGIC
+
+Prefer changing:
+
+- CSS
+- Tailwind classes
+- existing layout markup
+- typography
+- spacing
+- colors
+- borders
+- surfaces
+- visual grouping
+- presentational components
+
+Avoid touching business logic.
+
+============================================================
+DO NOT OVER-REFACTOR
+============================================================
+
+TIME IS LIMITED.
+
+Prefer:
+
+RESTYLE EXISTING COMPONENT
+
+instead of:
+
+REWRITE COMPONENT
+
+Prefer:
+
+EXISTING CSS / TAILWIND
+
+instead of:
+
+NEW UI FRAMEWORK
+
+Prefer:
+
+EXISTING DEPENDENCY
+
+instead of:
+
+INSTALL PACKAGE
+
+Prefer:
+
+SMALL REUSABLE STYLE
+
+instead of:
+
+LARGE DESIGN-SYSTEM ARCHITECTURE
+
+Prefer:
+
+SMALL SAFE DIFF
+
+instead of:
+
+ARCHITECTURAL CLEANUP
+
+DO NOT:
+
+- migrate frameworks
+- upgrade Next.js
+- upgrade React
+- upgrade libraries unnecessarily
+- replace Tailwind
+- reorganize the repository
+- rewrite state management
+- rename many files
+- mass-format unrelated files
+- refactor unrelated code
+- create dozens of components
+- create unnecessary abstractions
+- rewrite working logic for elegance
+
+Strong preference:
+
+ZERO new dependencies.
+
+============================================================
+PRODUCT DESIGN DIRECTION
+============================================================
+
+WhyLab should feel like:
+
+"An intelligent scientific workbench for investigating machine-learning failures."
+
+Visual personality:
+
+SCIENTIFIC
+PRECISE
+MODERN
+TRUSTWORTHY
+CALM
+INTELLIGENT
+APPROACHABLE
+
+It should NOT look like:
+
+- cybersecurity software
+- hacker terminal
+- generic SaaS admin dashboard
+- chatbot
+- notebook environment
+- dark developer console
+- childish education website
+
+The interface should communicate:
+
+MODEL FAILURE
+      ↓
+EVIDENCE
+      ↓
+HYPOTHESIS
+      ↓
+EXPERIMENT
+      ↓
+DIAGNOSIS
+      ↓
+REPAIR
+      ↓
+VERIFICATION
+
+A beginner should be able to understand:
+
+What happened?
+
+Why is it a problem?
+
+What evidence proves it?
+
+What is WhyLab testing?
+
+What did the experiment show?
+
+What should I do next?
+
+Did the repair improve the model?
+
+============================================================
+DESIGN DIRECTION
+============================================================
+
+The current frontend is too:
+
+- dark
+- dense
+- compressed
+- text-heavy
+- terminal-like
+- visually flat
+- intimidating
+- difficult to scan
+
+Transform it into a:
+
+MODERN SCIENTIFIC WORKBENCH
++
+PREMIUM AI PRODUCT
+
+Use a LIGHT-FIRST visual system.
+
+Recommended base:
+
+Background:
+#F7F9FC or equivalent soft neutral
+
+Primary surfaces:
+#FFFFFF
+
+Secondary surfaces:
+#F2F5F9 or similar
+
+Primary text:
+deep navy/slate
+
+Secondary text:
+medium slate
+
+Muted text:
+soft slate
+
+Borders:
+subtle cool gray
+
+Brand:
+deep indigo/navy
+
+Astra / investigation:
+teal
+
+Verified / success:
+green
+
+Warning:
+amber
+
+Failure / critical:
+controlled red/coral
+
+Hypothesis:
+violet/indigo
+
+You may adjust exact values if required for the existing design system.
+
+Use semantic color consistently.
+
+DO NOT use:
+
+- neon cyberpunk styling
+- excessive gradients
+- excessive glassmorphism
+- glowing borders everywhere
+- excessive shadows
+- colorful decoration without meaning
+- childish visuals
+
+============================================================
+GLOBAL DESIGN FOUNDATION
+============================================================
+
+First establish a simple consistent visual foundation.
+
+Use existing CSS variables/Tailwind tokens where appropriate.
+
+Standardize:
+
+- application background
+- surfaces
+- borders
+- primary text
+- secondary text
+- muted text
+- brand
+- Astra accent
+- success
+- warning
+- danger
+- hypothesis
+- border radius
+- shadows
+- spacing
+- buttons
+- inputs
+- cards
+
+Do NOT build a separate design-system package.
+
+============================================================
+TYPOGRAPHY
+============================================================
+
+The current UI has too much tiny text.
+
+Improve readability.
+
+Rough targets:
+
+Hero:
+48–60px desktop
+
+Major page heading:
+30–38px
+
+Section heading:
+22–26px
+
+Card title:
+16–20px
+
+Body:
+14–16px
+
+Helper text:
+13–14px
+
+Avoid going below 12px unless necessary.
+
+Improve:
+
+- line height
+- heading hierarchy
+- paragraph width
+- whitespace
+- label readability
+
+Reduce unnecessary uppercase micro-labels.
+
+Prefer the existing font.
+
+Do not add another font dependency unless absolutely necessary.
+
+============================================================
+LAYOUT
+============================================================
+
+Create a coherent page shell.
+
+Suggested maximum width:
+
+1200–1350px
+
+Use:
+
+- consistent horizontal padding
+- comfortable section spacing
+- clear hierarchy
+- logical grouping
+- whitespace
+
+Do NOT make every element a card.
+
+Use cards only where they provide structure.
+
+Break the current long-page monotony through:
+
+- section hierarchy
+- spacing
+- background grouping
+- metric grouping
+- workflow progression
+
+============================================================
+IMPLEMENTATION PRIORITY
+============================================================
+
+Work in THIS order automatically.
+
+Do not ask for approval between steps.
+
+1. Global visual foundation
+2. Navbar
+3. Hero
+4. Flagship ML failure case
+5. Investigation with Astra
+6. Investigation results/evidence
+7. What Went Wrong workflow
+8. Repair Lab
+9. Dataset Investigation
+10. Shared forms
+11. Shared metrics/cards
+12. Charts presentation
+13. Footer
+14. Responsive pass
+15. Accessibility pass
+16. Build/regression validation
+
+If time becomes constrained, follow this priority order.
+
+============================================================
+NAVBAR
+============================================================
+
+Redesign the existing navigation to feel:
+
+- minimal
+- premium
+- clean
+- readable
+
+Preserve every existing link and route.
+
+Keep:
+
+WhyLab branding
+navigation items
+active state
+New Investigation CTA
+
+Use subtle separation from the page.
+
+Do not make it oversized.
+
+============================================================
+HERO
+============================================================
+
+The Hero is a Product Hunt screenshot priority.
+
+Make it visually excellent.
+
+Preserve the existing core message:
+
+"Every failed model is trying to tell you something."
+
+Make the hierarchy obvious:
+
+context / eyebrow
+→
+strong headline
+→
+short explanation
+→
+primary CTA
+→
+secondary content if already present
+
+Primary CTA should be immediately visible.
+
+Use the existing graphic/diagnostic visual when possible.
+
+Do NOT waste time building a complex illustration.
+
+============================================================
+FLAGSHIP FAILURE CASE
+============================================================
+
+Make:
+
+"High accuracy. Missed malignant cases."
+
+visually powerful.
+
+When the project already contains values such as:
+
+94.2% Accuracy
+
+and
+
+22.4% Malignant Recall
+
+make the contradiction obvious.
+
+For example conceptually:
+
+MODEL REPORTS
+94.2%
+Accuracy
+
+vs
+
+WHYLAB DETECTS
+22.4%
+Malignant Recall
+
+Use only project data that already exists.
+
+DO NOT invent values.
+
+============================================================
+INVESTIGATION WITH ASTRA
+============================================================
+
+This is the primary functional area.
+
+Make it one of the strongest UI sections.
+
+Preserve all existing functionality.
+
+Organize visually around:
+
+Investigation objective
+↓
+Evidence/data input
+↓
+Configuration
+↓
+INVESTIGATE WITH ASTRA
+
+Make the Astra action the strongest CTA.
+
+Secondary actions such as:
+
+clear
+reset
+download
+upload
+manual calculation
+
+must remain visually subordinate.
+
+Improve:
+
+- textarea
+- file picker
+- numeric fields
+- checkboxes
+- labels
+- helper text
+- loading state
+- disabled state
+- error state
+- result state
+
+DO NOT change Astra behavior.
+
+============================================================
+INVESTIGATION RESULTS
+============================================================
+
+Make investigation output highly scannable.
+
+When existing data allows it, visually distinguish:
+
+OBSERVATION
+
+HYPOTHESIS
+
+EXPERIMENT / TEST
+
+RESULT
+
+REPAIR
+
+Suggested semantic treatment:
+
+Observation = neutral/blue
+
+Hypothesis = violet
+
+Experiment = teal
+
+Verified = green
+
+Warning = amber
+
+Failure/rejected = controlled red
+
+Repair = deep indigo
+
+Do not expose or manufacture hidden reasoning.
+
+Only display information that already legitimately exists.
+
+============================================================
+BEGINNER-FRIENDLY PRESENTATION
+============================================================
+
+Do NOT remove advanced ML metrics.
+
+Instead create two visual levels:
+
+PRIMARY:
+plain-English meaning
+
+SECONDARY:
+technical evidence
+
+Example:
+
+Primary:
+"The model performs much worse on the minority class."
+
+Secondary:
+Balanced Accuracy
+51.7%
+
+Only use explanations supported by existing project content.
+
+Do not fabricate analytical claims.
+
+Technical terms can remain.
+
+Make them easier to understand through hierarchy.
+
+============================================================
+WHAT WENT WRONG
+============================================================
+
+Make this workflow obvious:
+
+1
+UPLOAD EVIDENCE
+
+2
+CHOOSE ANALYSIS
+
+3
+INVESTIGATE FAILURE
+
+Improve the existing upload experience.
+
+Make selected/empty/error states clear.
+
+Do not alter its behavior.
+
+============================================================
+REPAIR LAB
+============================================================
+
+Treat this as a visual climax.
+
+Organize it around:
+
+CURRENT STATE
+      ↓
+RECOMMENDATION
+      ↓
+RESULT
+
+Where existing data supports it, make before/after results easy to compare.
+
+Clearly present existing:
+
+- current threshold
+- proposed/recommended threshold
+- FN cost
+- FP cost
+- objective
+- recommendation
+- apply action
+- before/after metrics
+
+Do NOT change:
+
+- threshold optimization
+- cost calculations
+- Astra recommendation logic
+- ML calculations
+
+============================================================
+DATASET INVESTIGATION
+============================================================
+
+Make:
+
+"Look inside your data"
+
+simple and approachable.
+
+Clearly organize:
+
+TRAINING
+VALIDATION
+PRODUCTION
+
+Prefer three consistent upload/data containers.
+
+Existing states should be easy to recognize:
+
+Empty
+
+Selected
+
+Processing
+
+Analyzed
+
+Error
+
+Improve existing profiling tables using styling only.
+
+Use:
+
+- clear headers
+- readable spacing
+- subtle borders
+- status indicators
+- numeric alignment
+- horizontal scrolling on small screens where required
+
+Do not change parsing or profiling.
+
+============================================================
+METRICS
+============================================================
+
+Make key metrics much easier to scan.
+
+Prefer:
+
+LARGE VALUE
+
+small descriptive label
+
+short supporting context
+
+For existing comparisons such as:
+
+Validation vs Production
+
+or
+
+Before vs After
+
+use side-by-side comparison where space permits.
+
+Never change metric values.
+
+============================================================
+FORMS
+============================================================
+
+Normalize all forms.
+
+Use consistent:
+
+- heights
+- labels
+- borders
+- radius
+- focus states
+- disabled states
+- helper text
+- error states
+- spacing
+- buttons
+
+Do not modify validation or form behavior.
+
+============================================================
+CARDS
+============================================================
+
+Keep the card vocabulary SIMPLE.
+
+Use roughly:
+
+1. Standard panel
+2. Metric panel
+3. Evidence/result panel
+4. Warning panel
+5. Verified/success panel
+
+Do not create a huge card component hierarchy.
+
+============================================================
+CHARTS
+============================================================
+
+DO NOT change chart data or calculations.
+
+Improve only:
+
+- container
+- whitespace
+- title
+- legend
+- labels
+- surrounding hierarchy
+- responsiveness
+- tooltip styling if straightforward
+
+Preserve chart functionality.
+
+============================================================
+ICONS
+============================================================
+
+Use the icon library already installed.
+
+If Lucide already exists, use it.
+
+Do not install another icon library.
+
+Use icons sparingly for comprehension.
+
+============================================================
+RESPONSIVE DESIGN
+============================================================
+
+Perform a practical responsive pass for approximately:
+
+1440px
+1280px
+1024px
+768px
+390px
+
+Prioritize preventing:
+
+- horizontal page overflow
+- overlapping content
+- clipped inputs
+- broken tables
+- metric overflow
+- giant mobile typography
+- unusable charts
+- inaccessible buttons
+
+Stack columns intelligently.
+
+Do not spend excessive time making every intermediate width pixel-perfect.
+
+============================================================
+ACCESSIBILITY
+============================================================
+
+Implement fast, high-value improvements:
+
+- visible focus states
+- sufficient contrast
+- accessible form labels
+- semantic headings
+- obvious button/link distinction
+- status not communicated only through color
+
+Preserve existing ARIA behavior.
+
+Do not undertake a major accessibility architecture rewrite.
+
+============================================================
+ANIMATION
+============================================================
+
+Keep motion minimal.
+
+Use existing CSS transitions where useful:
+
+approximately 150–250ms.
+
+No animation library.
+
+No decorative heavy motion.
+
+Respect prefers-reduced-motion if straightforward.
+
+============================================================
+PRODUCT HUNT PRIORITY
+============================================================
+
+These sections MUST look particularly strong:
+
+1. Hero
+2. Flagship metric contradiction
+3. Investigation with Astra
+4. Investigation findings
+5. Repair Lab
+6. Dataset Investigation
+
+If there is limited time, polish these BEFORE secondary details.
+
+============================================================
+DO NOT ADD NEW FEATURES
+============================================================
+
+This task is UI POLISH.
+
+Do not use this session to implement:
+
+- new Astra functionality
+- new diagnostic algorithms
+- new Evidence Graph if absent
+- new reliability score
+- authentication
+- databases
+- additional case studies
+- GitHub integrations
+- new ML tests
+- new backend APIs
+
+If functionality does not exist, leave it absent.
+
+Do not fake it visually.
+
+============================================================
+DEPENDENCY POLICY
+============================================================
+
+Prefer ZERO new dependencies.
+
+Before installing anything, ask yourself:
+
+"Can this be done cleanly with what is already installed?"
+
+If yes:
+
+DO NOT INSTALL IT.
+
+Never perform dependency upgrades as part of this task.
+
+============================================================
+TESTING STRATEGY
+============================================================
+
+Do NOT waste time running the complete test suite after every CSS edit.
+
+Implement the major redesign first.
+
+Then inspect package.json and use the scripts that actually exist.
+
+Run relevant checks such as:
+
+lint
+typecheck
+tests
+build
+
+Do not assume a command exists.
+
+If a check fails:
+
+1. determine whether your changes caused it
+2. fix regressions caused by your changes
+3. do not start repairing unrelated legacy technical debt
+
+Always ensure the production build succeeds if a build script exists and the project was buildable before.
+
+============================================================
+AUTOMATIC ERROR RECOVERY
+============================================================
+
+If you introduce:
+
+- TypeScript error
+- lint issue
+- build error
+- import error
+- CSS regression
+- component syntax error
+
+DO NOT stop and ask me what to do.
+
+Investigate it.
+
+Fix it.
+
+Rerun the relevant validation.
+
+Continue automatically.
+
+If the error clearly existed before your changes and is unrelated:
+
+do not waste the entire session fixing it.
+
+Document it at the end.
+
+============================================================
+REGRESSION REVIEW
+============================================================
+
+Before finishing:
+
+inspect git diff.
+
+Specifically search for accidental changes to:
+
+fetch
+axios
+OpenAI
+Astra
+API routes
+server actions
+schemas
+validation
+CSV parsing
+state logic
+useEffect logic
+event handlers
+metric calculations
+threshold calculations
+repair calculations
+backend files
+
+If such logic changed accidentally:
+
+REVERT THE FUNCTIONAL CHANGE
+
+while keeping the intended styling.
+
+============================================================
+GIT SAFETY
+============================================================
+
+Do not perform destructive Git operations.
+
+Do not:
+
+git reset --hard
+
+git clean -fd
+
+git push --force
+
+delete branches
+
+rewrite history
+
+unless I explicitly request it.
+
+You may use read-only Git commands freely:
+
+git status
+git diff
+git diff --stat
+git log
+git branch
+
+Do not automatically commit or push unless I explicitly asked for that.
+
+============================================================
+TIME MANAGEMENT
+============================================================
+
+Act as though you have approximately 5–10 total hours.
+
+Do not spend too long on one area.
+
+Suggested mental allocation:
+
+~10% quick inspection + foundation
+
+~15% hero/navbar/flagship case
+
+~25% Astra investigation + findings
+
+~15% Repair Lab
+
+~15% Dataset Investigation + What Went Wrong
+
+~10% consistency/responsive/accessibility
+
+~10% testing/regression/fixes
+
+These are guidelines, not stopping points.
+
+Continue autonomously.
+
+============================================================
+IF TIME OR CONTEXT BECOMES LIMITED
+============================================================
+
+DO NOT leave a visually inconsistent half-redesigned product.
+
+Prioritize:
+
+1. Global visual theme
+2. Hero
+3. Astra Investigation
+4. Findings/results
+5. Repair Lab
+6. Dataset Investigation
+7. What Went Wrong
+8. remaining page sections
+9. minor polish
+
+Prefer a consistent 90% redesign over:
+
+2 perfect sections + 8 untouched sections.
+
+Skip decorative extras before skipping core sections.
+
+============================================================
+DEFINITION OF DONE
+============================================================
+
+The task is complete when:
+
+[ ] WhyLab has a coherent light-first visual identity
+
+[ ] Navbar is polished
+
+[ ] Hero is polished
+
+[ ] Main value proposition is immediately understandable
+
+[ ] Flagship ML contradiction is visually strong
+
+[ ] Astra investigation is visually prominent
+
+[ ] Primary CTA is obvious
+
+[ ] Forms are consistent
+
+[ ] ML metrics are readable
+
+[ ] Investigation findings are easy to scan
+
+[ ] Observation / hypothesis / test / result are visually distinguishable where existing data supports them
+
+[ ] What Went Wrong is easier for beginners
+
+[ ] Repair Lab clearly communicates current → recommendation → result
+
+[ ] Dataset Investigation is approachable
+
+[ ] Tables are readable
+
+[ ] Existing charts still work
+
+[ ] Desktop layout works
+
+[ ] Tablet layout is usable
+
+[ ] Mobile layout is usable
+
+[ ] No existing functionality was intentionally changed
+
+[ ] No fake data was introduced
+
+[ ] No unnecessary dependencies were added
+
+[ ] Relevant lint/type/build checks pass or unrelated pre-existing issues are documented
+
+[ ] Functional regression review has been performed
+
+============================================================
+FINAL RESPONSE — KEEP IT SHORT
+============================================================
+
+After the actual coding work is finished, respond with only:
+
+## Completed
+2–4 sentences summarizing the redesign.
+
+## Files changed
+Concise list.
+
+## Key improvements
+Concise bullets.
+
+## Validation
+Lint: PASS / FAIL / N/A
+Typecheck: PASS / FAIL / N/A
+Tests: PASS / FAIL / N/A
+Build: PASS / FAIL / N/A
+
+If something failed, briefly state whether it is caused by your changes or appears pre-existing.
+
+## Functional safety
+State whether any:
+
+- backend
+- API
+- Astra
+- ML/statistical
+- dataset parsing
+- calculations
+- application behavior
+
+was intentionally changed.
+
+Expected statement:
+
+"No backend, API, Astra, ML/statistical, dataset parsing, calculation, or application behavior was intentionally changed."
+
+Then state:
+
+"Functional regression review completed."
+
+============================================================
+FINAL EXECUTION COMMAND
+============================================================
+
+START NOW.
+
+Inspect the repository briefly.
+
+Do not ask me to choose between normal frontend options.
+
+Use the safest recommended/default choice yourself.
+
+Do not stop after the audit.
+
+Do not provide a long plan before implementation.
+
+Do not wait for approval after each stage.
+
+Do not return only suggestions.
+
+EDIT THE CODE.
+
+WORK THROUGH THE FULL REDESIGN AUTONOMOUSLY.
+
+TEST YOUR WORK.
+
+FIX REGRESSIONS YOU INTRODUCE.
+
+FINISH AS MUCH OF THE COMPLETE UI AS POSSIBLE WITHIN THE AVAILABLE TIME.
+
+Preserve functionality.
+
+Improve presentation.
+
+Optimize for a polished Product Hunt submission.

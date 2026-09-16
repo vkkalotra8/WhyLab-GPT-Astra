@@ -6,6 +6,7 @@ import { investigationUploadSchema, activityMessage } from '../../lib/investigat
 import { authorizePaidRequest } from '../../lib/server/access-control.ts';
 import { enforceSharedQuota } from '../../lib/server/shared-quota.ts';
 import { AIServiceError, publicAIError } from '../../lib/server/openai-service.ts';
+import { saveInvestigationSession } from '../../lib/server/investigation-sessions.ts';
 export const runtime='nodejs';
 export const maxDuration=150;
 const headers={'Cache-Control':'no-store'};
@@ -46,7 +47,8 @@ export async function POST(request:Request){
         if(payload.trainingLogs.length)send({type:'progress',message:'Training log observations registered (unverified)'});
         send({type:'progress',message:'Astra investigation started'});
         const run=await investigateWithOpenAI({objective:payload.objective,steering:payload.steering,specialist:payload.specialist,consent:true,accuracyParadoxGap:payload.accuracyParadoxGap,datasets,trainingLogs:payload.trainingLogs},active,event=>{const message=activityMessage(event.kind,event.code);if(message)send({type:'progress',message});});
-        send({type:'result',investigation:run.finalInvestigation});
+        const sessionId = await saveInvestigationSession(run.finalInvestigation);
+        send({type:'result',investigation:run.finalInvestigation,sessionId});
       }catch(cause){send({type:'error',message:cause instanceof AIServiceError?publicAIError(cause.code):'Investigation was unavailable or failed validation. Check configuration or try again.'});}
       finally{release();if(!closed){closed=true;try{output.close();}catch{}}}};
       void task();

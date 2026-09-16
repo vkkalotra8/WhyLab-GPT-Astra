@@ -96,7 +96,7 @@ Browser validation: all 29 checks passed against an AI-disabled local server wit
 
 ## Strategy follow-up: training-log observations
 
-Optional bounded pasted training logs now enter the autonomous investigation as unverified source-linked observations. Line references and source IDs survive diagnosis, export and repair context. Consent includes raw log text; evaluation CSVs remain required. Richer artifact uploads and structured epoch diagnostics remain pending. See [Training logs](TRAINING_LOGS.md).
+Optional bounded pasted training logs now enter the autonomous investigation as unverified source-linked observations. Line references and source IDs survive diagnosis, export and repair context. Consent includes raw artifact text; evaluation CSVs remain required. Bounded TXT, LOG, JSON and CSV artifacts now provide structured epoch diagnostics, while log-only investigations remain unsupported. See [Training logs](TRAINING_LOGS.md).
 
 Validation (2026-09-16): 327 tests, lint, type checking, production build and 30 browser checks passed. Browser checks used an AI-disabled production server and mocked provider responses; no paid calls were made. An initial development-server browser run timed out during cold compilation; the production retry passed.
 
@@ -109,3 +109,11 @@ exports, responsive overflow, form labels, storage-quota recovery and the
 built local API route. Screenshots and `browser-report.json` were written to
 the ignored `artifacts/` directory. The run used mocked browser provider
 responses and did not make paid calls; a deployed-host run remains separate.
+
+## Strategy follow-up: structured epoch diagnostics
+
+Training artifacts now use the deterministic parser to expose reported epoch history, conservative trend heuristics, and parser limitations in both the local preview and Astra?s bounded investigation context. These remain unverified observations rather than measured evaluation metrics. Validation: 358 tests, lint, type checking, production build, and 30 browser checks passed; no paid calls were made.
+
+## Strategy follow-up: local draft recovery
+
+The Astra workspace can now restore an explicitly saved local input draft after reload. Drafts exclude access tokens, consent, provider activity, results, repair state, and file handles; a restored draft requires fresh consent. See [Local draft recovery](LOCAL_DRAFT_RECOVERY.md). This is not durable asynchronous server execution. Validation: 358 tests, lint, type checking, production build, and 31 browser checks passed; no paid calls were made.

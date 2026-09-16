@@ -46,3 +46,22 @@ test('invalid logs reject before any provider call',async()=>{
  await assert.rejects(runInvestigator({objective:'Inspect',consent:true,accuracyParadoxGap:10,datasets:[dataset],trainingLogs:[{name:'bad',text:'\0'}]},async()=>{called=true;},new AbortController().signal));
  assert.equal(called,false);
 });
+
+test('structured CSV and JSON epoch artifacts preserve reported values and conservative trend findings',()=>{
+ const csv=ingestTrainingLog({name:'metrics.csv',text:'epoch,train_loss,val_loss\n1,0.8,0.5\n2,0.6,0.7\n3,0.4,0.9\n4,0.2,1.1'});
+ assert.equal(csv.diagnostics.history.length,4);
+ assert.equal(csv.diagnostics.history[3].metrics['Validation loss'],1.1);
+ assert.ok(csv.diagnostics.findings.some(f=>f.title==='Possible overfitting'));
+ assert.ok(csv.evidence.some(e=>e.description.includes('Heuristic: Possible overfitting')));
+ const json=ingestTrainingLog({name:'metrics.json',text:JSON.stringify({history:[{epoch:1,training:{loss:.8}},{epoch:2,training:{loss:.6}}]})});
+ assert.equal(json.diagnostics.history.length,2);
+ assert.equal(json.diagnostics.history[0].metrics['Training loss'],.8);
+ assert.ok(json.evidence.every(e=>e.kind==='observation'&&e.measurements.length===0));
+});
+test('parser warnings remain explicit when epoch history cannot support a trend claim',()=>{
+ const log=ingestTrainingLog({name:'restart.log',text:'epoch=2 train_loss=.8\nepoch=1 train_loss=.7'});
+ assert.equal(log.diagnostics.history.length,0);
+ assert.equal(log.diagnostics.findings.length,0);
+ assert.ok(log.diagnostics.warnings.some(w=>w.includes('merging runs')));
+ assert.ok(log.evidence.some(e=>e.description.includes('Parser limitation:')));
+});

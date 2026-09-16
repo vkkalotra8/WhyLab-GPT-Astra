@@ -1,0 +1,1352 @@
+You are a senior product designer, frontend architect, and senior Next.js/React engineer.
+
+You are working inside my existing project:
+
+WHYLAB — an AI incident investigator for machine-learning systems.
+
+IMPORTANT:
+This task is ONLY a frontend visual/UI/UX redesign.
+
+DO NOT change the application's working functionality.
+
+The existing application already contains important ML investigation functionality, Astra integration/workflows, file uploads, diagnostic analysis, investigation controls, Repair Lab behavior, dataset analysis, metrics, buttons, forms, state management, API calls, backend routes, data structures, calculations, and other logic.
+
+Your job is to make the existing product substantially more beautiful, modern, intuitive, beginner-friendly, polished, and Product-Hunt-ready WITHOUT changing how the application works.
+
+==================================================
+1. ABSOLUTE NON-NEGOTIABLE RULE
+==================================================
+
+DO NOT modify application behavior.
+
+You may modify:
+
+- layout
+- spacing
+- visual hierarchy
+- typography
+- colors
+- borders
+- shadows
+- radii
+- cards
+- section presentation
+- responsive styling
+- icons
+- visual states
+- buttons visually
+- form field styling
+- tabs visually
+- progress indicators visually
+- navigation appearance
+- empty states visually
+- loading-state presentation
+- information grouping
+- component composition when behavior remains identical
+- CSS/Tailwind/classes/theme tokens
+- purely presentational React components
+- accessibility-related styling/markup that does not change behavior
+
+You MUST NOT change:
+
+- APIs
+- API routes
+- OpenAI/Astra integration
+- prompts used by the investigation engine
+- tool schemas
+- statistical calculations
+- ML logic
+- threshold calculations
+- dataset parsing
+- CSV validation
+- upload behavior
+- state-management behavior
+- database logic
+- server-side logic
+- environment variables
+- authentication behavior
+- form submission behavior
+- button behavior
+- event handlers except where restructuring requires the exact same handler
+- existing functional workflows
+- metric values
+- calculations
+- business logic
+- investigation pipeline
+- repair logic
+- evidence generation logic
+- URLs/routes
+- component inputs/outputs unless required for purely presentational refactoring
+- working functionality of any kind
+
+If something already works, it MUST still work exactly the same after the redesign.
+
+Do not "improve" backend logic while doing this task.
+
+Do not fix unrelated code.
+
+Do not replace real functionality with mock data.
+
+Do not introduce hardcoded results.
+
+Do not remove features merely because they are difficult to redesign.
+
+==================================================
+2. FIRST UNDERSTAND THE PRODUCT
+==================================================
+
+Before editing anything, inspect the repository carefully.
+
+Understand:
+
+- framework and project structure
+- page hierarchy
+- routes
+- existing components
+- shared components
+- Tailwind/CSS setup
+- fonts
+- design tokens if present
+- layout architecture
+- responsive implementation
+- state management
+- API interactions
+- Astra investigation workflow
+- investigation components
+- evidence/result components
+- Repair Lab
+- Dataset Investigation
+- Case Diagnosis
+- Evidence Import
+- hero
+- navbar
+- footer
+- upload controls
+- input fields
+- result cards
+- charts/graphs
+- metric displays
+- CTA buttons
+
+Identify which files are PRESENTATIONAL and which contain BUSINESS/FUNCTIONAL LOGIC.
+
+Avoid touching functional files unless absolutely necessary for visual composition.
+
+Before implementing, briefly report:
+
+1. current frontend architecture
+2. files/components responsible for styling
+3. files containing sensitive functional logic that must not be changed
+4. visual redesign plan
+5. exact files you intend to modify
+
+Do NOT begin by rewriting the entire application.
+
+==================================================
+3. PRODUCT POSITIONING TO PRESERVE
+==================================================
+
+WhyLab should visually communicate:
+
+"An AI incident investigator for machine-learning systems."
+
+Core mental model:
+
+Model failure
+    ↓
+Evidence
+    ↓
+Hypothesis
+    ↓
+Experiment
+    ↓
+Diagnosis
+    ↓
+Repair
+    ↓
+Verification
+
+This must feel like an investigation workspace rather than:
+
+- a generic SaaS dashboard
+- a hacker terminal
+- a cybersecurity dashboard
+- a chatbot
+- a conventional admin panel
+- a data-science notebook
+- a classroom website
+
+It should feel like:
+
+"An intelligent ML laboratory where complex failures become understandable."
+
+The interface must work for:
+
+PRIMARY:
+- ML engineers
+- data scientists
+- AI engineers
+- researchers
+
+BUT ALSO BE APPROACHABLE FOR:
+- students
+- junior developers
+- people learning ML reliability
+
+A beginner should be able to visually understand:
+
+"What happened?"
+"Why is it a problem?"
+"What evidence proves it?"
+"What hypothesis is being tested?"
+"What did WhyLab test?"
+"What should I do next?"
+"Did the repair improve the model?"
+
+without needing to understand every ML term immediately.
+
+==================================================
+4. OVERALL DESIGN DIRECTION
+==================================================
+
+The current interface is too:
+
+- dark
+- dense
+- compressed
+- developer-terminal-like
+- text-heavy
+- visually flat
+- difficult to scan
+- intimidating for beginners
+
+Redesign it into a refined modern AI/ML investigation interface.
+
+Use a:
+
+"Modern Scientific Workbench + AI Investigation Lab"
+
+design language.
+
+Think:
+
+- premium AI developer product
+- scientific clarity
+- calm confidence
+- intelligent visual hierarchy
+- trustworthy analytics
+- educational accessibility
+- Product Hunt launch quality
+
+DO NOT make it overly playful.
+
+DO NOT use excessive gradients.
+
+DO NOT use neon cyberpunk styling.
+
+DO NOT use glassmorphism everywhere.
+
+DO NOT fill the UI with glowing borders.
+
+DO NOT make every card look equally important.
+
+DO NOT create a generic template-dashboard appearance.
+
+==================================================
+5. RECOMMENDED COLOR SYSTEM
+==================================================
+
+Move away from the almost entirely dark navy interface.
+
+Prefer a LIGHT-FIRST sophisticated scientific theme.
+
+Suggested direction:
+
+App background:
+#F7F9FC or similar soft neutral
+
+Primary surfaces:
+#FFFFFF
+
+Secondary surfaces:
+#F2F5F9
+
+Primary text:
+#101828 / dark slate
+
+Secondary text:
+#475467
+
+Muted text:
+#667085
+
+Borders:
+subtle cool gray
+
+Primary brand:
+deep navy / indigo
+
+Investigation / Astra accent:
+teal / cyan-green
+
+Success:
+calm green
+
+Warning:
+amber
+
+Critical:
+controlled coral/red
+
+Hypothesis / intelligence:
+violet/indigo where appropriate
+
+Use colors semantically.
+
+Examples:
+
+teal = investigation / active intelligence
+green = verified/supporting evidence
+amber = attention / uncertainty
+red = failure / critical metric
+violet = hypothesis / reasoning layer
+blue = informational analysis
+
+Do not overuse any accent color.
+
+Maintain excellent WCAG contrast.
+
+If the application already supports dark mode, preserve it, but make the new LIGHT theme the visual reference implementation.
+
+Do not break theme functionality if it already exists.
+
+==================================================
+6. TYPOGRAPHY
+==================================================
+
+The current typography feels too small and compressed.
+
+Create a clear type scale.
+
+Use the project's existing font if suitable.
+
+Otherwise only use a new font if it can be introduced cleanly without destabilizing the project.
+
+Aim for:
+
+Hero heading:
+48-64px desktop where appropriate
+
+Page titles:
+32-40px
+
+Section headings:
+22-28px
+
+Card titles:
+16-20px
+
+Body:
+14-16px
+
+Helper text:
+13-14px
+
+Tiny metadata should rarely go below 12px.
+
+Increase:
+
+- readability
+- line-height
+- whitespace
+- hierarchy
+
+Avoid excessive uppercase micro-labels.
+
+Use uppercase only for truly useful metadata or workflow stage labels.
+
+==================================================
+7. LAYOUT SYSTEM
+==================================================
+
+Create a consistent page shell.
+
+Recommended:
+
+max-width around 1200-1400px depending on existing app needs
+
+generous horizontal padding
+
+consistent section spacing
+
+clear 8px-based spacing rhythm
+
+Use spacing intentionally:
+
+4
+8
+12
+16
+24
+32
+48
+64
+80
+
+Create visual breathing room between major investigation stages.
+
+Avoid huge empty areas, but do not compress everything into dense panels.
+
+==================================================
+8. NAVIGATION REDESIGN
+==================================================
+
+Improve the current top navigation.
+
+It should contain:
+
+WhyLab branding
+primary navigation
+current investigation/workspace context where appropriate
+New Investigation CTA
+
+Make it feel lightweight and premium.
+
+Use:
+
+- clean border-bottom
+- subtle backdrop if appropriate
+- readable active states
+- clear CTA hierarchy
+
+Avoid an oversized navigation bar.
+
+Do not alter navigation behavior or routes.
+
+==================================================
+9. HERO / LANDING AREA
+==================================================
+
+The hero should immediately explain the product.
+
+Keep existing functionality and underlying content structure, but improve presentation.
+
+Desired visual hierarchy:
+
+small contextual badge:
+AI ML Reliability Investigator
+
+main message:
+Every failed model is trying to tell you something.
+
+supporting explanation
+
+primary CTA:
+Investigate a Model / existing equivalent action
+
+secondary CTA if already present
+
+Alongside it, use the existing diagnostic visual/graphic if available, but redesign its presentation rather than replacing functionality.
+
+The flagship case:
+
+"High accuracy. Missed malignant cases."
+
+should appear as a polished investigation preview/case-study card rather than a flat text block.
+
+Make the contradiction visually obvious:
+
+94.2% Accuracy
+but
+22.4% malignant recall
+
+if those values are already provided by the application.
+
+DO NOT invent metric values.
+
+==================================================
+10. BEGINNER-FRIENDLY UX PRINCIPLE
+==================================================
+
+This is extremely important.
+
+Do NOT remove advanced ML information.
+
+Instead, create TWO LEVELS OF VISUAL COMMUNICATION:
+
+Level 1:
+plain-English meaning
+
+Level 2:
+technical evidence
+
+Example:
+
+Instead of visually leading with:
+
+Balanced Accuracy: 51.7%
+
+lead with something like the existing result meaning if available:
+
+"Performance collapses when both classes are weighted equally"
+
+and show:
+
+Balanced accuracy
+51.7%
+
+under/alongside it.
+
+IMPORTANT:
+Do not fabricate explanatory text from nowhere if doing so could change product meaning.
+
+Use existing labels/descriptions where possible.
+
+You may improve purely presentational helper copy only when its meaning is unquestionably equivalent.
+
+For unfamiliar terms such as:
+
+- PR-AUC
+- balanced accuracy
+- leakage
+- covariate shift
+- calibration
+- threshold
+- false negatives
+- prevalence
+
+use visual hierarchy and existing helper text/tooltips where available.
+
+Do not implement new analytical logic.
+
+==================================================
+11. INVESTIGATION WORKSPACE
+==================================================
+
+This should become the visual centerpiece.
+
+Currently the page feels like a long series of similar rectangles.
+
+Create a coherent investigation workspace.
+
+Suggested organization:
+
+Investigation header
+    ↓
+Input / objective
+    ↓
+Evidence collection
+    ↓
+Investigation progress
+    ↓
+Findings
+    ↓
+Hypotheses
+    ↓
+Verification
+    ↓
+Repair
+    ↓
+Outcome
+
+Use clear workflow stage indicators.
+
+For investigation progress, show executed activity visually using:
+
+- completed states
+- running states
+- waiting states
+- evidence/result icons
+- compact timeline
+
+Do NOT display or simulate hidden chain-of-thought.
+
+Only display information that the app already legitimately exposes.
+
+==================================================
+12. "INVESTIGATE WITH ASTRA" CTA
+==================================================
+
+This is one of the most important actions in the product.
+
+Make it visually prominent without turning it into a glowing gimmick.
+
+Use:
+
+- strong primary styling
+- icon if appropriate
+- clear hover/focus/disabled/loading states
+- sufficient size
+- readable label
+
+Its hierarchy should be stronger than minor actions such as:
+
+clear
+download
+secondary upload actions
+reset
+etc.
+
+Do not change what the button does.
+
+==================================================
+13. FORM / UPLOAD REDESIGN
+==================================================
+
+Improve:
+
+- file inputs
+- textareas
+- objective fields
+- numeric inputs
+- checkboxes
+- labels
+- helper text
+- validation presentation
+- action buttons
+
+Inputs should have:
+
+- clear labels
+- comfortable vertical spacing
+- visible focus state
+- readable helper text
+- consistent heights
+- logical grouping
+
+File upload should look like an intentional drop zone.
+
+When a file is selected, make the selected-file state visually obvious.
+
+Do not change upload mechanics.
+
+==================================================
+14. CARD SYSTEM
+==================================================
+
+Create a small reusable card vocabulary instead of using the same visual treatment everywhere.
+
+For example:
+
+A. Standard card
+general content
+
+B. Metric card
+number + label + context
+
+C. Evidence card
+observation + source + status
+
+D. Hypothesis card
+hypothesis + confidence + supporting/weakening evidence
+
+E. Warning card
+critical issue
+
+F. Success/verified card
+confirmed result
+
+G. Action card
+recommended next step
+
+Use subtle differentiation.
+
+Do not turn every section into a bordered card.
+
+Use whitespace and typography where a card is unnecessary.
+
+==================================================
+15. METRICS
+==================================================
+
+Metrics should be extremely easy to scan.
+
+Use:
+
+large numeric value
+small label
+short interpretation
+comparison indicator when already available
+
+For comparisons such as:
+
+validation vs production
+before vs after repair
+
+use visually distinct side-by-side presentation.
+
+Use semantic colors carefully.
+
+Never rely on color alone to communicate meaning.
+
+Do not alter values.
+
+==================================================
+16. VISUALIZATIONS
+==================================================
+
+Preserve chart functionality and chart data.
+
+Improve only presentation:
+
+- surrounding layout
+- card framing
+- labels
+- legends
+- whitespace
+- typography
+- chart container sizing
+- axis readability where styling can be changed safely
+- tooltip styling if already implemented
+
+Charts should feel integrated into the design system.
+
+Never modify the underlying ML calculations simply to make charts prettier.
+
+==================================================
+17. EVIDENCE GRAPH
+==================================================
+
+If the Evidence Graph already exists, redesign it so the flow is immediately understandable.
+
+Visual conceptual sequence:
+
+Observation
+↓
+Hypothesis
+↓
+Test
+↓
+Result
+↓
+Repair
+
+Use semantic visual types:
+
+Observation = neutral/blue
+Hypothesis = violet
+Experiment/Test = teal
+Confirmed result = green
+Rejected/weakened = muted/red as appropriate
+Repair = indigo/primary
+
+Keep connections visually clean.
+
+Do not add fake evidence nodes.
+
+Do not alter graph data generation.
+
+If graph functionality does not currently exist, DO NOT implement it as part of this visual-only task.
+
+Simply leave existing functionality intact.
+
+==================================================
+18. REPAIR LAB
+==================================================
+
+Treat the Repair Lab as one of the visual highlights of the entire product.
+
+It should clearly communicate:
+
+CURRENT STATE
+→
+RECOMMENDATION
+→
+EXPECTED / MEASURED RESULT
+
+Use a strong before/after layout.
+
+For threshold-related controls:
+
+- make the current threshold visible
+- make proposed threshold visually distinguishable
+- organize cost inputs clearly
+- present tradeoffs cleanly
+- emphasize the main action
+
+Do NOT modify:
+
+threshold logic
+optimization logic
+FN/FP calculations
+cost calculations
+Astra recommendation logic
+application behavior
+
+Only redesign presentation.
+
+==================================================
+19. DATASET INVESTIGATION
+==================================================
+
+The "Look inside your data" area should feel approachable.
+
+Visually organize:
+
+1. Training dataset
+2. Validation dataset
+3. Production dataset
+
+Use three consistent upload cards.
+
+Clearly indicate:
+
+Empty
+Uploaded
+Analyzed
+Error
+
+using existing state only.
+
+Make dataset profiling results easier to scan.
+
+For tables:
+
+- improve row spacing
+- clear headers
+- subtle borders
+- sticky header only if safe
+- readable numbers
+- status badges
+- responsive horizontal scrolling when necessary
+
+Do not alter data parsing/profile calculations.
+
+==================================================
+20. "WHAT WENT WRONG?" EXPERIENCE
+==================================================
+
+Redesign the first investigation/action card so a beginner immediately understands what they should do.
+
+Strong visual sequence:
+
+1. Upload evidence
+2. Choose analysis type
+3. Investigate failure
+
+Use step indicators if useful.
+
+Do not change the workflow.
+
+==================================================
+21. RESPONSIVENESS
+==================================================
+
+The new frontend must work well on:
+
+Desktop:
+1440+
+1280
+1024
+
+Tablet:
+768
+
+Mobile:
+390
+375
+
+Avoid:
+
+- horizontal page overflow
+- unreadably small charts
+- clipped controls
+- giant hero text on mobile
+- metric cards that overflow
+- broken tables
+- unusable form grids
+
+Where multi-column areas become too narrow, stack them intelligently.
+
+==================================================
+22. ACCESSIBILITY
+==================================================
+
+Improve accessibility while preserving functionality.
+
+Requirements:
+
+- visible keyboard focus
+- semantic button/link distinction
+- accessible form labels
+- sufficient text contrast
+- status indicators not communicated by color alone
+- sensible heading hierarchy
+- existing aria attributes preserved
+- avoid introducing inaccessible clickable divs
+
+==================================================
+23. MICROINTERACTIONS
+==================================================
+
+Use subtle motion only when it improves comprehension.
+
+Examples:
+
+- 150-250ms hover transitions
+- button state transitions
+- card hover where clickable
+- progress state transition
+- collapsible transition if already functional
+- subtle number/result reveal if safe
+
+Do NOT add heavy animation libraries just for decoration.
+
+Do NOT create distracting animations.
+
+Respect prefers-reduced-motion.
+
+==================================================
+24. DESIGN TOKENS
+==================================================
+
+Where possible, centralize visual decisions.
+
+Create/rework semantic tokens for:
+
+background
+surface
+surface-muted
+border
+text-primary
+text-secondary
+text-muted
+brand
+investigation
+hypothesis
+success
+warning
+danger
+
+Also standardize:
+
+radius-sm
+radius-md
+radius-lg
+
+shadow-sm
+shadow-md
+
+spacing
+
+Do not scatter arbitrary hex values across many components if the existing stack supports theme variables.
+
+==================================================
+25. COMPONENT REUSE
+==================================================
+
+Where useful, create purely-presentational reusable components such as:
+
+PageContainer
+SectionHeader
+Panel
+MetricCard
+StatusBadge
+StepIndicator
+EvidenceItem
+EmptyState
+UploadZone
+InfoCallout
+InvestigationStatus
+BeforeAfterMetric
+
+ONLY create these if they reduce duplication.
+
+Do not perform a huge architectural refactor.
+
+==================================================
+26. ICONOGRAPHY
+==================================================
+
+Use a consistent icon set that is already installed.
+
+If Lucide is already available, use it.
+
+Do not add a large icon library unnecessarily.
+
+Icons should support comprehension.
+
+Examples:
+
+Upload
+Database
+Search
+Activity
+Flask/experiment
+Brain/sparkles only when appropriate
+Shield/check
+Alert
+Chart
+Wrench
+Download
+
+Do not overload the UI with icons.
+
+==================================================
+27. REMOVE CURRENT VISUAL PROBLEMS
+==================================================
+
+Specifically improve:
+
+- extremely dark page background
+- too many nearly identical dark cards
+- tiny uppercase labels
+- weak separation between primary and secondary information
+- extremely small body text
+- cramped fields
+- weak CTA hierarchy
+- too much information visible with equal importance
+- insufficient whitespace
+- weak grouping of investigation stages
+- visually intimidating ML terminology
+- excessive long-page monotony
+- low discoverability of the main investigation workflow
+- tiny footer/navigation text
+- unclear metric prominence
+- dense table presentation
+- form sections that resemble developer configuration panels
+
+==================================================
+28. DO NOT DUMB DOWN WHYLAB
+==================================================
+
+Beginner-friendly does NOT mean childish.
+
+Do not:
+
+- add cartoon mascots
+- use childish illustrations
+- oversimplify scientific information
+- hide meaningful diagnostics
+- replace technical metrics with vague language
+- make the product look like a tutorial game
+
+The goal is:
+
+advanced capability
++
+clear explanation
++
+strong information architecture
+
+==================================================
+29. PRODUCT HUNT SCREENSHOT QUALITY
+==================================================
+
+Important sections should look excellent in screenshots.
+
+Especially:
+
+1. hero
+2. flagship failure case
+3. investigation workspace
+4. evidence/hypothesis result
+5. before/after Repair Lab
+6. dataset investigation
+
+Someone viewing a screenshot for 3 seconds should be able to understand:
+
+- there is an ML failure
+- WhyLab investigates it
+- evidence identifies the cause
+- an experiment verifies it
+- a repair can improve it
+
+==================================================
+30. IMPLEMENTATION STRATEGY — WORK ONE STEP AT A TIME
+==================================================
+
+DO NOT redesign the entire frontend in one uncontrolled pass.
+
+Work incrementally.
+
+PHASE 0 — AUDIT
+Inspect code and report:
+- current structure
+- UI stack
+- sensitive functional files
+- proposed visual system
+- files to change
+
+STOP and show me the audit before proceeding if this environment supports interactive approval.
+
+If working autonomously, continue only after clearly separating UI files from logic.
+
+PHASE 1 — FOUNDATION
+Update:
+- global colors
+- typography
+- page background
+- containers
+- spacing
+- design tokens
+- shared buttons/inputs/cards
+
+Then:
+- run lint
+- run TypeScript checks
+- run existing tests
+- build the project
+
+Fix only errors caused by your changes.
+
+PHASE 2 — NAVIGATION + HERO
+Redesign only:
+- top navigation
+- hero
+- flagship case preview
+
+Test again.
+
+PHASE 3 — INVESTIGATION WORKSPACE
+Redesign:
+- investigation inputs
+- Astra CTA
+- investigation status
+- evidence presentation
+- hypothesis/result presentation
+
+Test again.
+
+PHASE 4 — REPAIR LAB
+Redesign Repair Lab visual hierarchy.
+
+Test again.
+
+PHASE 5 — DATASET INVESTIGATION
+Redesign:
+- dataset upload cards
+- profiling area
+- tables
+- empty states
+
+Test again.
+
+PHASE 6 — REMAINING SECTIONS
+Apply the visual system consistently to remaining sections.
+
+PHASE 7 — RESPONSIVE + ACCESSIBILITY POLISH
+Check desktop/tablet/mobile and accessibility.
+
+PHASE 8 — REGRESSION REVIEW
+Verify that NO functional behavior changed.
+
+==================================================
+31. REGRESSION PROTECTION
+==================================================
+
+After every phase:
+
+Run whatever commands are appropriate for the repository, such as:
+
+npm run lint
+npm run typecheck
+npm test
+npm run build
+
+Use the actual scripts defined in package.json.
+
+Do not assume commands exist.
+
+Also inspect the git diff.
+
+Watch carefully for accidental changes involving:
+
+fetch(
+axios
+OpenAI
+Astra
+API handlers
+server actions
+database code
+calculations
+schemas
+validation logic
+useEffect logic
+state logic
+event handlers
+upload parsing
+metric calculations
+
+If such logic changed unintentionally, REVERT IT.
+
+==================================================
+32. DIFF DISCIPLINE
+==================================================
+
+Keep changes narrowly scoped.
+
+Avoid:
+
+- mass formatting unrelated files
+- rewriting existing logic
+- renaming large amounts of code
+- moving files unnecessarily
+- dependency upgrades
+- framework upgrades
+- changing package versions
+- replacing libraries
+- changing configuration unrelated to visual styling
+
+Do not modify package-lock.json unless a genuinely necessary frontend dependency is added.
+
+Prefer using existing dependencies.
+
+==================================================
+33. CONTENT PRESERVATION
+==================================================
+
+Do not silently change:
+
+- metric definitions
+- scientific terminology
+- investigation claims
+- measured results
+- case-study values
+- diagnosis confidence
+- cost assumptions
+- warning language
+- evidence provenance
+
+Do not invent:
+
+- performance improvements
+- model results
+- clinical impact
+- financial impact
+- Astra outputs
+
+Presentation may change.
+
+Meaning may not.
+
+==================================================
+34. QUALITY STANDARD
+==================================================
+
+The final UI should feel comparable in polish to modern high-quality developer/AI products.
+
+Aim for qualities associated with products such as:
+
+- Linear: hierarchy and precision
+- Vercel: typography and restraint
+- Stripe: information clarity
+- Notion: approachable complexity
+- modern scientific/data products: analytical trust
+
+DO NOT copy any product directly.
+
+Create a distinct WhyLab identity.
+
+==================================================
+35. VISUAL IDENTITY
+==================================================
+
+WhyLab should become recognizable through:
+
+- restrained navy/indigo foundation
+- teal investigation accent
+- clean scientific typography
+- meaningful status colors
+- structured evidence presentation
+- generous whitespace
+- investigation-oriented visual language
+
+The interface should communicate:
+
+TRUST
+CLARITY
+INVESTIGATION
+EVIDENCE
+VERIFICATION
+
+==================================================
+36. COMPLETION CRITERIA
+==================================================
+
+The redesign is complete only when:
+
+[ ] Existing functionality works exactly as before
+
+[ ] No API behavior changed
+
+[ ] No Astra behavior changed
+
+[ ] No ML/statistical logic changed
+
+[ ] No existing working action was removed
+
+[ ] Hero is substantially more polished
+
+[ ] Primary CTA is obvious
+
+[ ] Investigation workflow is easy to understand
+
+[ ] Beginners can distinguish evidence, hypothesis, test, and repair
+
+[ ] Metrics are easier to scan
+
+[ ] Repair Lab has strong before/after hierarchy
+
+[ ] Dataset Investigation is easier to understand
+
+[ ] Forms are consistent
+
+[ ] Empty/loading/error states look intentional
+
+[ ] Responsive layout works
+
+[ ] Accessibility is improved
+
+[ ] Build succeeds
+
+[ ] Existing tests pass
+
+[ ] No console errors introduced
+
+[ ] No dead buttons introduced
+
+[ ] No fake metrics/data introduced
+
+[ ] git diff contains primarily presentational changes
+
+==================================================
+37. FINAL RESPONSE FORMAT
+==================================================
+
+When the work is complete, give me:
+
+1. Summary of the visual redesign
+2. Files changed
+3. Components created
+4. Components restyled
+5. Design tokens/theme introduced
+6. Responsive improvements
+7. Accessibility improvements
+8. Commands/tests executed
+9. Build/test results
+10. Confirmation that backend/API/ML/Astra logic was not intentionally changed
+11. Any remaining UI issues you recommend addressing later
+
+Also explicitly state:
+
+"Functional regression review completed."
+
+If you cannot confidently say that, explain exactly what still needs verification.
+
+==================================================
+FINAL PRINCIPLE
+==================================================
+
+Treat the existing application as a working machine.
+
+You are redesigning the machine's CONTROL PANEL.
+
+You are NOT redesigning the machine itself.
+
+Preserve every working capability.
+
+Improve only how the user sees, understands, and interacts with those capabilities.
+
+Start by auditing the repository.
+Do not blindly begin rewriting components.
