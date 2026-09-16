@@ -9,4 +9,7 @@ for (const name of assets) {
 }
 const thumbnail = await readFile(resolve(root, 'whylab-thumbnail.svg'), 'utf8');
 if (!/width="1270"/.test(thumbnail) || !/height="760"/.test(thumbnail)) throw new Error('Thumbnail must be 1270×760.');
-console.log(JSON.stringify({ assets, thumbnail: '1270x760', status: 'valid' }, null, 2));
+const pngBuffer = await readFile(resolve(root, 'whylab-thumbnail.png'));
+if (!pngBuffer || pngBuffer.length === 0) throw new Error('PNG thumbnail missing or empty.');
+console.log(JSON.stringify({ assets, thumbnail: '1270x760', pngThumbnail: `${pngBuffer.length} bytes`, status: 'valid' }, null, 2));
+

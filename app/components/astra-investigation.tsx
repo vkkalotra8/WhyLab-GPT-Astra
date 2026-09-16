@@ -23,17 +23,80 @@ export default function AstraInvestigation(){
   const [csv,setCsv]=useState(''),[files,setFiles]=useState<File[]>([]),[positive,setPositive]=useState('1'),[negative,setNegative]=useState('0');
   const [objective,setObjective]=useState('Investigate why classification accuracy may be misleading.'),[gap,setGap]=useState('10'),[consent,setConsent]=useState(false),[specialist,setSpecialist]=useState<'general'|'metrics'|'data_quality'|'shift'|'leakage'>('general'),[steering,setSteering]=useState('');
   const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[events,setEvents]=useState<string[]>([]),[result,setResult]=useState<Investigation|null>(null),[saveDraft,setSaveDraft]=useState(false),[sessionId,setSessionId]=useState<string|null>(null),[restoreSessionId,setRestoreSessionId]=useState('');
+  const [isRecordedExample, setIsRecordedExample] = useState(false);
   const controller=useRef<AbortController|null>(null),generation=useRef(0),heading=useRef<HTMLHeadingElement>(null),fileInput=useRef<HTMLInputElement>(null);
   const cancelActive=useCallback(()=>{controller.current?.abort();generation.current++;},[]);
   useEffect(()=>{const draft=readDraft();if(!draft)return;let active=true;queueMicrotask(()=>{if(!active)return;setCsv(draft.csv);setTrainingLog(draft.trainingLog);setTrainingLogName(draft.trainingLogName);setPositive(draft.positive);setNegative(draft.negative);setObjective(draft.objective);setGap(draft.gap);setSpecialist(draft.specialist);setSteering(draft.steering);setSaveDraft(true);setNotice('Local draft restored. Reconfirm consent before starting; file uploads must be selected again.');});return()=>{active=false;};},[]);
   useEffect(()=>{if(!saveDraft)return;try{localStorage.setItem(draftKey,JSON.stringify({csv,trainingLog,trainingLogName,positive,negative,objective,gap,specialist,steering} satisfies LocalDraft));}catch{queueMicrotask(()=>setNotice('This browser could not save the local draft.'));}},[saveDraft,csv,trainingLog,trainingLogName,positive,negative,objective,gap,specialist,steering]);
-  const discardDraft=useCallback(()=>{try{localStorage.removeItem(draftKey);}catch{}setSaveDraft(false);setNotice('Saved local draft discarded.');},[]);
-  useEffect(()=>{const c=new AbortController();fetch('/api/investigate',{signal:c.signal,cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error();const body=await r.json();if(typeof body.available!=='boolean')throw new Error();setAvailable(body.available);}).catch(()=>{if(!c.signal.aborted)setConfigError(true);});return()=>{c.abort();cancelActive();};},[cancelActive]);
-  function clear(){controller.current?.abort();generation.current++;setBusy(false);setResult(null);setSessionId(null);setRepairDatasets([]);setRepairDatasetId('');setEvents([]);setNotice('');setConsent(false);}
+  useEffect(()=>{
+    const c=new AbortController();
+    let timedOut=false;
+    const timer=setTimeout(()=>{timedOut=true;c.abort();},6000);
+    fetch('/api/investigate',{signal:c.signal,cache:'no-store'}).then(async r=>{
+      if(!r.ok)throw new Error();
+      const body=await r.json();
+      if(typeof body.available!=='boolean')throw new Error();
+      setAvailable(body.available);
+    }).catch(()=>{
+      if(timedOut||!c.signal.aborted)setConfigError(true);
+    }).finally(()=>{
+      clearTimeout(timer);
+    });
+    return()=>{clearTimeout(timer);c.abort();cancelActive();};
+  },[cancelActive]);
+  function clear(){controller.current?.abort();generation.current++;setBusy(false);setResult(null);setSessionId(null);setRepairDatasets([]);setRepairDatasetId('');setEvents([]);setNotice('');setConsent(false);setIsRecordedExample(false);}
   async function loadFlagship(){
     clear();setFiles([]);if(fileInput.current)fileInput.current.value='';setBusy(true);
     try{const response=await fetch('/fixtures/melanoma-synthetic.csv',{cache:'no-store'});if(!response.ok)throw new Error();setCsv(await response.text());setPositive('1');setNegative('0');setGap('10');setObjective('Investigate why the synthetic melanoma classifier\'s 92% accuracy hides malignant-case failures. Choose diagnostics, falsify competing explanations where the supplied evidence permits, and identify what remains unverified.');setTrainingLogName('training-log.txt');setTrainingLog('epoch=1 train_loss=0.80 val_loss=0.82\nepoch=2 train_loss=0.55 val_loss=0.61\nepoch=3 train_loss=0.34 val_loss=0.52\nepoch=4 train_loss=0.22 val_loss=0.58\nepoch=5 train_loss=0.14 val_loss=0.71');setNotice('Flagship evidence loaded for Astra. Review it, confirm consent, then start the live investigation.');}
     catch{setNotice('Flagship fixture could not be loaded. Retry or select the CSV manually.');}finally{setBusy(false);}
+  }
+  async function loadRecordedExample(){
+    clear();setFiles([]);if(fileInput.current)fileInput.current.value='';setBusy(true);
+    try{
+      const [csvRes,recordRes]=await Promise.all([
+        fetch('/fixtures/melanoma-synthetic.csv',{cache:'no-store'}),
+        fetch('/fixtures/recorded-astra-investigation.json',{cache:'no-store'})
+      ]);
+      if(!csvRes.ok||!recordRes.ok)throw new Error('Recorded investigation fixtures unavailable.');
+      const csvText=await csvRes.text();
+      const recordedJson=await recordRes.json();
+      const validated=validateFinalInvestigation(recordedJson);
+
+      setCsv(csvText);
+      setPositive('1');
+      setNegative('0');
+      setGap('10');
+      setObjective(validated.objective);
+      setTrainingLogName('training-log.txt');
+      setTrainingLog('epoch=1 train_loss=0.80 val_loss=0.82\nepoch=2 train_loss=0.55 val_loss=0.61\nepoch=3 train_loss=0.34 val_loss=0.52\nepoch=4 train_loss=0.22 val_loss=0.58\nepoch=5 train_loss=0.14 val_loss=0.71');
+
+      const metadata=validated.datasets[0];
+      const source=validated.sources.find(s=>s.id===metadata?.sourceId)||validated.sources[0];
+      if(metadata&&source){
+        const parsed=ingestEvaluationCsv(csvText,metadata.name,{labels:{positive:'1',negative:'0'},datasetId:metadata.id,sourceId:source.id});
+        const bound:EvaluationDataset={...parsed,source};
+        setRepairDatasets([bound]);
+        setRepairDatasetId(bound.metadata.id);
+      }
+
+      setResult(validated);
+      setIsRecordedExample(true);
+      setEvents([
+        'Dataset parsed: 100 evaluation rows',
+        'Training log observations registered (unverified)',
+        'Astra investigation started',
+        'Hypothesis proposed: Severe class imbalance creates accuracy paradox',
+        'Diagnostic executed: compute_classification_metrics',
+        'Counterfactual test executed: accuracy_paradox supported (gap: 32.0 pp)',
+        'Final synthesis completed: verified evidence-linked diagnosis'
+      ]);
+      setNotice('Recorded Astra investigation loaded! This is a pre-computed, verified example requiring no deployment token or API key.');
+      requestAnimationFrame(()=>heading.current?.focus());
+    }catch(error){
+      setNotice(error instanceof Error?error.message:'Could not load recorded Astra investigation.');
+    }finally{
+      setBusy(false);
+    }
   }
   async function start(){
     if(!consent||!Number.isFinite(Number(gap))||Number(gap)<.001||Number(gap)>100){setNotice('Confirm consent and enter a gap between 0.001 and 100 percentage points.');return;}
@@ -83,6 +146,24 @@ export default function AstraInvestigation(){
       </span>
     </div>
     <p className="description">Give Astra evaluation predictions. It autonomously chooses diagnostics, tests hypotheses, and returns a verified diagnosis linked to measured evidence.</p>
+    
+    <div className="astra-demo-banner">
+      <div className="astra-demo-banner-body">
+        <div className="astra-demo-banner-title">
+          <span className="demo-pill">✨ Instant Demo · No Token Required</span>
+          <strong>Explore a fully worked Astra investigation</strong>
+        </div>
+        <p>See Astra’s multi-step autonomous diagnostic reasoning, hypothesis tests, and verified evidence graph without setting up an API token or incurring OpenAI costs.</p>
+      </div>
+      <button
+        type="button"
+        className="btn-recorded-example"
+        disabled={busy}
+        onClick={() => void loadRecordedExample()}
+      >
+        View recorded investigation
+      </button>
+    </div>
     
     {available === false && (
       <p role="status" className="astra-warning">
@@ -136,6 +217,7 @@ export default function AstraInvestigation(){
       </div>
 
       <div className="case-actions evidence-presets">
+        <button type="button" onClick={() => void loadRecordedExample()}>✨ View recorded Astra investigation (no token)</button>
         <button type="button" onClick={() => void loadFlagship()}>Load flagship melanoma example</button>
         <button type="button" onClick={() => {
           clear();
@@ -314,6 +396,14 @@ export default function AstraInvestigation(){
 
     {result && (
       <section className="astra-result">
+        {isRecordedExample && (
+          <div className="recorded-run-badge-box" role="status">
+            <span className="badge-tag">RECORDED INVESTIGATION</span>
+            <span>
+              <strong>Example output:</strong> Pre-computed, verified investigation result generated by Astra on the melanoma dataset. Fully interactive linked repair available below — no API token or OpenAI key required.
+            </span>
+          </div>
+        )}
         <div className="result-header-card">
           <span className="eyebrow cyan">FINAL SYNTHESIS</span>
           <h3 ref={heading} tabIndex={-1}>Diagnosis: {result.diagnosis!.status}</h3>
