@@ -45,7 +45,9 @@ test('duplicate calls reuse evidence and stop rather than looping forever',async
 test('threshold candidate order does not bypass deduplication',async()=>{const d=dataset();const base={datasetId:d.metadata.id,positiveLabel:'1',costs:null};const run=await runInvestigator(request(d),scripted([['threshold_sweep',{...base,thresholds:[0,.5,1]}],['threshold_sweep',{...base,thresholds:[1,.5,0]}],h=>{assert.equal(last(h).cached,true);return ['finish_investigation',{reason:'sufficient_evidence',evidenceIds:last(h).data.evidence.map(e=>e.id),missingEvidence:[]}];}]),signal());assert.equal(run.status,'completed');assert.equal(run.toolCalls.length,1);});
 test('unsupported tools, unknown dataset IDs and invalid arguments never produce evidence',async()=>{const d=dataset();for(const [name,args] of [['exec',{cmd:'bad'}],['compute_classification_metrics',{datasetId:'dataset_missing',positiveLabel:'1'}],['profile_dataset',{datasetId:d.metadata.id,targetColumn:'y_true',extra:true}]]){let i=0;const run=await runInvestigator(request(d),async()=>response(name,args,`call_${++i}`),signal());assert.equal(run.stopReason,'error_limit');assert.equal(run.evidence.length,0);}});
 test('hallucinated evidence cannot ground a proposal or completion',async()=>{const d=dataset();for(const name of ['propose_hypothesis','finish_investigation']){let i=0;const args=name==='propose_hypothesis'?{kind:'other',statement:'Test',evidenceIds:['evidence_fake'],missingEvidence:[]}:{reason:'sufficient_evidence',evidenceIds:['evidence_fake'],missingEvidence:[]};const run=await runInvestigator(request(d),async()=>response(name,args,`call_${++i}`),signal());assert.equal(run.stopReason,'error_limit');assert.equal(run.hypotheses.length,0);assert.equal(run.completion,null);}});
-test('malformed output, refusal, incomplete responses and multiple calls fail closed',async()=>{const d=dataset();for(const raw of [null,{status:'incomplete',output:[]},{status:'completed',output:[{type:'message',content:[{type:'refusal'}]}]},{status:'completed',output:[]},{status:'completed',output:[...response(...metrics(d)).output,...response(...metrics(d),'call_2').output]}]){const run=await runInvestigator(request(d),async()=>raw,signal());assert.equal(run.status,'stopped');assert.equal(run.toolResults.length,0);}});
+const control=id=>response('finish_investigation',{reason:'sufficient_evidence',evidenceIds:['evidence_x'],missingEvidence:[]},id).output;
+const profile=(d,id)=>response('profile_dataset',{datasetId:d.metadata.id,targetColumn:'y_true'},id).output;
+test('malformed output, refusal, incomplete responses and unbatchable call groups fail closed',async()=>{const d=dataset();for(const raw of [null,{status:'incomplete',output:[]},{status:'completed',output:[{type:'message',content:[{type:'refusal'}]}]},{status:'completed',output:[]},{status:'completed',output:[...control('call_1'),...control('call_2')]},{status:'completed',output:[...profile(d,'call_1'),...control('call_2')]},{status:'completed',output:[...profile(d,'call_1'),...profile(d,'call_2'),...profile(d,'call_3'),...profile(d,'call_4')]}]){const run=await runInvestigator(request(d),async()=>raw,signal());assert.equal(run.status,'stopped');assert.equal(run.toolResults.length,0);}});
 test('duplicate provider call IDs are rejected',async()=>{const d=dataset();const run=await runInvestigator(request(d),async()=>response(...metrics(d),'same'),signal());assert.equal(run.stopReason,'invalid_call');assert.equal(run.toolResults.length,1);});
 test('round and tool budgets cannot be bypassed with distinct operations',async()=>{const d=dataset();const steps=[metrics(d),['profile_dataset',{datasetId:d.metadata.id,targetColumn:'y_true'}]];let run=await runInvestigator(request(d),scripted(steps),signal(),{...INVESTIGATOR_LIMITS,rounds:1});assert.equal(run.stopReason,'round_limit');run=await runInvestigator(request(d),scripted(steps),signal(),{...INVESTIGATOR_LIMITS,tools:1});assert.equal(run.stopReason,'tool_limit');assert.equal(run.toolResults.length,1);});
 test('expensive calls and unsupported assumptions produce failed results without measured evidence',async()=>{const d=dataset();const run=await runInvestigator(request(d),scripted([['threshold_sweep',{datasetId:d.metadata.id,positiveLabel:'1',thresholds:Array.from({length:52},(_,i)=>i/51),costs:null}]]),signal(),{...INVESTIGATOR_LIMITS,rounds:1});assert.equal(run.toolResults[0].status,'error');assert.equal(run.evidence.length,0);});
@@ -58,3 +60,87 @@ test('reasoning items are retained when returning measured tool results',async()
 test('dataset and limit snapshots cannot change while awaiting provider decisions',async()=>{const d=dataset(),options={...INVESTIGATOR_LIMITS,rounds:1};const run=await runInvestigator(request(d),async()=>{d.rows.forEach(row=>row.predicted='1');options.rounds=100;return response(...metrics(d));},signal(),options);assert.equal(run.stopReason,'round_limit');assert.equal(run.toolResults[0].output.metrics.find(m=>m.name==='accuracy').value,.9);});
 test('counterfactual rejects fabricated hypotheses and changed caller criteria',async()=>{const d=dataset();const run=await runInvestigator(request(d),scripted([metrics(d),h=>['propose_hypothesis',{kind:'accuracy_paradox',statement:'Imbalance',evidenceIds:last(h).evidence.map(e=>e.id),missingEvidence:[]}],h=>['run_counterfactual_test',{datasetId:d.metadata.id,positiveLabel:'1',hypothesisId:last(h).hypothesis.id,method:'accuracy_paradox',seed:0,criterion:{metric:'accuracy_paradox_gap',operator:'at_least',value:20,unit:'percentage_points'}}]]),signal(),{...INVESTIGATOR_LIMITS,rounds:3});assert.equal(run.experiments.length,0);assert.equal(run.toolCalls.length,1);const args={datasetId:d.metadata.id,positiveLabel:'1',hypothesisId:'hypothesis_invented',method:'accuracy_paradox',seed:0,criterion:{metric:'accuracy_paradox_gap',operator:'at_least',value:10,unit:'percentage_points'}};assert.equal((await runInvestigator(request(d),scripted([['run_counterfactual_test',args]]),signal(),{...INVESTIGATOR_LIMITS,rounds:1})).experiments.length,0);});
 test('PSI configuration is retained with its result for reproducibility',async()=>{const a=dataset(),b=dataset();const run=await runInvestigator({...request(a),datasets:[a,b]},scripted([['run_drift_tests',{referenceDatasetId:a.metadata.id,comparisonDatasetId:b.metadata.id,columns:['feature_x'],method:'psi',bins:2}],finish]),signal());assert.equal(run.artifacts[0].resultId,run.toolResults[0].id);assert.deepEqual(run.artifacts[0].details[0].cutPoints,[49.5]);});
+
+test('a partially met conjunctive prediction weakens its hypothesis and survives canonical replay',async()=>{
+ const d=dataset();let resultId;
+ const criterion={kind:'all_of',criteria:[{metric:'accuracy',operator:'at_least',value:.8,unit:'ratio'},{metric:'recall',operator:'at_least',value:.5,unit:'ratio'}]};
+ const run=await runInvestigator({...request(d),objective:'Investigate whether headline accuracy reflects minority performance'},scripted([
+  metrics(d),
+  h=>{resultId=last(h).result.id;return ['propose_hypothesis',{kind:'other',statement:'Headline accuracy and minority recall are both acceptable.',evidenceIds:last(h).evidence.map(e=>e.id),missingEvidence:['Measure recall against the declared floor']}];},
+  h=>['evaluate_diagnostic_falsification',{hypothesisId:last(h).hypothesis.id,resultId,prediction:'Accuracy is at least 0.8 and recall is at least 0.5.',criterion}],
+  h=>['finish_investigation',{reason:'sufficient_evidence',evidenceIds:[last(h).evidence.id],missingEvidence:[]}],
+ ]),signal());
+ assert.equal(run.status,'completed',JSON.stringify({stopReason:run.stopReason,events:run.events}));
+ assert.equal(run.experiments.length,1);assert.equal(run.experiments[0].outcome,'weakens');
+ assert.deepEqual(run.evidence.at(-1).measurements.map(m=>[m.name,m.value]),[['accuracy',.9],['recall',0]]);
+ const final=buildFinalInvestigation(run);
+ assert.equal(final.hypotheses[0].status,'weakened');
+ assert.equal(final.diagnosis.status,'inconclusive');
+ assert.equal(final.diagnosis.primaryHypothesisId,null);
+ assert.deepEqual(validateFinalInvestigation(final),final);
+});
+
+test('replay rejects a tampered conjunctive outcome and tampered measurement evidence',async()=>{
+ const d=dataset();let resultId;
+ const criterion={kind:'all_of',criteria:[{metric:'accuracy',operator:'at_least',value:.8,unit:'ratio'},{metric:'recall',operator:'at_least',value:.5,unit:'ratio'}]};
+ const run=await runInvestigator({...request(d),objective:'Investigate whether headline accuracy reflects minority performance'},scripted([
+  metrics(d),
+  h=>{resultId=last(h).result.id;return ['propose_hypothesis',{kind:'other',statement:'Headline accuracy and minority recall are both acceptable.',evidenceIds:last(h).evidence.map(e=>e.id),missingEvidence:['Measure recall against the declared floor']}];},
+  h=>['evaluate_diagnostic_falsification',{hypothesisId:last(h).hypothesis.id,resultId,prediction:'Accuracy is at least 0.8 and recall is at least 0.5.',criterion}],
+  h=>['finish_investigation',{reason:'sufficient_evidence',evidenceIds:[last(h).evidence.id],missingEvidence:[]}],
+ ]),signal());
+ const final=buildFinalInvestigation(run);
+ // Promote the weakened result to a supported one, keeping the hypothesis status internally consistent
+ // so that only the replay of the recorded measurements can detect the change.
+ const promoted=structuredClone(final);
+ promoted.experiments[0].outcome='supports';
+ promoted.hypotheses[0].status='supported';
+ promoted.diagnosis.primaryHypothesisId=promoted.hypotheses[0].id;
+ assert.throws(()=>validateFinalInvestigation(promoted),/outcome disagrees with its measured criterion/);
+ const restated=structuredClone(final);
+ restated.evidence.at(-1).measurements=[{name:'recall',status:'measured',value:.9,unit:'ratio',sampleSize:100}];
+ assert.throws(()=>validateFinalInvestigation(restated),/evidence differs from its measured result/);
+});
+
+const fc=(name,args,id)=>({type:'function_call',call_id:id,name,arguments:JSON.stringify(args)});
+// Fresh provider state per run so repeated investigations are genuinely independent.
+const batchingProvider=d=>{let turns=0;return async history=>{
+ turns++;
+ if(turns===1)return {status:'completed',output:[
+  fc('profile_dataset',{datasetId:d.metadata.id,targetColumn:'y_true'},'call_a'),
+  fc('compute_classification_metrics',{datasetId:d.metadata.id,positiveLabel:'1'},'call_b'),
+  fc('threshold_sweep',{datasetId:d.metadata.id,positiveLabel:'1',thresholds:[0,.5,1],costs:null},'call_c'),
+ ]};
+ const evidence=history.filter(x=>x.type==='function_call_output').flatMap(x=>JSON.parse(x.output).evidence??[]);
+ return {status:'completed',output:[fc('finish_investigation',{reason:'sufficient_evidence',evidenceIds:evidence.map(e=>e.id),missingEvidence:[]},'call_done')],turns};
+};};
+
+test('independent diagnostics batch into one provider turn and stay reproducible',async()=>{
+ const d=dataset();let turns=0;
+ const provider=batchingProvider(d),counted=async h=>{turns++;return provider(h);};
+ const run=await runInvestigator(request(d),counted,signal());
+ assert.equal(run.status,'completed',JSON.stringify({stopReason:run.stopReason,events:run.events}));
+ assert.equal(turns,2,'three diagnostics cost one provider turn, not three');
+ assert.equal(run.toolResults.length,3);
+ assert.deepEqual(run.toolCalls.map(c=>c.tool),['profile_dataset','compute_classification_metrics','threshold_sweep']);
+ assert.ok(run.toolResults.every(r=>r.status==='completed'));
+ // Declaration order, not completion order, drives the recorded sequence.
+ assert.deepEqual(run.events.filter(e=>e.kind==='tool_requested').map(e=>e.code),['profile_dataset','compute_classification_metrics','threshold_sweep']);
+ const other=dataset();
+ const again=await runInvestigator(request(other),batchingProvider(other),signal());
+ assert.deepEqual(again.events.map(e=>[e.kind,e.code]),run.events.map(e=>[e.kind,e.code]));
+});
+
+test('a batch cannot exceed the tool budget or bypass per-call validation',async()=>{
+ const d=dataset();let n=0;
+ const three=()=>({status:'completed',output:[
+  fc('profile_dataset',{datasetId:d.metadata.id,targetColumn:'y_true'},`call_a${++n}`),
+  fc('compute_classification_metrics',{datasetId:d.metadata.id,positiveLabel:'1'},`call_b${n}`),
+  fc('compute_classification_metrics',{datasetId:'dataset_missing',positiveLabel:'1'},`call_c${n}`),
+ ]});
+ const run=await runInvestigator(request(d),async()=>three(),signal(),{...INVESTIGATOR_LIMITS,tools:2});
+ assert.equal(run.stopReason,'tool_limit');
+ assert.equal(run.toolResults.length,2,'the budget stops mid-batch rather than after it');
+ // The unknown dataset in the third slot never produces evidence even when its batch-mates succeed.
+ assert.ok(run.toolResults.every(r=>r.status==='completed'));
+});

@@ -166,3 +166,34 @@ durable async continuation remains an infrastructure follow-up.
 - Added docs/SUBMISSION_READINESS.md with positioning, a 60-90 second demo,
   launch assets, current Product Hunt schedule, and explicit release gates.
 - GitHub CLI authentication is invalid locally; hosted CI remains unverified.
+
+2026-09-16 winning-readiness code track (see docs/NEXT_IMPLEMENTATION_PLAN.md):
+- Conjunctive falsification predictions: implemented. The experiment criterion is now a
+  backward-compatible union of the existing single criterion and {kind:"all_of",criteria:[2-4]}.
+  All components met supports, some met weakens, none met rejects, any unevaluable component is
+  inconclusive for the whole prediction. This gives the general engine the weaken outcome that
+  previously existed only in the accuracy-paradox counterfactual, using the same component rule.
+  Final-report replay recomputes the outcome and rejects tampered outcomes and restated evidence.
+  criterionSchema itself is unchanged, so repair candidates and comparisons are unaffected.
+  See docs/GENERAL_FALSIFICATION.md.
+- Batched diagnostic calls: implemented. Up to three allowlisted diagnostics may arrive in one
+  provider turn; control operations still arrive alone. The deterministic engines are synchronous,
+  so this removes provider round-trips rather than parallelizing computation, and is documented as
+  such. Execution follows declaration order and stays reproducible. Each call is independently
+  validated, deduplicated and counted against the tool budget. See docs/INVESTIGATOR_LOOP.md.
+- Executable operational remedies: implemented. deriveCiPolicy builds a runnable ciPolicySchema
+  gate from measured passing comparisons that round-trips through evaluateCiPolicy unedited;
+  thresholds are the measured values and no tolerance is invented. incidentIssueMarkdown renders a
+  GitHub-issue body. Both rebuild derived fields from the canonical record. Without a passing
+  measured comparison no gate is produced. See docs/INCIDENT_REPORT.md.
+- Repair tools inside the autonomous loop: NOT implemented, deliberately. The loop forbids cost
+  policies (tool-registry.ts, investigator-tools.ts) because costs are a user assumption requiring
+  explicit assumption evidence, and repair-candidates.ts requires exactly that evidence. An
+  autonomous repair tool would therefore need the model to invent error costs, contradicting the
+  project boundary and the strategy credibility rule. The connected Repair Lab already satisfies
+  the repair-loop requirement with user-declared costs and explicit application. Revisit after
+  launch as a design decision about who declares costs, not as a missing feature.
+
+Validation for the above: 356 tests (was 343), lint, TypeScript, Next.js production build, and 30
+browser checks against the production server on port 3110. No paid provider calls; the browser run
+used mocked provider responses. Live Astra access remains blocked on billing and is unchanged.
