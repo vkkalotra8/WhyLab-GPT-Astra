@@ -1,4 +1,6 @@
 ﻿'use client';
+import { ingestTrainingLog, trainingLogSchema } from '../lib/investigation/training-logs';
+import TrainingLogPreview from './training-log-preview';
 import RepairLab from './repair-lab';
 import { ingestEvaluationCsv, type EvaluationDataset } from '../lib/investigation/evaluation-ingestion';
 import ChallengeReview from './challenge-review';
@@ -12,6 +14,7 @@ const sample='y_true,y_pred,y_probability,site\n'+Array.from({length:100},(_,i)=
 export default function AstraInvestigation(){
   const [repairDatasets,setRepairDatasets]=useState<EvaluationDataset[]>([]),[repairDatasetId,setRepairDatasetId]=useState('');
   const [available,setAvailable]=useState<boolean|null>(null),[configError,setConfigError]=useState(false);
+  const [trainingLog,setTrainingLog]=useState('');
   const [csv,setCsv]=useState(''),[files,setFiles]=useState<File[]>([]),[positive,setPositive]=useState('1'),[negative,setNegative]=useState('0');
   const [objective,setObjective]=useState('Investigate why classification accuracy may be misleading.'),[gap,setGap]=useState('10'),[consent,setConsent]=useState(false);
   const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[events,setEvents]=useState<string[]>([]),[result,setResult]=useState<Investigation|null>(null);
@@ -26,8 +29,10 @@ export default function AstraInvestigation(){
       const selected=files.length?await Promise.all(files.map(async f=>{if(f.size>2000000||!f.name.toLowerCase().endsWith('.csv'))throw new Error('Choose CSV files up to 2 MB each.');return {name:f.name,text:await f.text()};})):[{name:'pasted-evaluation.csv',text:csv}];
       if(c.signal.aborted)return;
       if(!selected[0]?.text.trim())throw new Error('Choose evaluation CSV files or paste predictions.');
+      const trainingLogs=trainingLog.trim()?[trainingLogSchema.parse({name:'training-log.txt',text:trainingLog})]:[];
+      for(const log of trainingLogs)ingestTrainingLog(log);
       const completed:Investigation[]=[];
-      const response=await fetch('/api/investigate',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({objective,files:selected,labels:{positive,negative},accuracyParadoxGap:Number(gap),consent:true})});
+      const response=await fetch('/api/investigate',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({objective,trainingLogs,files:selected,labels:{positive,negative},accuracyParadoxGap:Number(gap),consent:true})});
       await readInvestigationStream(response,event=>{if(generation.current!==id)return;if(event.type==='progress')setEvents(items=>[...items,event.message]);else if(event.type==='error')throw new Error(event.message);else completed.push(event.investigation);});
       const final=completed[0];
       if(generation.current===id&&final){
@@ -58,10 +63,14 @@ export default function AstraInvestigation(){
       <p className="description">Required columns: <code>y_true, y_pred, y_probability</code>. Probability must refer to the positive label. Up to 2 MB per file and 20,000 rows total. Add separate evaluation/reference files for drift comparisons.</p>
       {files.length>0&&<p>{files.map(f=>f.name).join(', ')}</p>}
       <label>Or paste evaluation CSV<textarea value={csv} disabled={files.length>0} onChange={e=>{clear();setCsv(e.target.value);}} spellCheck={false} placeholder="y_true,y_pred,y_probability"/></label>
-      <div className="case-actions"><button type="button" onClick={()=>{clear();setFiles([]);if(fileInput.current)fileInput.current.value='';setCsv(sample);setPositive('1');setNegative('0');}}>Load synthetic prediction example</button><button type="button" onClick={()=>{clear();setFiles([]);setCsv('');if(fileInput.current)fileInput.current.value='';}}>Clear evidence</button></div>
+      <div className="case-actions"><button type="button" onClick={()=>{clear();setFiles([]);if(fileInput.current)fileInput.current.value='';setCsv(sample);setPositive('1');setNegative('0');}}>Load synthetic prediction example</button><button type="button" onClick={()=>{clear();setFiles([]);setCsv('');setTrainingLog('');if(fileInput.current)fileInput.current.value='';}}>Clear evidence</button></div>
+      <label>Optional training logs<textarea value={trainingLog} onChange={e=>{clear();setTrainingLog(e.target.value);}} spellCheck={false} aria-describedby="training-log-help" placeholder="epoch=1 train_loss=0.8 val_loss=0.9"/></label>
+      <p id="training-log-help" className="description">Paste up to 16 KB and 200 lines. Log text is sent to OpenAI as unverified observations with line references. Evaluation CSVs are still required; logs alone cannot verify a cause.</p>
+      <TrainingLogPreview text={trainingLog} />
+      <button type="button" onClick={()=>{clear();setTrainingLog('epoch=1 train_loss=0.80 val_loss=0.85\nepoch=2 train_loss=0.40 val_loss=0.70\nepoch=3 train_loss=0.15 val_loss=0.95\nepoch=4 train_loss=0.10 val_loss=1.1\nepoch=5 train_loss=0.08 val_loss=1.2');}}>Load synthetic training logs</button>
       <div className="astra-settings"><label>Positive label<input value={positive} maxLength={128} onChange={e=>{clear();setPositive(e.target.value);}}/></label><label>Negative label<input value={negative} maxLength={128} onChange={e=>{clear();setNegative(e.target.value);}}/></label><label>Accuracy-paradox gap (percentage points)<input type="number" min="0.001" max="100" step="any" value={gap} onChange={e=>{clear();setGap(e.target.value);}}/></label></div>
       <label>Investigation objective<input value={objective} maxLength={4000} onChange={e=>{clear();setObjective(e.target.value);}}/></label>
-      <label className="astra-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>I agree to send these CSVs to the WhyLab server and their metadata and diagnostic results (which may include category values) to OpenAI.</label>
+      <label className="astra-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>I agree to send these CSVs to the WhyLab server and their metadata, diagnostic results (which may include category values), and any training-log text to OpenAI.</label>
     </fieldset>
     <div className="case-actions"><button className="investigate-button" onClick={()=>void start()} disabled={busy||available!==true||!consent}>{busy?'Investigation running…':'INVESTIGATE WITH ASTRA'}</button>{busy&&<button onClick={()=>controller.current?.abort()}>Cancel investigation</button>}</div>
     <p role="status" className="description">{notice}</p>

@@ -24,7 +24,7 @@ export async function POST(request:Request){
     if(timedOut||request.signal.aborted)throw new Error('Upload interrupted');
     const bytes=new Uint8Array(size);let offset=0;for(const p of parts){bytes.set(p,offset);offset+=p.length;}
     payload=investigationUploadSchema.parse(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)));
-  }catch{release();return error('Provide consent, valid settings, and one to three CSV files up to 2 MB each.',400);}
+  }catch{release();return error('Provide consent, valid settings, one to three CSV files up to 2 MB each, and optional logs up to 16 KB / 200 lines.',400);}
   if(!isAIConfigured()){release();return error('Astra is not configured. Set WHYLAB_AI_ENABLED, OPENAI_API_KEY and OPENAI_MODEL on the server.',503);}
   let datasets;
   try{datasets=payload.files.map(file=>ingestEvaluationCsv(file.text,file.name,{labels:payload.labels}));if(datasets.reduce((n,d)=>n+d.rows.length,0)>20000)throw new Error('Row limit');}
@@ -35,8 +35,9 @@ export async function POST(request:Request){
       const send=(value:unknown)=>{if(closed||active.aborted)return;try{output.enqueue(encoder.encode(JSON.stringify(value)+'\n'));}catch{closed=true;controller.abort();}};
       const task=async()=>{try{
         for(const d of datasets)send({type:'progress',message:`Dataset parsed: ${d.metadata.rowCount} evaluation rows`});
+        if(payload.trainingLogs.length)send({type:'progress',message:'Training log observations registered (unverified)'});
         send({type:'progress',message:'Astra investigation started'});
-        const run=await investigateWithOpenAI({objective:payload.objective,consent:true,accuracyParadoxGap:payload.accuracyParadoxGap,datasets},active,event=>{const message=activityMessage(event.kind,event.code);if(message)send({type:'progress',message});});
+        const run=await investigateWithOpenAI({objective:payload.objective,consent:true,accuracyParadoxGap:payload.accuracyParadoxGap,datasets,trainingLogs:payload.trainingLogs},active,event=>{const message=activityMessage(event.kind,event.code);if(message)send({type:'progress',message});});
         send({type:'result',investigation:run.finalInvestigation});
       }catch{send({type:'error',message:'Investigation was unavailable or failed validation. Check configuration or try again.'});}
       finally{release();if(!closed){closed=true;try{output.close();}catch{}}}};

@@ -84,3 +84,15 @@ The flagship and additional case studies now include measured classroom exercise
 ## Strategy follow-up: connected investigation and repair
 
 Astra results now retain matching submitted evaluation data and expose an embedded Repair Lab. Application appends assumptions, tools, evidence, repairs and comparisons to the original investigation; parent graphs and exports update together. Repeated repairs preserve history. See [Connected repair](CONNECTED_REPAIR.md). Validation: 316 tests, lint, type checking, production build and 29 browser checks passed. Browser provider responses were mocked and the test server had AI disabled; no paid API call was made. Persistent model context and live model validation remain separate follow-ups.
+
+## Strategy follow-up: structured repair context
+
+Linked Astra repair planning now receives validated diagnosis, hypotheses, evidence, verification history and prior repair comparisons on both provider turns. Consent discloses this context; invalid, mismatched or oversized context is rejected before provider access. See [Repair context](REPAIR_CONTEXT.md). Validation: 322 tests, lint, type checking and production build passed. Provider tests use mocks; no paid calls were made. Live demonstration remains unverified.
+
+Browser validation: all 29 checks passed against an AI-disabled local server with mocked provider responses. The runner emitted the existing Node module-type warning, surfaced by PowerShell as NativeCommandError; no browser assertion failed.
+
+## Strategy follow-up: training-log observations
+
+Optional bounded pasted training logs now enter the autonomous investigation as unverified source-linked observations. Line references and source IDs survive diagnosis, export and repair context. Consent includes raw log text; evaluation CSVs remain required. Richer artifact uploads and structured epoch diagnostics remain pending. See [Training logs](TRAINING_LOGS.md).
+
+Validation (2026-09-16): 327 tests, lint, type checking, production build and 30 browser checks passed. Browser checks used an AI-disabled production server and mocked provider responses; no paid calls were made. An initial development-server browser run timed out during cold compilation; the production retry passed.

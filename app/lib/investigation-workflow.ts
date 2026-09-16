@@ -1,9 +1,15 @@
+import { trainingLogSchema } from './investigation/training-logs.ts';
 ﻿import { array, literal, number, object, schema, text } from './investigation/schema.ts';
 import { validateFinalInvestigation } from './investigation/final-diagnosis.ts';
 const csv = schema<string>((v) => { if (typeof v !== 'string' || !v.trim() || new TextEncoder().encode(v).length > 2000000) throw new Error('Each CSV must contain at most 2 MB of UTF-8 text.'); return v; });
-export const investigationUploadSchema = object({
+const uploadSchema = object({
   objective: text, consent: literal(true), accuracyParadoxGap: number(0.001, 100),
+  trainingLogs: array(trainingLogSchema, 0, 1),
   labels: object({ positive: text, negative: text }), files: array(object({ name: text, text: csv }), 1, 3),
+});
+export const investigationUploadSchema = schema(value => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return uploadSchema.parse(value);
+  return uploadSchema.parse({ trainingLogs: [], ...value });
 });
 export const activityLabels: Record<string, string> = {
   profile_dataset: 'Dataset profile and prevalence measured', compute_classification_metrics: 'Classification metrics measured',

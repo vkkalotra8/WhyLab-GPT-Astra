@@ -89,10 +89,19 @@ STRATEGY FOLLOW-UP (beyond the scoped milestone checklist)
   Embedded Repair Lab retains original dataset and investigation IDs and appends
   candidate, assumption, measurement and comparison records. See docs/CONNECTED_REPAIR.md.
 - Live GPT-6 Astra investigation and repair demonstration: not yet validated.
-- Persistent structured Astra context across diagnosis and repair: remains.
-- Training-log/richer-artifact ingestion into the autonomous loop: remains.
+- Explicit structured Astra context across diagnosis and repair: implemented.
+  322 tests, lint, type checking, production build and 29 browser checks passed
+  (2026-09-16); existing Node module-type warning persists.
+  Both repair provider turns receive validated diagnosis, evidence, hypotheses
+  and verification history; no paid calls. This is not persistent hidden reasoning.
+- Training-log ingestion into the autonomous loop: partially implemented.
+  Optional bounded pasted logs become source-linked unverified observations.
+  Richer artifact uploads, structured epoch diagnostics and log-only runs remain.
+  327 tests, lint, type checking, build and 30 browser checks passed; no paid calls.
+  See docs/TRAINING_LOGS.md.
 - Broader falsification protocols beyond the accuracy-paradox test: remains.
 - Public deployment, paid-endpoint access/usage controls and hosted CI: remain.
 - Product positioning, launch assets and final submission-rule verification: remain.
 
-Next step: structured diagnosis context in Astra repair planning, then deliberate live-demo validation.
+Next step: deliberate live-demo validation when API usage is authorized;
+structured epoch diagnostics and richer artifacts remain implementation follow-ups.
