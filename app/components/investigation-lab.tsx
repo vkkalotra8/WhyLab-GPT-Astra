@@ -135,10 +135,28 @@ export default function InvestigationLab() {
         }, 800);
     }
 
-    function example() {
+    async function example(autoRun: boolean | React.MouseEvent = true) {
+        const shouldRun = typeof autoRun === "boolean" ? autoRun : true;
         handleNavClick("examples");
         choose(2);
         document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" });
+        if (shouldRun) {
+            invalidate();
+            const current = request.current;
+            setReading(true);
+            const controller = new AbortController();
+            parserController.current = controller;
+            try {
+                const parsed = await runIngestion<import("../lib/evidence").Evidence>("analyze", [{ text: sample, name: "Example logs" }], controller.signal);
+                if (current !== request.current) return;
+                setEvidence(parsed);
+                setStage(0);
+            } catch (cause) {
+                if (current === request.current) setError(cause instanceof Error ? cause.message : "Unable to read this file. Try exporting it as UTF-8 text.");
+            } finally {
+                if (current === request.current) setReading(false);
+            }
+        }
     }
 
     function reset() {
@@ -192,7 +210,7 @@ export default function InvestigationLab() {
             type="button"
             className={activeNav === "examples" ? "nav-active" : undefined}
             disabled={busy}
-            onClick={example}
+            onClick={() => void example(true)}
           >
             Examples
           </button>
@@ -214,6 +232,17 @@ export default function InvestigationLab() {
               <span>Evidence, not guesswork</span>
               <span>Scientific clarity</span>
               <span>Built for curious engineers</span>
+            </div>
+            <div className="hero-distinction-banner" role="note">
+              <span className="distinction-item">
+                <strong className="distinction-tag tag-local">Local deterministic analysis</strong>
+                <span className="distinction-copy">Free, instant, runs completely in your browser without API keys.</span>
+              </span>
+              <span className="distinction-divider" aria-hidden="true">·</span>
+              <span className="distinction-item">
+                <strong className="distinction-tag tag-astra">Astra-powered investigation</strong>
+                <span className="distinction-copy">Autonomous AI diagnostics requiring your own API/deployment token.</span>
+              </span>
             </div>
             <div className="hero-actions">
               <a className="hero-primary" href="#astra-lab">
@@ -346,7 +375,19 @@ export default function InvestigationLab() {
                   </>
                 ) : (
                   <div className="logs-wrap">
-                    <label htmlFor="logs">{tab === 2 ? "IMAGE CLASSIFIER · SAMPLE LOGS" : "TRAINING LOGS & METRICS"}</label>
+                    <div className="logs-label-row">
+                      <label htmlFor="logs">{tab === 2 ? "IMAGE CLASSIFIER · SAMPLE LOGS" : "TRAINING LOGS & METRICS"}</label>
+                      {tab === 2 && (
+                        <button
+                          type="button"
+                          className="btn-text-run"
+                          disabled={busy}
+                          onClick={() => void example(true)}
+                        >
+                          ⚡ Run sample diagnosis (1-click)
+                        </button>
+                      )}
+                    </div>
                     <textarea
                       id="logs"
                       value={logs}
@@ -422,8 +463,8 @@ export default function InvestigationLab() {
               </div>
               <div className="case-bottom">
                 <span>3 hypotheses. A path to understanding.</span>
-                <button disabled={busy} onClick={example}>
-                  Use this example <Icon type="arrow" />
+                <button disabled={busy} onClick={() => void example(true)}>
+                  Run sample diagnosis (1-click) <Icon type="arrow" />
                 </button>
               </div>
             </section>

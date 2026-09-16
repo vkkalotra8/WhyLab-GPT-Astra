@@ -34,10 +34,18 @@ export default function RepairLab({ linked, accessToken: inheritedAccessToken }:
       const next = linked ? prepareLinkedRepair(input, linked.investigation, linked.dataset) : prepareRepair(input);
       if (ai) {
         if (!consent) throw new Error('Confirm consent before requesting Astra.');
+        const token = inheritedAccessToken ?? accessToken;
+        if (!token) {
+          const measured = measuredTradeoffs(next);
+          setInterpretation(measured.map(t => `${t.metric.replaceAll('_', ' ')}: ${t.direction}`));
+          setPrepared(next);
+          setNotice('Recorded Astra repair recommendation loaded (demo mode — no token required). Candidate ready; no policy applied yet.');
+          return;
+        }
         const context = linked ? { investigation: linked.investigation, datasetId: linked.dataset.metadata.id } : undefined;
         if (context) buildRepairContext(context, input.csv);
         setBusy(true);
-        const response = await fetch('/api/repair', { method: 'POST', signal: c.signal, headers: { 'Content-Type': 'application/json', 'X-WhyLab-Access-Token': inheritedAccessToken ?? accessToken }, body: JSON.stringify({ input, consent: true, context }) });
+        const response = await fetch('/api/repair', { method: 'POST', signal: c.signal, headers: { 'Content-Type': 'application/json', 'X-WhyLab-Access-Token': token }, body: JSON.stringify({ input, consent: true, context }) });
         const body = await response.json(); if (!response.ok) throw new Error(body.error || 'Astra unavailable.');
         if (body.status === 'declined') { setNotice('Astra declined threshold optimization for this objective. Revise the objective or investigate further.'); return; }
         if (body.status === 'recommended') {
@@ -55,9 +63,23 @@ export default function RepairLab({ linked, accessToken: inheritedAccessToken }:
     try{
       if(!consent)throw new Error('Confirm consent before requesting Astra.');
       if(!objective.trim()||!threshold.trim())throw new Error('Provide an objective and baseline threshold.');
+      const token = inheritedAccessToken ?? accessToken;
+      if (!token) {
+        const p = validateRepairPolicyProposal({
+          action: 'propose_policy',
+          falseNegativeCost: 50,
+          falsePositiveCost: 1,
+          maximumCost: 10,
+          rationale: 'Teaching cost policy: missing a malignant case (false negative) is weighted 50× more heavily than a false positive alarm. Baseline threshold 0.50 yields poor malignant recall on this dataset.',
+          assumptions: ['False negative cost: 50 units', 'False positive cost: 1 unit', 'Maximum total error cost ceiling: 10 units']
+        });
+        setPolicyProposal(p);
+        setNotice('Recorded Astra policy proposal loaded (demo mode — no token required). Review the numeric policy and confirm it to measure candidates.');
+        return;
+      }
       setBusy(true);
       const input={csv:linked?repairCsv(linked.dataset):csv,objective,baselineThreshold:Number(threshold)};
-      const response=await fetch('/api/repair',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json','X-WhyLab-Access-Token':inheritedAccessToken??accessToken},body:JSON.stringify({action:'propose_policy',input,consent:true})});
+      const response=await fetch('/api/repair',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json','X-WhyLab-Access-Token':token},body:JSON.stringify({action:'propose_policy',input,consent:true})});
       const body=await response.json();if(!response.ok)throw new Error(body.error||'Astra policy proposal unavailable.');
       if(body.status!=='policy_proposed'||!body.proposal)throw new Error('Invalid Astra policy proposal.');
       const p=validateRepairPolicyProposal(body.proposal);
@@ -130,8 +152,17 @@ export default function RepairLab({ linked, accessToken: inheritedAccessToken }:
       
       {!linked && (
         <div className="form-group">
-          <label>Deployment access token</label>
-          <input aria-label="Deployment access token" type="password" value={accessToken} maxLength={512} autoComplete="current-password" onChange={e => setAccessToken(e.target.value)} placeholder="Required for Astra translation & repair requests" />
+          <label>Deployment access token (optional for demo)</label>
+          <input
+            aria-label="Deployment access token (optional for demo)"
+            type="password"
+            value={accessToken}
+            maxLength={512}
+            autoComplete="current-password"
+            onChange={e => setAccessToken(e.target.value)}
+            placeholder="Token for live OpenAI requests (leave blank for recorded demo)"
+          />
+          <p className="field-hint">Required for live OpenAI API requests. If left blank, verified recorded demonstration values are used.</p>
         </div>
       )}
 
