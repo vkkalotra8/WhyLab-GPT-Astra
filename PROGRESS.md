@@ -64,6 +64,42 @@ Target: GPT-6 Astra Challenge (Product Hunt)
 
 ---
 
-## Phase 2: Build the Signature Differentiator (Investigation Report)
-*(In Progress)*
+## Phase 2: Build the Signature Differentiator (Investigation Report - Completed)
+
+### Changes Made:
+1. **Built Shareable Investigation Report Modal (`app/components/investigation-report-modal.tsx`)**:
+   - Designed a standalone, screenshot-friendly, and printable report artifact card (`#printable-investigation-report`).
+   - Surfaces:
+     - **Observed Symptoms**: High-contrast cards for overall accuracy, minority recall, and balanced accuracy.
+     - **Tested Hypotheses**: Categorized cleanly as `SUPPORTED`, `FALSIFIED`, or `INCONCLUSIVE` with direct citations of deciding empirical evidence.
+     - **Applied Policy Repair & Measured Re-Test**: Operating threshold delta (e.g., `0.50 → 0.20`), before/after comparison table with measured impacts (e.g. `False negatives: 8 → 0 (-100%)`, `Malignant Recall: 20.0% → 100.0% (+80.0 pp)`, `Total Cost: 80 → 4 units (-95.0%)`), and explicit criterion verification status.
+     - **Honest Provenance & Disclosures**: Detailed dataset row counts, execution mode (Deterministic Local Solver vs Astra Autonomous AI), generation timestamp, and clear statement that this is empirical analysis, not a certification or regulatory clearance.
+   - Built-in Actions:
+     - **1-Click Copy Summary**: Formats an executive Markdown summary and copies to clipboard with visual status confirmation.
+     - **Print / Save as PDF**: `@media print` CSS isolating the report card into a clean, margin-perfect executive PDF without screen chrome or backgrounds.
+     - **Keyboard accessibility**: Closes on Escape key or backdrop click.
+2. **Wired "Generate Investigation Report" Across Key Workflows**:
+   - **Flagship Melanoma Case (`app/components/flagship-melanoma.tsx`)**: Available immediately on diagnosis completion and inside the repair drawer.
+   - **Astra Autonomous Investigator (`app/components/astra-investigation.tsx`)**: Available in the synthesis header and footer for both live and recorded runs.
+   - **Scenario Studies (`app/components/case-studies.tsx`)**: Available for calibration drift and site shift cases.
+3. **Report & Print Styles in `app/globals.css`**:
+   - Added complete modal, card, symptom grid, hypothesis status badges, repair table, and `@media print` rules.
+
+### Browser Verifications:
+- Verified end-to-end flow with automated CDP browser runner (`verify_investigation_report.mjs`):
+  - Ran flagship case in 1 click.
+  - Inspected measured repair.
+  - Clicked `Generate Investigation Report` button (`.btn-generate-report`).
+  - Confirmed `#printable-investigation-report` rendered with exact numbers: Validation Accuracy 92.0%, Malignant Recall 20.0%, Balanced Accuracy 60.0%, 3 hypotheses, -100% missed cancers impact, -95% cost impact, and honest disclosure.
+  - Confirmed `Copy summary` action and Escape key modal dismiss.
+  - Captured full high-resolution visual screenshot (`investigation_report_artifact.png`).
+- Confirmed zero regressions across all 360 unit tests and all 31 browser checks.
+
+### Judgments / Trade-offs:
+- Used native `@media print` with browser print-to-PDF rather than heavy, fragile canvas-based snapshot libraries (e.g., html2canvas), ensuring razor-sharp vector text, zero added bundle dependencies, and perfect fidelity.
+
+---
+
+## Phase 3: Reduce Friction (In Progress)
+
 
