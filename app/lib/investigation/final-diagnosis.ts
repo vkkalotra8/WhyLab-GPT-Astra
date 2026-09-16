@@ -31,10 +31,12 @@ export function validateFinalInvestigation(value: unknown): Investigation {
       if(assessment.outcome!==experiment.outcome)fail(experiment.id,'diagnostic falsification outcome disagrees with its measured criterion');
       if(experiment.seed!==null)fail(experiment.id,'diagnostic falsification is deterministic and requires a null seed');
       if(experiment.method!==`diagnostic_falsification_v1:${result.tool}:${result.id}`)fail(experiment.id,'diagnostic falsification method does not identify its result');
-      for(const eid of experiment.evidenceIds){const evidence=v.evidence.find(e=>e.id===eid)!;const expected=assessment.measurement?[assessment.measurement]:[];if(evidence.kind!=='measurement'||evidence.provenance.kind!=='experiment'||evidence.provenance.experimentId!==experiment.id||!equal(evidence.measurements,expected))fail(eid,'diagnostic falsification evidence differs from its measured result');}
+      for(const eid of experiment.evidenceIds){const evidence=v.evidence.find(e=>e.id===eid)!;if(evidence.kind!=='measurement'||evidence.provenance.kind!=='experiment'||evidence.provenance.experimentId!==experiment.id||!equal(evidence.measurements,assessment.measurements))fail(eid,'diagnostic falsification evidence differs from its measured result');}
       continue;
     }
     if (!call || call.tool !== 'run_counterfactual_test' || !result || result.status !== 'completed' || result.tool !== 'run_counterfactual_test') fail(experiment.id, 'verification lacks a completed counterfactual result');
+    // Conjunctive criteria belong to the general falsification path; the counterfactual declares one gap.
+    if ('kind' in experiment.criterion) fail(experiment.id, 'counterfactual verification requires a single declared criterion');
     if (call.input.hypothesisId !== experiment.hypothesisId || result.output.hypothesisId !== experiment.hypothesisId || !equal(call.input.criterion, experiment.criterion) || call.input.seed !== experiment.seed || result.output.outcome !== experiment.outcome || !equal(result.output.evidenceIds, experiment.evidenceIds)) fail(experiment.id, 'experiment differs from executed call/result');
     if (experiment.criterion.metric !== 'accuracy_paradox_gap' || experiment.criterion.operator !== 'at_least' || experiment.criterion.unit !== 'percentage_points' || experiment.criterion.value <= 0 || experiment.criterion.value > 100) fail(experiment.id, 'unsupported verification criterion');
     if (v.hypotheses.find(h => h.id === experiment.hypothesisId)?.statement !== accuracyStatement) fail(experiment.id, 'counterfactual verifies only the accuracy-paradox prediction');

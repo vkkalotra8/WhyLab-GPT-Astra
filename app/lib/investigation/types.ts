@@ -1,5 +1,5 @@
 import { array, count, enumeration, fail, literal, nullable, object, refine, text, timestamp, union, unique, type Infer } from './schema.ts';
-import { confidenceSchema, criterionSchema, evidenceIds, id, measurementSchema, policySchema } from './primitives.ts';
+import { confidenceSchema, criterionSchema, evidenceIds, experimentCriterionSchema, id, measurementSchema, policySchema } from './primitives.ts';
 import { diagnosticToolCallSchema, diagnosticToolResultSchema } from './tool-contracts.ts';
 export const sourceSchema = object({ id: id('source'), kind: enumeration(['uploaded_file', 'pasted_logs', 'user_assumption', 'fixture']), name: text, capturedAt: timestamp, contentDigest: nullable(refine(text, (v, p) => { if (!/^sha256:[a-f0-9]{64}$/.test(v))
         fail(p, 'expected sha256 digest'); })) });
@@ -15,7 +15,7 @@ export const evidenceSchema = object({
     provenance: union(object({ kind: literal('source'), sourceId: id('source'), datasetId: nullable(id('dataset')), rows: nullable(object({ first: count, last: count })), columns: array(text) }), object({ kind: literal('tool_result'), resultId: id('result') }), object({ kind: literal('experiment'), experimentId: id('experiment') })),
 });
 export const hypothesisSchema = object({ id: id('hypothesis'), statement: text, status: enumeration(['proposed', 'supported', 'weakened', 'rejected', 'confirmed']), confidence: confidenceSchema, evidence: array(object({ evidenceId: id('evidence'), relationship: enumeration(['supports', 'weakens', 'rejects']), rationale: text })), unresolvedQuestions: array(text) });
-export const verificationExperimentSchema = object({ id: id('experiment'), hypothesisId: id('hypothesis'), prediction: text, method: text, seed: nullable(count), callIds: refine(array(id('call')), unique), criterion: criterionSchema, status: enumeration(['planned', 'completed', 'failed']), outcome: nullable(enumeration(['supports', 'weakens', 'rejects', 'inconclusive'])), evidenceIds, limitations: array(text) });
+export const verificationExperimentSchema = object({ id: id('experiment'), hypothesisId: id('hypothesis'), prediction: text, method: text, seed: nullable(count), callIds: refine(array(id('call')), unique), criterion: experimentCriterionSchema, status: enumeration(['planned', 'completed', 'failed']), outcome: nullable(enumeration(['supports', 'weakens', 'rejects', 'inconclusive'])), evidenceIds, limitations: array(text) });
 const repairBase = { id: id('repair'), hypothesisId: id('hypothesis'), rationale: text, evidenceIds };
 export const repairCandidateSchema = union(object({ ...repairBase, kind: literal('operating_policy'), verification: literal('evaluation_data'), datasetId: id('dataset'), policy: policySchema, criterion: criterionSchema }), object({ ...repairBase, kind: literal('training_recommendation'), verification: literal('requires_external_experiment'), recommendation: text }));
 export const beforeAfterComparisonSchema = object({ id: id('comparison'), repairId: id('repair'), datasetId: id('dataset'), baselinePolicy: policySchema, afterPolicy: policySchema, baselineEvidenceIds: refine(evidenceIds, (v, p) => { if (!v.length)

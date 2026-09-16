@@ -47,3 +47,18 @@ Run records and evidence are held in memory and returned to the caller; durable 
 `tests/openai-investigator.test.mjs` stubs fetch only in tests and exercises the real server wrapper, strict tool payloads, matching function-call outputs, configuration/consent, safe diagnostics, response limits, and cancellation. The test harness removes only the Next.js server-only marker for native Node execution.
 
 Protocol reference: [OpenAI function calling](https://developers.openai.com/api/docs/guides/function-calling). Provider schema descriptions are intentionally narrower than the general diagnostic contracts; update both definitions and runtime limits when expanding supported operations.
+
+## Batched diagnostic calls
+
+Astra may return up to three `function_call` items in one turn when every call is an allowlisted
+diagnostic. Hypothesis proposals, falsification requests and completion read accumulated state, so
+they must arrive alone and keep their ordering unambiguous; mixing them with a diagnostic, or
+exceeding the batch limit, stops the run.
+
+The deterministic engines are synchronous, so batching removes **provider round-trips** — the
+dominant latency — rather than parallelizing computation. It is not a claim of concurrent execution.
+
+Batched calls are executed in declaration order, so recorded events and results stay reproducible
+across runs. Every call in a batch is counted individually against the tool budget, deduplicated
+through the same cache, and validated independently: the budget can stop a run part-way through a
+batch, and one rejected call never suppresses or contaminates its batch-mates.

@@ -1,6 +1,6 @@
 import { ingestTrainingLog, type TrainingLog } from './training-logs.ts';
 ﻿import { array, enumeration, object, text } from './schema.ts';
-import { createId, criterionSchema, evidenceIds, id, type Id } from './primitives.ts';
+import { createId, evidenceIds, experimentCriterionSchema, id, type Id } from './primitives.ts';
 import { diagnosticToolCallSchema, diagnosticToolResultSchema, type DiagnosticToolCall, type DiagnosticToolResult, toolNames } from './tool-contracts.ts';
 import { evidenceSchema, hypothesisSchema, verificationExperimentSchema, type Evidence, type Hypothesis, type VerificationExperiment } from './types.ts';
 import { profileEvaluationDataset } from './dataset-profiler.ts';
@@ -8,7 +8,7 @@ import type { EvaluationDataset } from './evaluation-ingestion.ts';
 import { executeDiagnostic } from './tool-registry.ts';
 import { evaluateDiagnosticFalsification } from './diagnostic-falsification.ts';
 
-export const INVESTIGATOR_LIMITS = Object.freeze({ rounds: 16, tools: 10, errors: 3, hypotheses: 5, durationMs: 120000, transcriptBytes: 1000000, responseBytes: 262144 });
+export const INVESTIGATOR_LIMITS = Object.freeze({ rounds: 16, tools: 10, errors: 3, hypotheses: 5, batch: 3, durationMs: 120000, transcriptBytes: 1000000, responseBytes: 262144 });
 export type InvestigatorProvider = (input: readonly unknown[], signal: AbortSignal) => Promise<unknown>;
 export type InvestigatorRequest = { objective: string; steering?: string | null; specialist?: 'general'|'metrics'|'data_quality'|'shift'|'leakage' | null; trainingLogs?: readonly TrainingLog[]; datasets: readonly EvaluationDataset[]; consent: true; accuracyParadoxGap: number };
 export type InvestigatorRun = {
@@ -23,7 +23,7 @@ export type InvestigatorRun = {
 };
 const proposal = object({ kind: enumeration(['accuracy_paradox', 'other']), statement: text, evidenceIds, missingEvidence: array(text, 0, 10) });
 const completion = object({ reason: enumeration(['sufficient_evidence', 'insufficient_evidence']), evidenceIds, missingEvidence: array(text, 0, 10) });
-const diagnosticFalsification = object({ hypothesisId:id('hypothesis'),resultId:id('result'),prediction:text,criterion:criterionSchema });
+const diagnosticFalsification = object({ hypothesisId:id('hypothesis'),resultId:id('result'),prediction:text,criterion:experimentCriterionSchema });
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
   if (value && typeof value === 'object') return '{' + Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => JSON.stringify(k) + ':' + canonical(v)).join(',') + '}';
@@ -80,17 +80,25 @@ export async function runInvestigator(request: InvestigatorRequest, provider: In
       if (response.status !== 'completed' || !Array.isArray(response.output)) return stop('invalid_response');
     } catch { return stop(active.aborted ? (signal.aborted ? 'cancelled' : 'deadline') : 'provider_error'); }
     const output = response.output as unknown[];
-    let call: Record<string, unknown>;
+    let batch: Record<string, unknown>[];
     try {
       const entries = output.map(record);
       if (entries.some(e => !['reasoning', 'function_call'].includes(String(e.type)))) return stop('unexpected_output');
-      const calls = entries.filter(e => e.type === 'function_call');
-      if (calls.length !== 1) return stop('expected_one_call');
-      call = calls[0];
-      if (typeof call.call_id !== 'string' || !/^[A-Za-z0-9_-]{1,200}$/.test(call.call_id) || callIds.has(call.call_id) || typeof call.name !== 'string' || typeof call.arguments !== 'string' || call.arguments.length > 16000) return stop('invalid_call');
-      callIds.add(call.call_id);
+      batch = entries.filter(e => e.type === 'function_call');
+      // Independent diagnostics may arrive together, saving provider round-trips. Hypothesis,
+      // falsification and completion operations read accumulated state, so they must arrive alone
+      // and keep their ordering unambiguous.
+      if (!batch.length || batch.length > limits.batch) return stop('expected_one_call');
+      if (batch.length > 1 && batch.some(item => !toolNames.includes(String(item.name) as typeof toolNames[number]))) return stop('expected_one_call');
+      for (const item of batch) {
+        if (typeof item.call_id !== 'string' || !/^[A-Za-z0-9_-]{1,200}$/.test(item.call_id) || callIds.has(item.call_id) || typeof item.name !== 'string' || typeof item.arguments !== 'string' || item.arguments.length > 16000) return stop('invalid_call');
+        callIds.add(item.call_id);
+      }
     } catch { return stop('invalid_call'); }
     history.push(...output);
+    // Executed in declaration order: the deterministic engines are synchronous, so batching removes
+    // provider round-trips rather than parallelizing computation. Results stay reproducible.
+    for (const call of batch) {
     let feedback: unknown;
     try {
       const args: unknown = JSON.parse(call.arguments as string);
@@ -112,7 +120,7 @@ export async function runInvestigator(request: InvestigatorRequest, provider: In
         const request=diagnosticFalsification.parse(args),hypothesis=run.hypotheses.find(h=>h.id===request.hypothesisId),result=run.toolResults.find(r=>r.id===request.resultId);
         if(!hypothesis||!result||result.tool==='run_counterfactual_test'||run.experiments.some(e=>e.hypothesisId===request.hypothesisId&&e.callIds.includes(result.callId)))throw new Error('Unknown or duplicate falsification scope');
         const assessment=evaluateDiagnosticFalsification(result,request),experimentId=createId('experiment'),evidenceId=createId('evidence');
-        const evidence=evidenceSchema.parse({id:evidenceId,kind:'measurement',description:assessment.rationale,measurements:assessment.measurement?[assessment.measurement]:[],provenance:{kind:'experiment',experimentId}});
+        const evidence=evidenceSchema.parse({id:evidenceId,kind:'measurement',description:assessment.rationale,measurements:assessment.measurements,provenance:{kind:'experiment',experimentId}});
         const experiment=verificationExperimentSchema.parse({id:experimentId,hypothesisId:hypothesis.id,prediction:request.prediction,method:`diagnostic_falsification_v1:${result.tool}:${result.id}`,seed:null,callIds:[result.callId],criterion:request.criterion,status:'completed',outcome:assessment.outcome,evidenceIds:[evidence.id],limitations:['The declared threshold is a test policy, not a significance test.','The experiment reuses a recorded diagnostic result and does not establish causality or independent generalization.']});
         run.evidence.push(evidence);run.experiments.push(experiment);feedback={assessment,experiment,evidence};event('experiment_completed',assessment.outcome,experiment.id);
       } else {
@@ -149,8 +157,9 @@ export async function runInvestigator(request: InvestigatorRequest, provider: In
         }
       }
     } catch { feedback = { error: 'invalid_or_unsupported_operation', instruction: 'Use registered IDs, supported arguments and declared limits. Do not repeat this call.' }; errors++; event('operation_rejected', 'invalid_or_unsupported_operation'); }
-    history.push({ type: 'function_call_output', call_id: call.call_id, output: JSON.stringify(feedback) });
+    history.push({ type: 'function_call_output', call_id: call.call_id as string, output: JSON.stringify(feedback) });
     if (errors >= limits.errors) return stop('error_limit');
+    }
   }
   return stop('round_limit');
 }

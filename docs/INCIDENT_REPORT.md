@@ -26,3 +26,24 @@ The builder validates the canonical reference graph and does not modify the inve
 `tests/incident-report.test.mjs` covers canonical round-trip/provenance preservation, immutable annotations, all required sections, missing verification, unresolved hypotheses, invalid references and Markdown fencing. The browser suite downloads both formats and verifies comparison records and the provenance appendix. Run `npm run check`, start the production build and run `npm run test:browser`.
 
 Manual check: run the flagship, reveal its measured repair, enter a model/version and severity rationale, export both formats, and inspect dataset IDs, confidence, cost policy, before/after evidence IDs and suggestions. Astra and applied Repair Lab results expose the same exporter.
+
+## Generated CI reliability gate and issue body
+
+The report now emits a runnable policy rather than prose alone.
+
+`deriveCiPolicy(investigation)` builds a `ciPolicySchema` document from measured **passing**
+comparisons. The metric the repair was accepted on keeps its declared operator; additional headline
+metrics (`recall`, `precision`, `balanced_accuracy`, `expected_cost`) are gated by unit direction —
+cost and loss `at_most`, everything else `at_least`. Thresholds are the measured values themselves:
+any tolerance would be an invented number, so teams must widen the gate deliberately. Without a
+passing measured comparison the policy is `null`; no gate is fabricated.
+
+The result round-trips through `evaluateCiPolicy` unedited, so the exported gate is the same
+artifact the checker runs.
+
+`incidentIssueMarkdown(report)` renders a GitHub-issue body: severity, observed failure, diagnosis,
+a verification tally by outcome, an actionable follow-up checklist, the generated gate and the
+standing limitations. Like the full report, it rebuilds every derived field from the canonical
+record, so edited report fields cannot steer the exported text.
+
+Both artifacts remain clearly labeled: a generated configuration, not a deployed monitor.
