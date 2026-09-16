@@ -4,7 +4,7 @@
   <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#122b42"/></linearGradient><linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#46e0c0"/><stop offset="1" stop-color="#7aa7ff"/></linearGradient></defs>
   <rect width="1270" height="760" rx="36" fill="url(#bg)"/>
   <circle cx="1080" cy="110" r="190" fill="#46e0c0" opacity=".08"/><circle cx="1200" cy="650" r="270" fill="#7aa7ff" opacity=".08"/>
-  <text x="90" y="115" fill="#46e0c0" font-family="Arial,sans-serif" font-size="28" font-weight="700" letter-spacing="4">WHyLAB / GPT-6 ASTRA</text>
+  <text x="90" y="115" fill="#46e0c0" font-family="Arial,sans-serif" font-size="28" font-weight="700" letter-spacing="4">WHYLAB / GPT-6 ASTRA</text>
   <text x="90" y="215" fill="white" font-family="Arial,sans-serif" font-size="68" font-weight="700">Investigate the</text>
   <text x="90" y="290" fill="white" font-family="Arial,sans-serif" font-size="68" font-weight="700">failure. Prove the why.</text>
   <text x="94" y="350" fill="#b8c9d9" font-family="Arial,sans-serif" font-size="25">Evidence-linked diagnosis → measurable repair → retained re-test</text>
