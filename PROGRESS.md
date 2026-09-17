@@ -151,15 +151,27 @@ Target: GPT-6 Astra Challenge (Product Hunt)
 
 ---
 
-## Executive Recommendation: "If I Only Merge One Thing, Merge This"
+## Frontend Quality Pass
 
-> **Recommendation: Merge Phase 2 ("Investigation Report" Modal Artifact & Shareable Summary)**
-> 
-> The **Investigation Report** feature (`app/components/investigation-report-modal.tsx` and commit `bae4dc3`) fundamentally elevates WhyLab from a standard demo dashboard into a memorable, shareable diagnostic product.
-> 
-> When Product Hunt judges and users test ML failure tools, they typically look for proof and clarity:
-> 1. **Glanceable Verdict**: A single, beautiful card bringing together the symptom gap (92.0% validation vs 20.0% minority recall), the hypotheses tested (with empirical deciding evidence citations), and the measured repair (FN 8 → 0, cost -95%).
-> 2. **Instant Utility**: 1-click Markdown copying and margin-perfect Print / Save as PDF export.
-> 3. **High Credibility**: Clear provenance disclosures stating exactly what was measured in the session without fabricated claims or regulatory overreach.
-> 
-> It provides the single strongest "aha!" moment of the submission.
+### Baseline Viewport Audits (375px, 768px, 1440px):
+- Captured initial baseline screenshots:
+  - Mobile: `baseline_mobile_375.png` (375×812)
+  - Tablet: `baseline_tablet_768.png` (768×1024)
+  - Desktop: `baseline_desktop_1440.png` (1440×1000)
+
+### Item 1: Section Numbering (Completed)
+- **Problem**: Section numbers were previously mapped to a theoretical 8-stage pipeline (`06` for CaseManager library, `01` for workspace, `02` for dataset, `07` for extended import, `03` for diagnosis, `04` for lesson, `05` for experiment). In the actual DOM and visual layout, this caused jarring out-of-order numbers: a visitor saw `06 / Investigation library` at the very top of the page before `01`, and `07 / Extended evidence import` directly below `01 / Investigation workspace`.
+- **Changes Made**:
+  - Renumbered all 8 numbered sections to match their exact visual, logical, and DOM reading order from top to bottom:
+    1. `01 / Investigation library` (`app/components/case-manager.tsx`)
+    2. `02 / Investigation workspace` (`app/components/investigation-lab.tsx`)
+    3. `03 / Dataset investigation` (`app/components/dataset-lab.tsx`)
+    4. `04 / Extended evidence import` (`app/components/evidence-import.tsx`)
+    5. `05 / Combined diagnosis` (`app/components/diagnosis-panel.tsx`)
+    6. `06 / Learn why: {lesson.title}` (`app/components/interactive-lesson.tsx`)
+    7. `07 / Verify this hypothesis` (`app/components/experiment-workflow.tsx`)
+    8. `08 / Evidence-grounded explanation` (`app/components/explanation-assistant.tsx`)
+- **Browser Verifications**:
+  - Verified in browser across DOM tree that section numbers now proceed strictly sequentially from `01` to `08`.
+  - Confirmed all 360 unit tests and 31 automated browser checks pass without regression.
+

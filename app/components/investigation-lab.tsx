@@ -308,7 +308,7 @@ export default function InvestigationLab() {
 
         <section id="workspace">
           <div className="section-heading">
-            <h2><span className="section-number">01 /</span> Investigation workspace</h2>
+            <h2><span className="section-number">02 /</span> Investigation workspace</h2>
             <span className="local-note"><span className="status-dot" /> LOCAL PROTOTYPE · IN-BROWSER EXECUTION</span>
           </div>
           <div className="workspace-grid">
