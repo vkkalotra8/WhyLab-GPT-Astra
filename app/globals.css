@@ -4421,28 +4421,35 @@ footer {
    INVESTIGATION REPORT ARTIFACT & MODAL STYLES (PHASE 2 SIGNATURE FEATURE)
    ========================================================================== */
 
-.btn-generate-report {
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+.btn-generate-report,
+.flagship-actions .btn-generate-report {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
   color: #ffffff !important;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 650;
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28);
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 650 !important;
+  font-size: 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28) !important;
+  white-space: nowrap !important;
+  text-decoration: none !important;
 }
-.btn-generate-report:hover {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.42);
+.btn-generate-report:hover,
+.flagship-actions .btn-generate-report:hover:not(:disabled) {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.42) !important;
+  color: #ffffff !important;
 }
-.btn-generate-report svg {
+.btn-generate-report svg,
+.flagship-actions .btn-generate-report svg {
   flex-shrink: 0;
+  color: #ffffff !important;
 }
 
 .report-modal-overlay {

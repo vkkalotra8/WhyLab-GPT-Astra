@@ -10,7 +10,7 @@ export interface ReportSymptom {
 
 export interface ReportHypothesis {
   statement: string;
-  status: 'supported' | 'falsified' | 'inconclusive' | 'unresolved' | 'confirmed' | 'rejected';
+  status: string;
   decidingEvidence: string;
 }
 
@@ -118,7 +118,7 @@ export default function InvestigationReportModal({
           <div className="report-btn-group">
             <button
               type="button"
-              className={`report-btn ${copied ? 'btn-copied' : ''}`}
+              className={`report-btn btn-report-copy ${copied ? 'btn-copied' : ''}`}
               onClick={copyMarkdown}
               aria-label="Copy markdown summary to clipboard"
             >

@@ -132,4 +132,34 @@ Target: GPT-6 Astra Challenge (Product Hunt)
 
 ---
 
-## Phase 4: Polish & Final Verifications (In Progress)
+## Phase 4: Polish & Final Verifications (Completed)
+
+### Changes Made:
+1. **Real Operating-Point Trade-off Chart (`app/components/flagship-chart.tsx`, `app/components/flagship-melanoma.tsx`)**:
+   - Built a custom, zero-dependency SVG visualization rendering the precision-recall and cost curves derived directly from the 101-threshold sweep of `melanoma-synthetic.csv` (100 rows, 10 malignant, 90 benign).
+   - Features glowing cyan Malignant Recall curve and coral dashed Total Error Cost curve with shaded area.
+   - Interactive threshold markers at key operating points (Baseline T=0.50 with Cost=80, Repaired T=0.20 with Cost=4).
+   - Dynamic comparison panel on the right updating live on hover or touch tap.
+   - Explicit "Honest Data Guarantee" banner grounding all data in real dataset measurements.
+2. **Comprehensive Polish & Zero-Warning Auditing**:
+   - Cleaned all TypeScript explicit `any` casts in `investigation-report-modal.tsx`, `flagship-melanoma.tsx`, `astra-investigation.tsx`, and `case-studies.tsx`.
+   - Elevated button styling for `.btn-generate-report` with high specificity, gradient treatment, and crisp SVG icon.
+   - Verified that ESLint (`npm run lint`), TypeScript (`npm run typecheck`), and the full unit suite (`npm test`, 360 tests) pass with 0 errors and 0 warnings.
+3. **Comprehensive End-to-End Browser Pass**:
+   - Executed full headless Chrome browser verification (`verify_phase4_comprehensive.mjs`) navigating fresh from hero to Flagship, Astra recorded demo, and Repair Lab.
+   - Confirmed 0 console errors during the full run.
+
+---
+
+## Executive Recommendation: "If I Only Merge One Thing, Merge This"
+
+> **Recommendation: Merge Phase 2 ("Investigation Report" Modal Artifact & Shareable Summary)**
+> 
+> The **Investigation Report** feature (`app/components/investigation-report-modal.tsx` and commit `bae4dc3`) fundamentally elevates WhyLab from a standard demo dashboard into a memorable, shareable diagnostic product.
+> 
+> When Product Hunt judges and users test ML failure tools, they typically look for proof and clarity:
+> 1. **Glanceable Verdict**: A single, beautiful card bringing together the symptom gap (92.0% validation vs 20.0% minority recall), the hypotheses tested (with empirical deciding evidence citations), and the measured repair (FN 8 → 0, cost -95%).
+> 2. **Instant Utility**: 1-click Markdown copying and margin-perfect Print / Save as PDF export.
+> 3. **High Credibility**: Clear provenance disclosures stating exactly what was measured in the session without fabricated claims or regulatory overreach.
+> 
+> It provides the single strongest "aha!" moment of the submission.

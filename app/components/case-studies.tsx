@@ -167,7 +167,7 @@ export default function CaseStudies() {
             ],
             hypotheses: result.hypotheses.map(h => ({
               statement: h.statement,
-              status: h.status as any,
+              status: h.status,
               decidingEvidence: h.confidence.rationale || 'Verified through diagnostic tool executions.',
             })),
           }}

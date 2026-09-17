@@ -552,7 +552,7 @@ export default function AstraInvestigation(){
               ],
               hypotheses: result.hypotheses.map(h => ({
                 statement: h.statement,
-                status: h.status as any,
+                status: h.status,
                 decidingEvidence: h.confidence.rationale || 'Evaluated through diagnostic tool execution.',
               })),
               repair: result.comparisons?.[0] ? {
