@@ -9,6 +9,7 @@ import EvidenceImport from "./evidence-import";
 import { runIngestion } from "../lib/ingestion-client";
 import AstraInvestigation from './astra-investigation';
 import DatasetLab from "./dataset-lab";
+import VisionLab from "./vision-lab";
 import EvidenceSummary from "./evidence-summary";
 import SubmissionReadinessModal from './submission-readiness-modal';
 import DemoTour from './demo-tour';
@@ -97,14 +98,14 @@ export default function InvestigationLab() {
     useEffect(() => {
         function checkHash() {
             const h = window.location.hash.replace("#", "");
-            if (["workspace", "flagship", "astra-lab", "repair-lab"].includes(h)) {
+            if (["workspace", "flagship", "astra-lab", "repair-lab", "vision-lab"].includes(h)) {
                 setActiveNav(h);
             }
         }
         checkHash();
         window.addEventListener("hashchange", checkHash);
 
-        const ids = ["workspace", "flagship", "astra-lab", "repair-lab"];
+        const ids = ["workspace", "flagship", "astra-lab", "repair-lab", "vision-lab"];
         const observer = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver((entries) => {
             if (isNavClicking.current) return;
             const visible = entries.filter(e => e.isIntersecting);
@@ -210,6 +211,13 @@ export default function InvestigationLab() {
             onClick={() => handleNavClick("repair-lab")}
           >
             Repair Lab
+          </a>
+          <a
+            className={activeNav === "vision-lab" ? "nav-active" : undefined}
+            href="#vision-lab"
+            onClick={() => handleNavClick("vision-lab")}
+          >
+            Vision Lab
           </a>
           <button
             type="button"
@@ -563,6 +571,7 @@ export default function InvestigationLab() {
 
         <EvidenceImport disabled={stage >= 0 || reading} onBusyChange={setExtendedBusy} />
         <DatasetLab evidence={complete ? evidence : null} />
+        <VisionLab />
 
         <section className="learning" aria-labelledby="learning-heading">
           <div className="learning-intro">

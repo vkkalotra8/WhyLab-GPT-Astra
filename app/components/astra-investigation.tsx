@@ -377,7 +377,7 @@ export default function AstraInvestigation({
       <div className="form-group mid-turn-steering-group">
         <div className="section-label-row">
           <label className="field-title">Mid-Investigation Steering &amp; Priorities (§7, §116–117)</label>
-          <span className="field-sub">Steer Astra's diagnostic priorities and domain-specific cost objectives</span>
+          <span className="field-sub">Steer Astra&apos;s diagnostic priorities and domain-specific cost objectives</span>
         </div>
 
         <div className="steering-presets-bar" aria-label="Steering Presets">
