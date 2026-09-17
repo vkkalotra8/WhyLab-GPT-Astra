@@ -9,7 +9,10 @@ import EvidenceImport from "./evidence-import";
 import { runIngestion } from "../lib/ingestion-client";
 import AstraInvestigation from './astra-investigation';
 import DatasetLab from "./dataset-lab";
+import VisionLab from "./vision-lab";
 import EvidenceSummary from "./evidence-summary";
+import SubmissionReadinessModal from './submission-readiness-modal';
+import DemoTour from './demo-tour';
 import { Upload, FileText, Sparkles, Activity, GitFork, ArrowUpRight } from 'lucide-react';
 const sample = `[experiment] image_classifier_v3 / ResNet-18
 [epoch 26/30] train_loss=0.14 val_loss=0.15 train_accuracy=0.95 val_accuracy=0.948
@@ -33,6 +36,7 @@ export default function InvestigationLab() {
     const newCase = useNewCase();
     const [astraKey,setAstraKey]=useState(0);
     const [deploymentToken, setDeploymentToken] = useState('');
+    const [showReadinessModal, setShowReadinessModal] = useState(false);
     const [tab, setTab] = useCaseState("tab"), [logs, setLogs] = useCaseState("logs"), [file, setFile] = useState<File | null>(null), [analysis, setAnalysis] = useCaseState("analysis"), [drag, setDrag] = useState(false), [error, setError] = useState(""), [stage, setStage] = useState(-1), [complete, setComplete] = useCaseState("complete"), [expanded, setExpanded] = useState<number | null>(0);
     const input = useRef<HTMLInputElement>(null), result = useRef<HTMLElement>(null);
     const [evidence, setEvidence] = useCaseState("evidence");
@@ -94,14 +98,14 @@ export default function InvestigationLab() {
     useEffect(() => {
         function checkHash() {
             const h = window.location.hash.replace("#", "");
-            if (["workspace", "flagship", "astra-lab", "repair-lab"].includes(h)) {
+            if (["workspace", "flagship", "astra-lab", "repair-lab", "vision-lab"].includes(h)) {
                 setActiveNav(h);
             }
         }
         checkHash();
         window.addEventListener("hashchange", checkHash);
 
-        const ids = ["workspace", "flagship", "astra-lab", "repair-lab"];
+        const ids = ["workspace", "flagship", "astra-lab", "repair-lab", "vision-lab"];
         const observer = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver((entries) => {
             if (isNavClicking.current) return;
             const visible = entries.filter(e => e.isIntersecting);
@@ -208,6 +212,13 @@ export default function InvestigationLab() {
           >
             Repair Lab
           </a>
+          <a
+            className={activeNav === "vision-lab" ? "nav-active" : undefined}
+            href="#vision-lab"
+            onClick={() => handleNavClick("vision-lab")}
+          >
+            Vision Lab
+          </a>
           <button
             type="button"
             className={activeNav === "examples" ? "nav-active" : undefined}
@@ -215,6 +226,14 @@ export default function InvestigationLab() {
             onClick={() => void example(true)}
           >
             Examples
+          </button>
+          <button
+            type="button"
+            className="btn-submission-audit"
+            onClick={() => setShowReadinessModal(true)}
+            title="Inspect 11-point Product Hunt Submission Readiness Gate (§21)"
+          >
+            🏆 Submission Gate
           </button>
         </nav>
         <button className="new-button" onClick={reset}>
@@ -226,14 +245,32 @@ export default function InvestigationLab() {
         <section className="hero">
           <div>
             <div className="eyebrow cyan">
-              <span className="status-dot" /> AI ML Reliability Investigator
+              <span className="status-dot" /> AI ML RELIABILITY INVESTIGATOR
             </div>
-            <h1>Every failed model is trying<br className="desktop-break" /> to tell you <span>something.</span></h1>
-            <p>Turn failed experiments into evidence-backed diagnoses.<br className="desktop-break" /> Find the why, test your hypotheses, and learn what to do next.</p>
+            <h1>Every failed model is trying <br className="desktop-break" />to tell you <span>something.</span></h1>
+            <div className="mental-model-badge">
+              <span>Sentry for software</span> · <span>Datadog for infra</span> · <strong className="cyan-text">WhyLab for machine learning</strong>
+            </div>
+            <p className="hero-lead">Upload your evaluation data. WhyLab investigates why your model is failing, proves the root cause with counterfactual experiments, and repairs your operating policy.</p>
+
+            <div className="hero-tension-card" role="region" aria-label="Incident Tension Callout">
+              <div className="tension-half tension-model">
+                <span className="tension-speaker">YOUR MODEL SAYS</span>
+                <strong className="tension-metric text-cyan">94.2% ACCURACY</strong>
+                <span className="tension-sub">Looks excellent at first glance</span>
+              </div>
+              <div className="tension-divider" aria-hidden="true">VS</div>
+              <div className="tension-half tension-whylab">
+                <span className="tension-speaker">WHYLAB SAYS</span>
+                <strong className="tension-metric text-danger">HIGH-RISK FAILURE DETECTED</strong>
+                <span className="tension-sub">Malignant recall: 22.4% · Misses 3 out of 4 cancers</span>
+              </div>
+            </div>
+
             <div className="hero-tags">
               <span>Evidence, not guesswork</span>
-              <span>Scientific clarity</span>
-              <span>Built for curious engineers</span>
+              <span>Scientific provenance</span>
+              <span>Falsification engine</span>
             </div>
             <div className="hero-distinction-banner" role="note">
               <span className="distinction-item">
@@ -250,8 +287,11 @@ export default function InvestigationLab() {
               <a className="hero-primary" href="#astra-lab">
                 Start an Astra investigation <span aria-hidden="true">→</span>
               </a>
-              <a className="hero-secondary" href="#workspace">
-                Explore the workbench
+              <a className="hero-secondary" href="#flagship">
+                Run Flagship Melanoma Demo
+              </a>
+              <a className="hero-secondary" href="#dataset-heading">
+                Bring Your Own Model
               </a>
             </div>
           </div>
@@ -531,6 +571,7 @@ export default function InvestigationLab() {
 
         <EvidenceImport disabled={stage >= 0 || reading} onBusyChange={setExtendedBusy} />
         <DatasetLab evidence={complete ? evidence : null} />
+        <VisionLab />
 
         <section className="learning" aria-labelledby="learning-heading">
           <div className="learning-intro">
@@ -562,5 +603,12 @@ export default function InvestigationLab() {
         </a>
         <span>Built with GPT-6 Astra <span className="footer-dot">·</span> ML Incident Investigation Platform</span>
       </footer>
+
+      <SubmissionReadinessModal
+        isOpen={showReadinessModal}
+        onClose={() => setShowReadinessModal(false)}
+      />
+
+      <DemoTour />
     </div>;
 }

@@ -5,6 +5,7 @@ import { compareDatasets, profileDataset } from '../lib/dataset';
 import { useCaseState } from './case-manager';
 import DiagnosisPanel from './diagnosis-panel';
 import type { Evidence } from '../lib/evidence';
+import { datasetPresets, type DatasetPreset } from '../lib/dataset-presets';
 
 const roles = ['Training', 'Validation', 'Production'] as const;
 
@@ -33,6 +34,16 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
 
   const training = datasets.Training;
   const profiles = useMemo(() => training ? profileDataset(training, target, task) : [], [training, target, task]);
+
+  function loadPreset(preset: DatasetPreset) {
+    generation.current++;
+    setReading(false);
+    setError('');
+    setDatasets(preset.datasets);
+    setTarget(preset.target);
+    setTask(preset.task);
+    setRevision(r => r + 1);
+  }
 
   async function upload(role: typeof roles[number], file?: File) {
     if (!file) return;
@@ -88,6 +99,28 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
         Profile a training CSV, then add validation or production data to compare. All analysis stays in your browser.
         Up to 2 MB, 10,000 rows, and 100 columns per file.
       </p>
+
+      {/* Quick Select Presets (§11 Bring Your Own Model) */}
+      <div className="dataset-preset-bar" aria-label="Preset Evaluation Experiments">
+        <div className="preset-bar-label">
+          <span className="preset-spark-icon">⚡</span>
+          <span>Quick-Load Verified Multi-Split Experiment:</span>
+        </div>
+        <div className="preset-buttons">
+          {datasetPresets.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              className="preset-pill-btn"
+              onClick={() => loadPreset(p)}
+              title={p.description}
+            >
+              <span className="preset-domain">{p.domain}</span>
+              <strong className="preset-name">{p.name.split('(')[0].trim()}</strong>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* 3 Upload Cards */}
       <div className="dataset-uploads">
@@ -173,6 +206,44 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
 
       {training ? (
         <>
+          <div className="byom-pipeline-bridges" role="region" aria-label="BYOM Pipeline Actions">
+            <div className="byom-meta-summary">
+              <span className="byom-chip">
+                <strong>{training.rows.length.toLocaleString()}</strong> training rows
+              </span>
+              {datasets.Validation && (
+                <span className="byom-chip">
+                  <strong>{datasets.Validation.rows.length.toLocaleString()}</strong> validation rows
+                </span>
+              )}
+              {datasets.Production && (
+                <span className="byom-chip">
+                  <strong>{datasets.Production.rows.length.toLocaleString()}</strong> production rows
+                </span>
+              )}
+              <span className="byom-chip">
+                Target: <strong>{target || 'None selected'}</strong>
+              </span>
+            </div>
+
+            <div className="byom-bridge-actions">
+              <a
+                href="#astra-lab"
+                className="bridge-btn primary"
+                title="Launch GPT-6 Astra autonomous investigation on this dataset (§4, §11)"
+              >
+                🔬 Investigate in Astra Lab <span aria-hidden="true">→</span>
+              </a>
+              <a
+                href="#repair-lab"
+                className="bridge-btn secondary"
+                title="Optimize operating thresholds and decision policies in Repair Lab (§9)"
+              >
+                ⚙️ Optimize in Repair Lab <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+
           <div className="dataset-options">
             <label>
               <span className="option-title">Task type</span>

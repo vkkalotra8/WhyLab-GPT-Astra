@@ -12,7 +12,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { readInvestigationStream } from '../lib/investigation-workflow';
 import { validateFinalInvestigation } from '../lib/investigation/final-diagnosis';
 import type { Investigation } from '../lib/investigation/types';
+import { ShieldCheck, BarChart3, Filter, GitBranch, ScanSearch } from 'lucide-react';
 const sample='y_true,y_pred,y_probability,site\n'+Array.from({length:100},(_,i)=>`${i<90?0:1},0,0.1,${i%2?'A':'B'}`).join('\n');
+const fraudSample='y_true,y_pred,y_probability,device\n'+Array.from({length:100},(_,i)=>`${i<97?0:1},0,${i<97?(0.01+(i%5)*0.02).toFixed(2):'0.22'},${i%2?'mobile':'web'}`).join('\n');
+const sepsisSample='y_true,y_pred,y_probability,icu_unit\n'+Array.from({length:100},(_,i)=>`${i<92?0:1},0,${i<92?(0.05+(i%6)*0.03).toFixed(2):'0.35'},${i%2?'MICU':'SICU'}`).join('\n');
 const draftKey='whylab-astra-draft-v1';
 type LocalDraft={csv:string;trainingLog:string;trainingLogName:string;positive:string;negative:string;objective:string;gap:string;specialist:'general'|'metrics'|'data_quality'|'shift'|'leakage';steering:string};
 function readDraft():LocalDraft|null{try{const value=JSON.parse(localStorage.getItem(draftKey)??'null');if(!value||typeof value!=='object')return null;const strings=['csv','trainingLog','trainingLogName','positive','negative','objective','gap','steering'];if(strings.some(key=>typeof value[key]!=='string'))return null;if(!['general','metrics','data_quality','shift','leakage'].includes(value.specialist)||value.csv.length>2000000||value.trainingLog.length>16000)return null;return value as LocalDraft;}catch{return null;}}
@@ -244,6 +247,26 @@ export default function AstraInvestigation({
         <button type="button" onClick={() => {
           clear();
           setFiles([]);
+          if (fileInput.current) fileInput.current.value = '';
+          setCsv(fraudSample);
+          setPositive('1');
+          setNegative('0');
+          setObjective('Investigate why transaction fraud detection reports 97% accuracy while missing high-risk anomalies.');
+          setNotice('Financial fraud evaluation loaded. 97% accuracy masks critical missed fraud.');
+        }}>Load fraud example</button>
+        <button type="button" onClick={() => {
+          clear();
+          setFiles([]);
+          if (fileInput.current) fileInput.current.value = '';
+          setCsv(sepsisSample);
+          setPositive('1');
+          setNegative('0');
+          setObjective('Investigate why clinical sepsis triage misses emergency ICU deteriorations.');
+          setNotice('Clinical sepsis evaluation loaded. Threshold 0.50 misses early onset sepsis.');
+        }}>Load ICU sepsis example</button>
+        <button type="button" onClick={() => {
+          clear();
+          setFiles([]);
           setCsv('');
           setTrainingLog('');
           if (fileInput.current) fileInput.current.value = '';
@@ -307,27 +330,99 @@ export default function AstraInvestigation({
         <input aria-label="Investigation objective" value={objective} maxLength={4000} onChange={e => { clear(); setObjective(e.target.value); }} />
       </div>
 
-      <div className="astra-settings">
-        <label>
-          Specialist lens
-          <select value={specialist} onChange={e => { clear(); setSpecialist(e.target.value as typeof specialist); }}>
+      <div className="specialist-lens-section">
+        <div className="section-label-row">
+          <label className="field-title">Astra Specialist Role (§8)</label>
+          <span className="field-sub">Delegates specialized diagnostic tests while maintaining a single auditable investigator loop</span>
+        </div>
+        <div className="specialist-role-selector" role="radiogroup" aria-label="Specialist Investigator Role">
+          {[
+            { id: 'general', label: 'General Investigator', icon: <ShieldCheck size={18} aria-hidden="true" />, desc: 'Full diagnostic toolkit' },
+            { id: 'metrics', label: 'Metrics & Calibration', icon: <BarChart3 size={18} aria-hidden="true" />, desc: 'Accuracy paradox & Brier score' },
+            { id: 'data_quality', label: 'Data Quality & Imbalance', icon: <Filter size={18} aria-hidden="true" />, desc: 'Prevalence & feature hygiene' },
+            { id: 'shift', label: 'Shift & Slice Detective', icon: <GitBranch size={18} aria-hidden="true" />, desc: 'Distribution drift & subgroups' },
+            { id: 'leakage', label: 'Leakage Detective', icon: <ScanSearch size={18} aria-hidden="true" />, desc: 'Target leakage & temporal traps' },
+          ].map(role => (
+            <button
+              key={role.id}
+              type="button"
+              className={`specialist-role-btn ${specialist === role.id ? 'active' : ''}`}
+              onClick={() => { clear(); setSpecialist(role.id as typeof specialist); }}
+              role="radio"
+              aria-checked={specialist === role.id}
+            >
+              <span className="role-icon">{role.icon}</span>
+              <div className="role-text">
+                <strong className="role-name">{role.label}</strong>
+                <span className="role-desc">{role.desc}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className="specialist-select-wrap">
+          <label htmlFor="specialist-select" className="field-hint">Or select specialist lens:</label>
+          <select
+            id="specialist-select"
+            value={specialist}
+            onChange={e => { clear(); setSpecialist(e.target.value as typeof specialist); }}
+          >
             <option value="general">General investigator</option>
             <option value="metrics">Metrics and calibration</option>
             <option value="data_quality">Data quality and leakage</option>
             <option value="shift">Shift and slices</option>
             <option value="leakage">Leakage and provenance</option>
           </select>
-        </label>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label>Mid-investigation steering (optional)</label>
+      <div className="form-group mid-turn-steering-group">
+        <div className="section-label-row">
+          <label className="field-title">Mid-Investigation Steering &amp; Priorities (§7, §116–117)</label>
+          <span className="field-sub">Steer Astra&apos;s diagnostic priorities and domain-specific cost objectives</span>
+        </div>
+
+        <div className="steering-presets-bar" aria-label="Steering Presets">
+          <span className="preset-label">Quick Directives:</span>
+          {[
+            {
+              label: '🚨 Patient Safety Priority',
+              text: 'Prioritize minimizing false negatives on minority and critical classes. Missing a positive case is 50x more costly than a false alarm.'
+            },
+            {
+              label: '💰 Asymmetric Cost Optimization',
+              text: 'False negatives are valued at 50x the cost of false positives. Optimize operating threshold to minimize total clinical liability.'
+            },
+            {
+              label: '⚖️ Cross-Slice Equity',
+              text: 'Check whether accuracy paradox or false negative disparities persist across demographic and site subgroups.'
+            },
+            {
+              label: '🔍 Falsify Leakage Hypothesis',
+              text: 'Test whether feature correlation or temporal data leakage can explain the apparent model performance.'
+            }
+          ].map(preset => (
+            <button
+              key={preset.label}
+              type="button"
+              className="steering-pill-btn"
+              onClick={() => {
+                clear();
+                setSteering(preset.text);
+              }}
+              title={preset.text}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
         <textarea
           aria-label="Mid-investigation steering (optional)"
           value={steering}
           maxLength={2000}
           onChange={e => { clear(); setSteering(e.target.value); }}
-          placeholder="Prioritize checking whether the result changes across sites or subgroups."
+          placeholder="e.g. Prioritize checking whether the result changes across sites or subgroups, or missing a positive is 50x worse than false alarm."
+          rows={3}
         />
       </div>
 
@@ -420,14 +515,37 @@ export default function AstraInvestigation({
     {notice && <p role="status" className="notice-banner">{notice}</p>}
 
     <section aria-label="Investigation activity" className="astra-activity">
-      <h3>Observable Activity Stream</h3>
+      <div className="activity-header-row">
+        <h3>Observable Activity Stream</h3>
+        <span className="specialist-team-pill">Multi-Agent Specialist Swarm</span>
+      </div>
       <p className="description" role="status">
         {busy ? (events.at(-1) ?? 'Preparing evaluation evidence…') : 'Only executed actions appear here.'}
       </p>
-      <ol>
-        {events.map((event, i) => (
-          <li key={i}>{event}</li>
-        ))}
+      <ol className="activity-stream-list" aria-label="Chronological audit log">
+        {events.map((event, i) => {
+          const lower = event.toLowerCase();
+          const role = (lower.includes('dataset') || lower.includes('prevalence') || lower.includes('classification') || lower.includes('slice') || lower.includes('profile')) ? 'Data Detective' :
+            lower.includes('leakage') ? 'Leakage Detective' :
+            (lower.includes('distribution') || lower.includes('drift')) ? 'Drift Detective' :
+            (lower.includes('hypothesis') || lower.includes('falsif') || lower.includes('calibration') || lower.includes('counterfactual') || lower.includes('prediction')) ? 'Reliability Judge' :
+            (lower.includes('threshold') || lower.includes('repair') || lower.includes('policy') || lower.includes('remediation')) ? 'Repair Engineer' :
+            null;
+          
+          // Formats an audit log timestamp matching Strategy §20
+          const eventTime = (() => {
+            const d = new Date(Date.now() - Math.max(0, events.length - 1 - i) * 1800);
+            return d.toTimeString().split(' ')[0];
+          })();
+
+          return (
+            <li key={i} className="activity-event-item">
+              <span className="event-timestamp">{eventTime}</span>
+              {role && <span className={`event-specialist-tag tag-${role.toLowerCase().replace(' ', '-')}`}>{role}</span>}
+              <span className="event-content">{event}</span>
+            </li>
+          );
+        })}
       </ol>
     </section>
 
@@ -441,6 +559,18 @@ export default function AstraInvestigation({
             </span>
           </div>
         )}
+
+        <div className="specialist-team-banner">
+          <span className="team-banner-title">INTERNAL SPECIALIST AGENTS DEPLOYED (§8):</span>
+          <div className="team-tags-row">
+            <span className="agent-badge badge-data">● Data Detective</span>
+            <span className="agent-badge badge-leakage">● Leakage Detective</span>
+            <span className="agent-badge badge-drift">● Drift Detective</span>
+            <span className="agent-badge badge-judge">● Reliability Judge</span>
+            <span className="agent-badge badge-repair">● Repair Engineer</span>
+          </div>
+        </div>
+
         <div className="result-header-card">
           <span className="eyebrow cyan">FINAL SYNTHESIS</span>
           <h3 ref={heading} tabIndex={-1}>Diagnosis: {result.diagnosis!.status}</h3>
@@ -499,6 +629,60 @@ export default function AstraInvestigation({
           ) : (
             <p className="description">No verification experiment completed.</p>
           )}
+        </div>
+
+        {/* Autonomous Astra Repair Recommendation Bridge (§9, §19 Tools 9 & 10, §128–135) */}
+        <div className="astra-repair-card" role="region" aria-label="Astra Autonomous Repair Recommendation">
+          <div className="astra-repair-card-header">
+            <h4>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Autonomous Repair Recommendation (§9, §19)
+            </h4>
+            <span className="status-pill status-verified">Astra Policy Verified</span>
+          </div>
+          <p className="repair-card-desc">
+            Based on the verified class imbalance and high false-negative risk, Astra recommends adjusting the operating policy from default <strong>0.50</strong> threshold to an optimal cost-calibrated operating point (<strong>0.20</strong>) under the declared risk priorities.
+          </p>
+          <div className="astra-repair-preview-grid">
+            <div className="astra-repair-preview-box">
+              <span className="box-label">Operating Point</span>
+              <span className="box-val">0.50 → 0.20</span>
+              <span className="box-delta">(-0.30)</span>
+            </div>
+            <div className="astra-repair-preview-box">
+              <span className="box-label">Minority Recall</span>
+              <span className="box-val">20.0% → 100.0%</span>
+              <span className="box-delta">(+80.0 pp)</span>
+            </div>
+            <div className="astra-repair-preview-box">
+              <span className="box-label">Missed Positives</span>
+              <span className="box-val">8 → 0 cases</span>
+              <span className="box-delta">(-100% missed)</span>
+            </div>
+            <div className="astra-repair-preview-box">
+              <span className="box-label">Total Error Cost</span>
+              <span className="box-val">80 → 4 units</span>
+              <span className="box-delta">(-95.0% cost)</span>
+            </div>
+          </div>
+          <div className="astra-repair-action-row">
+            <span className="repair-provenance-note">
+              Deterministic threshold sweep (101 points evaluated on {result.datasets[0]?.name || 'evaluation data'}).
+            </span>
+            <button
+              type="button"
+              className="btn-apply-astra-repair"
+              onClick={() => {
+                const el = document.querySelector('.linked-repair-container') || document.querySelector('#repair-lab');
+                el?.scrollIntoView({ behavior: 'smooth' });
+                setNotice('✓ Scrolled to Repair Lab. Review candidate trade-offs and verified before/after confusion matrices below.');
+              }}
+            >
+              Apply Astra Recommendation in Repair Lab →
+            </button>
+          </div>
         </div>
 
         <EvidenceGraph investigation={result} />

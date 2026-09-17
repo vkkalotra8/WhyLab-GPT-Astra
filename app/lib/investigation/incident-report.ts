@@ -109,3 +109,62 @@ export function incidentIssueMarkdown(report: IncidentReport) {
     '### Limitations', ...r.limitations.map(item => '- ' + safe(item)),
   ].join('\n\n') + '\n';
 }
+
+/** A ready-to-commit GitHub Actions workflow YAML for running the measured reliability gate in CI (§13, §173). */
+export function generateWorkflowYaml(report: IncidentReport): string {
+  const r = buildIncidentReport(report.investigation, { modelIdentifier: report.modelIdentifier.value, severity: report.severity.level, severityRationale: report.severity.rationale });
+  const v = r.investigation;
+  const policyJson = r.cicd.policy ? JSON.stringify(r.cicd.policy, null, 2).split('\n').map(line => `          ${line}`).join('\n') : null;
+
+  return `# .github/workflows/whylab-gate.yml
+# WhyLab ML Incident CI/CD Reliability Gate
+# Generated for Incident: ${v.id}
+# Model: ${r.modelIdentifier.value} | Severity: ${r.severity.level}
+name: WhyLab Reliability Gate
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ml-reliability-gate:
+    name: Model Reliability & Cost-Safety Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Execute WhyLab Reliability Gate Check
+        run: npm run check:reliability
+
+${policyJson ? `      - name: Save Measured Incident Policy Gate
+        run: |
+          mkdir -p .github/policies
+          cat << 'EOF' > .github/policies/whylab-incident-gate.json
+${policyJson}
+          EOF
+
+      - name: Upload Incident Gate Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: whylab-policy-${v.id}
+          path: .github/policies/whylab-incident-gate.json
+          retention-days: 14` : '      # Standard reliability policy check executed.'}
+`;
+}
+

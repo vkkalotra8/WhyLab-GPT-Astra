@@ -102,6 +102,37 @@ export default function InvestigationReportModal({
     }).catch(() => {});
   }
 
+  function openGitHubIssue() {
+    const lines: string[] = [
+      `# WhyLab Investigation Report: ${data.title}`,
+      `**Case ID:** \`${data.caseId}\` | **Generated:** ${now} | **Mode:** ${data.analysisMode}`,
+      data.datasetName ? `**Dataset:** ${data.datasetName} (${data.rowCount || 'evaluated'} rows)` : '',
+      '',
+      '## 1. Observed Symptoms',
+      ...data.symptoms.map(s => `- **${s.label}:** ${s.value}${s.subtext ? ` (${s.subtext})` : ''}`),
+      '',
+      '## 2. Competing Hypotheses & Deciding Evidence',
+      ...data.hypotheses.map(h => `- [${h.status.toUpperCase()}] **${h.statement}**\n  - Deciding Evidence: ${h.decidingEvidence}`),
+    ];
+    if (data.repair) {
+      lines.push(
+        '',
+        '## 3. Applied Policy Repair & Verification',
+        `**Policy:** ${data.repair.policyLabel}`,
+        data.repair.thresholdDelta ? `**Threshold Shift:** ${data.repair.thresholdDelta}` : '',
+        data.repair.statusText ? `**Verification Status:** ${data.repair.statusText}` : '',
+        '',
+        '| Metric | Baseline | Repaired | Impact |',
+        '| :--- | :--- | :--- | :--- |',
+        ...data.repair.metrics.map(m => `| ${m.label} | ${m.before} | ${m.after} | ${m.delta} |`)
+      );
+    }
+    const issueBody = lines.filter(Boolean).join('\n');
+    const title = `ML Reliability Incident: ${data.caseId} - ${data.title}`;
+    const url = `https://github.com/vkkalotra8/WhyLab-GPT-Astra/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(issueBody)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   function printReport() {
     window.print();
   }
@@ -116,6 +147,19 @@ export default function InvestigationReportModal({
             <span>OFFICIAL INVESTIGATION ARTIFACT</span>
           </div>
           <div className="report-btn-group">
+            <button
+              type="button"
+              className="report-btn btn-report-github"
+              onClick={openGitHubIssue}
+              aria-label="Open prefilled incident issue on GitHub"
+              title="Open prefilled incident issue on GitHub"
+              style={{ background: '#238636', color: '#fff', borderColor: '#2ea043' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+              </svg>
+              Open on GitHub
+            </button>
             <button
               type="button"
               className={`report-btn btn-report-copy ${copied ? 'btn-copied' : ''}`}

@@ -32,6 +32,44 @@ export default function ChallengeReview({ investigation, datasets = [], onUpdate
     {adversarial && <p role="status">{adversarial.executed ? `Ran ${adversarial.selectedTool}. ${adversarial.rationale}` : adversarial.rationale}</p>}
     {error && <p role="alert">{error}</p>}
     {active && <div>
+      {active.confidenceShift && (
+        <div className="adversarial-confidence-banner">
+          <div className="confidence-banner-top">
+            <span className="badge-tag">ADVERSARIAL REVIEW STATUS</span>
+            <span className={`confidence-shift-badge ${active.confidenceShift.status === 'increased' ? 'shift-up' : active.confidenceShift.status === 'decreased' ? 'shift-down' : 'shift-neutral'}`}>
+              Confidence: {active.confidenceShift.initialPercentage}% → {active.confidenceShift.reviewedPercentage}%
+            </span>
+          </div>
+          <p className="confidence-verdict-lead">
+            <strong>Adversarial Verdict:</strong> {active.confidenceShift.verdict}
+          </p>
+        </div>
+      )}
+
+      {active.canonicalAlternatives && (
+        <div className="canonical-alternatives-section">
+          <h4>Alternative Failure Causes Evaluated</h4>
+          <div className="alternatives-grid">
+            {active.canonicalAlternatives.map(alt => (
+              <div key={alt.cause} className="alternative-cause-card">
+                <div className="cause-header">
+                  <strong>{alt.cause}</strong>
+                  <span className={`status-pill pill-${alt.status}`}>
+                    {alt.status.replaceAll('_', ' ')}
+                  </span>
+                </div>
+                <p className="cause-summary">{alt.evidenceSummary}</p>
+                <small className="cause-impact">
+                  {alt.impactOnDiagnosis === 'supports_primary' ? '✓ Corroborates primary root cause' :
+                   alt.impactOnDiagnosis === 'eliminates_alternative' ? '✓ Eliminated by evidence' :
+                   '⚠ Unresolved boundary'}
+                </small>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p role="status">Review complete: {active.findings.length} findings. {active.assessments.filter(a => a.reduced).length} hypothesis confidence reductions.</p>
       <p>Diagnosis evidence strength: {active.diagnosisConfidence.original ?? 'Not recorded'} → {active.diagnosisConfidence.reviewed ?? 'Not recorded'} (reviewed assessment).</p>
       {active.assessments.map(a => <article key={a.hypothesisId}><h4>{a.hypothesisId}</h4><p>{a.originalLevel} → {a.reviewedLevel} · {a.reduced ? 'Reduced' : 'Not increased'}</p><p>Original status: {a.status}</p><ul>{a.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul></article>)}
