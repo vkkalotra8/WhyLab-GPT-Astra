@@ -229,6 +229,45 @@ Target: GPT-6 Astra Challenge (Product Hunt)
     - Verified checkbox click toggles state and correctly controls button availability (`disabled={busy || available !== true || !consent}`).
   - Confirmed all 360 unit tests and 31 browser checks pass without regression.
 
+### Item 5: Final Visual Pass & Responsive Viewport Audit (Completed)
+- **Viewport Re-Audits (375px, 768px, 1440px)**:
+  - Re-captured full-page screenshots at all three required breakpoints:
+    - Mobile: `artifacts/post_fix_mobile_375.png` (375×812)
+    - Tablet: `artifacts/post_fix_tablet_768.png` (768×1024)
+    - Desktop: `artifacts/post_fix_desktop_1440.png` (1440×1000)
+  - Focused component inspections:
+    - `artifacts/mobile_375_astra_inputs.png` (Astra upload & preset actions)
+    - `artifacts/mobile_375_extended_evidence.png` (Extended evidence multi-file importer)
+    - `artifacts/astra_consent_expanded.png` & `artifacts/repair_consent_expanded.png` (Expanded legal disclosure cards)
+    - `artifacts/tabs_icons_mobile_375.png` & `artifacts/lessons_icons_mobile_375.png` (Lucide SVG icon fidelity)
+
+- **Audit Findings & Confident In-Scope Fixes**:
+  1. **Multi-File Upload Widgets (Astra & Extended Evidence Import)**:
+     - *Finding*: File inputs and upload wrappers stayed contained, but preset buttons in `.evidence-presets` wrapped awkwardly at 375px with mixed button widths.
+     - *Fix*: Configured `.evidence-presets button` to span `width: 100%` with centered text and 40px minimum touch targets on mobile (<640px). Ensured `.extended-file input[type=file]` has `max-width: 100%` and `.case-actions button, label` have `min-height: 38px` for comfortable touch ergonomics.
+  2. **Case Manager Drawer Fields**:
+     - *Finding*: When `.case-manager details` was opened, `.case-manager .experiment-fields` forced a rigid `grid-template-columns: minmax(220px, 1fr) minmax(320px, 1.6fr)` (summing to >550px), creating a 180px horizontal overflow on 375px screens.
+     - *Fix*: Changed grid columns to `repeat(auto-fit, minmax(min(100%, 280px), 1fr))` and forced `grid-template-columns: 1fr` on screens <= 640px.
+  3. **Flagship Preview Metric Callout**:
+     - *Finding*: `.flagship-preview-callout` had `gap: 20px` and `.preview-metric-box` had `min-width: 200px`, causing a 50px overflow (`420px > 375px`).
+     - *Fix*: Added `flex-wrap: wrap` to the callout container, responsive flex shrinking (`flex: 1 1 180px; max-width: 100%`), and stacked `.preview-metric-box` vertically on screens <= 640px.
+  4. **Topbar Navigation Overflow on Tablet (768px)**:
+     - *Finding*: Between 641px and 900px (including 768px tablet), the brand logo, 5 navigation links, and the `+ New investigation` button collided on a single line, causing the `.new-button` to clip off-screen (`x: 825px > 753px`).
+     - *Fix*: Extended topbar responsive wrapping to `@media (max-width: 900px)` with a smooth, horizontally swipeable nav row (`overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch`).
+  5. **Global Viewport Overflow Guard**:
+     - *Fix*: Added `overflow-x: hidden` to `body` ensuring clean zero-horizontal-scroll guarantees across all mobile devices.
+  - *Result*: Automated audit (`audit_item5_responsive.mjs`) verified `hasDocOverflow: false` and `document.body.scrollWidth === document.documentElement.clientWidth` across all three viewports (375px, 768px, 1440px).
+
+- **Summary of All Visual / UX Changes Made in this Frontend Quality Pass**:
+  | Item | Component / Area | Before | After | Verification |
+  | :--- | :--- | :--- | :--- | :--- |
+  | **1. Section Numbering** | `case-manager`, `investigation-lab`, `dataset-lab`, `evidence-import`, `diagnosis-panel`, `interactive-lesson`, `experiment-workflow`, `explanation-assistant` | Non-sequential pipeline numbering (`06`, `01`, `02`, `07`, `03`, `04`, `05`, `08`) | Strict sequential visual & DOM order (`01` through `08`) | Chrome CDP DOM check, 31 browser checks pass |
+  | **2. Token Consolidation** | `investigation-lab`, `astra-investigation`, `repair-lab` | Duplicate token entry fields requiring visitor to re-type token in Astra and Repair Lab | Lifted into shared page state; entering in either instantly shares to both; added "Clear / Change token" affordance | Bidirectional sync verified in Chrome CDP (`verify_item2_token.mjs`) |
+  | **3. Vector SVG Icons** | Tab navigation & Learning cards (`investigation-lab`) | Raw unicode glyphs (`↥`, `≡`, `✧`, `≋`, `⋈`, `↗`) | Vector SVG icons via `lucide-react` (`Upload`, `FileText`, `Sparkles`, `Activity`, `GitFork`, `ArrowUpRight`) with design system token coloring | Rendered SVG verified at 375px, 768px, 1440px |
+  | **4. Collapsed Consent** | Astra (`#astra-lab`) & Repair Lab (`#repair-lab`) | Dense inline paragraphs cluttering form flow | Concise 1-line checkbox with collapsible `<details><summary>What data is sent?</summary></details>` containing exact, unedited legal text | Verified legal text matches 100%, toggles consent properly |
+  | **5. Responsive Polish** | Global layout, topbar, flagship callout, case manager, file inputs | Horizontal overflow at 375px and 768px; rigid multi-column grids | Zero horizontal overflow across all viewports; full mobile touch target optimization | Zero-overflow audit passed; 360 unit tests & 31 browser checks pass |
+
+
 
 
 
