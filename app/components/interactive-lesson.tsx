@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useId, useState } from 'react';
 import { demonstration, lessons } from '../lib/lessons';
 export default function InteractiveLesson({ diagnosisId, evidence }: { diagnosisId: string; evidence: string }) {
@@ -19,7 +19,7 @@ function LessonBody({ diagnosisId, evidence }: { diagnosisId: string; evidence: 
   const maximum=Math.max(.001,...curve.map(point=>point.value));
   const x=(value:number)=>30+(value-start)/(100-start)*290;
   const y=(value:number)=>120-value/maximum*100;
-  return <details className="interactive-lesson"><summary>04 / Learn why: {lesson.title}</summary>
+  return <details className="interactive-lesson"><summary>06 / Learn why: {lesson.title}</summary>
     <p className="lesson-evidence">Connected evidence: {evidence}</p>
     <label className="lesson-level" htmlFor={`${id}-level`}>Explanation depth<select id={`${id}-level`} value={level} onChange={event=>setLevel(event.target.value)}><option value="beginner">Beginner</option><option value="advanced">Advanced</option></select></label>
     <p className="description">{level==='beginner'?lesson.beginner:lesson.advanced}</p>

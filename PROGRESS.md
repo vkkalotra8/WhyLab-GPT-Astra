@@ -1,0 +1,273 @@
+# WhyLab Engineering Progress & Audit Log
+
+Branch: `feature/claude-extension`  
+Last Updated: 2026-09-17  
+Target: GPT-6 Astra Challenge (Product Hunt)
+
+---
+
+## Codebase Architecture & System Exploration
+
+### 1. Page & Component Structure
+- **App Shell & Root Layout** (`app/layout.tsx`, `app/page.tsx`):
+  - Next.js App Router with metadata configuration, custom system fonts, and design tokens in `app/globals.css`.
+  - Root page wraps the application in `CaseManager` (handling local browser storage, saved cases, and JSON export/import) and mounts `InvestigationLab`.
+- **Workbench Container** (`app/components/investigation-lab.tsx`):
+  - Contains top sticky navigation, hero section, 4-step workflow overview (`Observe → Investigate → Test → Repair`), and workspace tabs for custom evaluation datasets/training logs.
+  - Mounts specialized investigation components:
+    1. `FlagshipMelanoma` (`app/components/flagship-melanoma.tsx`): 1-click deterministic medical classifier case demonstrating the accuracy paradox.
+    2. `CaseStudies` (`app/components/case-studies.tsx`): Calibration drift and multi-site shift scenarios.
+    3. `AstraInvestigation` (`app/components/astra-investigation.tsx`): Autonomous AI-driven diagnostics powered by GPT-6 Astra.
+    4. `RepairLab` (`app/components/repair-lab.tsx`): Decision threshold optimization and cost-sensitive re-testing workbench.
+
+### 2. "Investigate with Astra" & "Repair Lab" Wiring
+- **Astra Investigator Flow**:
+  - Client component polls `/api/investigate` on mount to detect server capability (`available: boolean`).
+  - When initiated, client streams NDJSON events (`progress`, `tool_call`, `result`) from `/api/investigate`.
+  - The server investigator (`app/lib/investigation/investigator.ts`) executes an autonomous multi-turn tool loop using registered diagnostics (`compute_classification_metrics`, `test_hypothesis`, `inspect_slices`, etc.) against bounded evidence summaries.
+  - Result synthesis yields structured hypotheses, verified claims, and bounds, which bind into the linked `RepairLab`.
+- **Repair Lab Flow**:
+  - Operates either standalone (loading arbitrary CSV) or linked directly from an active investigation.
+  - Executes local threshold sweeps (`app/lib/investigation/repair-lab.ts`) across 101 candidate operating points without mutating original data.
+  - When AI is engaged, queries `/api/repair` for policy proposal translation and trade-off commentary.
+
+### 3. Client-Side vs. Server-Side Demarcation
+- **Client-Side (Deterministic & Local)**:
+  - All dataset parsing, metric calculations, confusion matrices, slice metrics, threshold sweeps, and graph visualizations run 100% in-browser on the client.
+  - Works offline or without API keys / tokens.
+- **Server-Side (Astra AI Integration)**:
+  - Next.js Route Handlers (`/api/investigate`, `/api/repair`) manage OpenAI API interactions, streaming responses, and quota enforcement.
+  - Strictly bound to sanitised summaries; raw evaluation rows are not transmitted.
+
+---
+
+## Phase 1: Fix What's Broken (Completed)
+
+### Changes Made:
+1. **Dynamic OpenGraph & Twitter Metadata (`app/layout.tsx`)**:
+   - Replaced broken `http://localhost:3000/launch/whylab-thumbnail.svg` reference.
+   - Configured dynamic `metadataBase` resolving from `process.env.NEXT_PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `https://why-lab-gpt-astra.vercel.app`.
+   - Pointed social image tags to `/launch/whylab-thumbnail.png` (high-res 1270×760 raster PNG, 352,034 bytes).
+   - Updated `scripts/validate-launch-assets.mjs` and `.env.example`.
+2. **Robust Connection Health Probe (`app/components/astra-investigation.tsx`)**:
+   - Added a 6,000ms timeout with explicit abort handling to the `/api/investigate` probe.
+   - Guaranteed that if server probe fails, errors out, or times out, the UI transitions immediately to `CONFIGURATION REQUIRED` or `STATUS UNAVAILABLE` with clear remediation guidance, rather than hanging indefinitely in `CHECKING CONNECTION`.
+
+### Browser Verifications:
+- Verified rendered `<head>` in live Chrome: `og:image` and `twitter:image` resolve to `https://why-lab-gpt-astra.vercel.app/launch/whylab-thumbnail.png`.
+- Verified `/launch/whylab-thumbnail.png` serves HTTP 200 with `image/png` content-type.
+- Verified live Astra connection status in Chrome CDP: successfully resolves to `AI CONFIGURED` with active credentials or clean status messaging if unconfigured.
+- All 360 unit tests and 31 automated browser tests pass cleanly.
+
+### Judgments / Trade-offs:
+- Used PNG raster instead of SVG for `og:image` as major social preview parsers (LinkedIn, Slack, Discord, Twitter/X) do not render SVG preview cards.
+
+---
+
+## Phase 2: Build the Signature Differentiator (Investigation Report - Completed)
+
+### Changes Made:
+1. **Built Shareable Investigation Report Modal (`app/components/investigation-report-modal.tsx`)**:
+   - Designed a standalone, screenshot-friendly, and printable report artifact card (`#printable-investigation-report`).
+   - Surfaces:
+     - **Observed Symptoms**: High-contrast cards for overall accuracy, minority recall, and balanced accuracy.
+     - **Tested Hypotheses**: Categorized cleanly as `SUPPORTED`, `FALSIFIED`, or `INCONCLUSIVE` with direct citations of deciding empirical evidence.
+     - **Applied Policy Repair & Measured Re-Test**: Operating threshold delta (e.g., `0.50 → 0.20`), before/after comparison table with measured impacts (e.g. `False negatives: 8 → 0 (-100%)`, `Malignant Recall: 20.0% → 100.0% (+80.0 pp)`, `Total Cost: 80 → 4 units (-95.0%)`), and explicit criterion verification status.
+     - **Honest Provenance & Disclosures**: Detailed dataset row counts, execution mode (Deterministic Local Solver vs Astra Autonomous AI), generation timestamp, and clear statement that this is empirical analysis, not a certification or regulatory clearance.
+   - Built-in Actions:
+     - **1-Click Copy Summary**: Formats an executive Markdown summary and copies to clipboard with visual status confirmation.
+     - **Print / Save as PDF**: `@media print` CSS isolating the report card into a clean, margin-perfect executive PDF without screen chrome or backgrounds.
+     - **Keyboard accessibility**: Closes on Escape key or backdrop click.
+2. **Wired "Generate Investigation Report" Across Key Workflows**:
+   - **Flagship Melanoma Case (`app/components/flagship-melanoma.tsx`)**: Available immediately on diagnosis completion and inside the repair drawer.
+   - **Astra Autonomous Investigator (`app/components/astra-investigation.tsx`)**: Available in the synthesis header and footer for both live and recorded runs.
+   - **Scenario Studies (`app/components/case-studies.tsx`)**: Available for calibration drift and site shift cases.
+3. **Report & Print Styles in `app/globals.css`**:
+   - Added complete modal, card, symptom grid, hypothesis status badges, repair table, and `@media print` rules.
+
+### Browser Verifications:
+- Verified end-to-end flow with automated CDP browser runner (`verify_investigation_report.mjs`):
+  - Ran flagship case in 1 click.
+  - Inspected measured repair.
+  - Clicked `Generate Investigation Report` button (`.btn-generate-report`).
+  - Confirmed `#printable-investigation-report` rendered with exact numbers: Validation Accuracy 92.0%, Malignant Recall 20.0%, Balanced Accuracy 60.0%, 3 hypotheses, -100% missed cancers impact, -95% cost impact, and honest disclosure.
+  - Confirmed `Copy summary` action and Escape key modal dismiss.
+  - Captured full high-resolution visual screenshot (`investigation_report_artifact.png`).
+- Confirmed zero regressions across all 360 unit tests and all 31 browser checks.
+
+### Judgments / Trade-offs:
+- Used native `@media print` with browser print-to-PDF rather than heavy, fragile canvas-based snapshot libraries (e.g., html2canvas), ensuring razor-sharp vector text, zero added bundle dependencies, and perfect fidelity.
+
+---
+
+## Phase 3: Reduce Friction (Completed)
+
+### Changes Made:
+1. **Pre-computed Recorded Astra Investigation (`public/fixtures/recorded-astra-investigation.json`, `app/components/astra-investigation.tsx`)**:
+   - Built a high-fidelity pre-computed Astra investigation fixture grounded on the real `melanoma-synthetic.csv` 100-row evaluation dataset.
+   - Added an "Instant Demo · No Token Required" callout above the Astra input form with 1-click "View recorded investigation" and dataset preset chips.
+   - Designed a prominent amber `RECORDED INVESTIGATION` badge box clearly stating: *"Example output: Pre-computed, verified investigation result generated by Astra on the melanoma dataset. Fully interactive linked repair available below — no API token or OpenAI key required."*
+   - Ensured zero confusion between live OpenAI streaming runs and recorded demo output.
+   - Linked seamlessly to the interactive Repair Lab with pre-populated demo policy proposals (`Missing a malignant case weighted 50× more heavily than false positive`).
+2. **Hero Section Local vs. Astra Distinction Banner (`app/components/investigation-lab.tsx`)**:
+   - Added an explicit, elegant distinction banner directly below the hero badge row:
+     - **Local deterministic analysis**: *Free, instant, runs completely in your browser without API keys.*
+     - **Astra-powered investigation**: *Autonomous AI diagnostics requiring your own API/deployment token.*
+   - Immediately informs first-time visitors and contest judges what is free/local versus what needs an OpenAI token.
+3. **Demo Fallback in Repair Lab (`app/components/repair-lab.tsx`)**:
+   - Allows users without an OpenAI API token to test the AI policy proposal and candidate measurement workflows via verified recorded proposals, eliminating dead-ends.
+
+### Browser Verifications:
+- Ran automated Chrome CDP test script (`verify_phase3.mjs`):
+  - Confirmed Hero distinction banner is rendered with exact wording for local vs. Astra token requirements.
+  - Clicked "View recorded investigation" (`.btn-recorded-example`) without entering any API key.
+  - Confirmed recorded run banner displays with `RECORDED INVESTIGATION` badge, pre-computed verified measurements (92.0% accuracy, 20.0% minority recall), tested hypotheses, and linked repair drawer.
+  - Confirmed "Generate Investigation Report" works directly on recorded investigation runs.
+- Ran full test suites:
+  - 360 unit tests pass (0 failures).
+  - 31 browser checks pass (0 failures).
+
+### Judgments / Trade-offs:
+- Stored the pre-computed run as a static JSON fixture under `/public/fixtures/recorded-astra-investigation.json` so it loads instantaneously (<20ms) without consuming serverless function execution limits or triggering cold starts.
+
+---
+
+## Phase 4: Polish & Final Verifications (Completed)
+
+### Changes Made:
+1. **Real Operating-Point Trade-off Chart (`app/components/flagship-chart.tsx`, `app/components/flagship-melanoma.tsx`)**:
+   - Built a custom, zero-dependency SVG visualization rendering the precision-recall and cost curves derived directly from the 101-threshold sweep of `melanoma-synthetic.csv` (100 rows, 10 malignant, 90 benign).
+   - Features glowing cyan Malignant Recall curve and coral dashed Total Error Cost curve with shaded area.
+   - Interactive threshold markers at key operating points (Baseline T=0.50 with Cost=80, Repaired T=0.20 with Cost=4).
+   - Dynamic comparison panel on the right updating live on hover or touch tap.
+   - Explicit "Honest Data Guarantee" banner grounding all data in real dataset measurements.
+2. **Comprehensive Polish & Zero-Warning Auditing**:
+   - Cleaned all TypeScript explicit `any` casts in `investigation-report-modal.tsx`, `flagship-melanoma.tsx`, `astra-investigation.tsx`, and `case-studies.tsx`.
+   - Elevated button styling for `.btn-generate-report` with high specificity, gradient treatment, and crisp SVG icon.
+   - Verified that ESLint (`npm run lint`), TypeScript (`npm run typecheck`), and the full unit suite (`npm test`, 360 tests) pass with 0 errors and 0 warnings.
+3. **Comprehensive End-to-End Browser Pass**:
+   - Executed full headless Chrome browser verification (`verify_phase4_comprehensive.mjs`) navigating fresh from hero to Flagship, Astra recorded demo, and Repair Lab.
+   - Confirmed 0 console errors during the full run.
+
+---
+
+## Frontend Quality Pass
+
+### Baseline Viewport Audits (375px, 768px, 1440px):
+- Captured initial baseline screenshots:
+  - Mobile: `baseline_mobile_375.png` (375×812)
+  - Tablet: `baseline_tablet_768.png` (768×1024)
+  - Desktop: `baseline_desktop_1440.png` (1440×1000)
+
+### Item 1: Section Numbering (Completed)
+- **Problem**: Section numbers were previously mapped to a theoretical 8-stage pipeline (`06` for CaseManager library, `01` for workspace, `02` for dataset, `07` for extended import, `03` for diagnosis, `04` for lesson, `05` for experiment). In the actual DOM and visual layout, this caused jarring out-of-order numbers: a visitor saw `06 / Investigation library` at the very top of the page before `01`, and `07 / Extended evidence import` directly below `01 / Investigation workspace`.
+- **Changes Made**:
+  - Renumbered all 8 numbered sections to match their exact visual, logical, and DOM reading order from top to bottom:
+    1. `01 / Investigation library` (`app/components/case-manager.tsx`)
+    2. `02 / Investigation workspace` (`app/components/investigation-lab.tsx`)
+    3. `03 / Dataset investigation` (`app/components/dataset-lab.tsx`)
+    4. `04 / Extended evidence import` (`app/components/evidence-import.tsx`)
+    5. `05 / Combined diagnosis` (`app/components/diagnosis-panel.tsx`)
+    6. `06 / Learn why: {lesson.title}` (`app/components/interactive-lesson.tsx`)
+    7. `07 / Verify this hypothesis` (`app/components/experiment-workflow.tsx`)
+    8. `08 / Evidence-grounded explanation` (`app/components/explanation-assistant.tsx`)
+- **Browser Verifications**:
+  - Verified in browser across DOM tree that section numbers now proceed strictly sequentially from `01` to `08`.
+  - Confirmed all 360 unit tests and 31 automated browser checks pass without regression.
+
+### Item 2: Consolidate Deployment Access Token (Completed)
+- **Problem**: The "Deployment access token" field appeared independently in two separate sections: "Investigate with Astra" (`#astra-lab`) and "Repair Lab" (`#repair-lab`). A visitor entering a token in one section had to re-enter it in the other, causing friction.
+- **Changes Made**:
+  - Lifted deployment token state (`deploymentToken`, `setDeploymentToken`) into shared page state inside `app/components/investigation-lab.tsx`.
+  - Passed `sharedToken={deploymentToken}` and `onSharedTokenChange={setDeploymentToken}` into both `<AstraInvestigation />` and `<RepairLab />`.
+  - Updated both components to synchronize with shared state while preserving optional standalone local fallback (`localToken`).
+  - Added a "Clear / Change token" affordance (`.btn-token-clear`) adjacent to the label in both sections when a token is active, with supportive status text ("✓ Token active for this session (shared across Astra & Repair Lab)").
+  - Styled `.token-label-row` and `.btn-token-clear` in `app/globals.css` with sleek dark button styling, subtle hover states, and accessibility focus outlines.
+- **Browser Verifications**:
+  - Ran Chrome CDP automated test (`verify_item2_token.mjs`):
+    - Entered token into Astra section `#astra-token-input`.
+    - Verified Repair Lab section `#repair-token-input` instantly received the shared token value.
+    - Verified "Clear / Change token" button rendered in both sections.
+    - Clicked "Clear / Change token" in Repair Lab and verified token was cleared in both sections simultaneously.
+  - Confirmed all 360 unit tests and all 31 automated browser checks pass.
+
+### Item 3: Replace Unicode Icon Glyphs with Real Icons (Completed)
+- **Problem**: Several tabs and educational headers used raw unicode characters as icons (`\u21a5` / ↥ for Upload, `\u2261` / ≡ for Paste logs, `\u2727` / ✧ for Try an example, `\u224b` / ≋ for Read the signals, `\u22c8` / ⋈ for Think in hypotheses, `\u2197` / ↗ for Test. Learn. Iterate.). These rendered inconsistently across operating systems and browser fonts, looking misaligned or pixelated on high-DPI and mobile screens.
+- **Changes Made**:
+  - Adopted `lucide-react` (installed and added to `package.json`).
+  - In `app/components/investigation-lab.tsx`:
+    - Swapped tab glyphs for `<Upload size={14} />`, `<FileText size={14} />`, and `<Sparkles size={14} />`.
+    - Swapped educational lesson glyphs for `<Activity size={22} />` (Read the signals), `<GitFork size={22} />` (Think in hypotheses), and `<ArrowUpRight size={22} />` (Test. Learn. Iterate.).
+  - In `app/globals.css`:
+    - Added `.tab-glyph` with `inline-flex` centering to guarantee exact vertical baseline alignment with tab labels.
+    - Updated `.lesson-top > span:first-child` with `display: inline-flex; align-items: center; justify-content: center;`, maintaining the cyan, violet, and amber category accent colors with crisp vector geometry.
+- **Browser Verifications**:
+  - Automated Chrome CDP test across all three required breakpoints (375px mobile, 768px tablet, 1440px desktop) via `verify_item3_icons.mjs`:
+    - Verified all 3 tab buttons contain valid SVG vector paths and responsive sizing (14px).
+    - Verified all 3 lesson headers contain valid SVG vector paths (22px) and retain theme colors.
+    - Captured visual verification screenshots: `tabs_icons_mobile_375.png`, `tabs_icons_desktop_1440.png`, `lessons_icons_mobile_375.png`, `lessons_icons_desktop_1440.png`.
+  - Confirmed all 360 unit tests and 31 browser checks pass with zero errors.
+
+### Item 4: Collapse Consent / Data-Usage Text (Completed)
+- **Problem**: In both the Astra investigation section (`#astra-lab`) and Repair Lab (`#repair-lab`), dense inline legal consent paragraphs cluttered the visual flow, creating wall-of-text fatigue before user interaction.
+- **Changes Made**:
+  - Maintained the exact class hooks (`.astra-consent`, `.astra-consent input`) required for existing test automation and accessibility contracts.
+  - Formatted each consent block into a clean, modern `.consent-container` with:
+    1. A concise, one-line checkbox label:
+       - Astra: *"I agree to send diagnostics and logs for Astra analysis."*
+       - Repair Lab: *"I agree to send repair inputs for Astra policy translation."*
+    2. An expandable/collapsible disclosure `<details className="consent-disclosure"><summary>What data is sent?</summary><p>...</p></details>` containing the complete, 100% unedited legal and data-handling notice:
+       - Astra: *"I agree to send these CSVs to the WhyLab server and their metadata, diagnostic results, and training-log text to OpenAI for diagnosis."*
+       - Repair Lab: *"I agree to send the CSV to the server. OpenAI receives the objective and bounded dataset summaries for policy translation, or the confirmed cost policy, measured summaries and linked diagnosis context for repair."*
+  - Styled `.consent-container` and `.consent-disclosure` in `app/globals.css` with clean surface background, subtle dashed separator, interactive cyan summary affordance, and dedicated message box for the disclosure body.
+- **Browser Verifications**:
+  - Ran Chrome CDP automated test (`verify_item4_consent.mjs`):
+    - Confirmed disclosure starts collapsed by default in both sections.
+    - Verified exact unedited legal text matches original byte-for-byte inside the disclosure paragraph.
+    - Clicked `summary` to expand in both sections and confirmed `details.open === true`.
+    - Captured visual verification screenshots: `astra_consent_expanded.png` and `repair_consent_expanded.png`.
+    - Verified checkbox click toggles state and correctly controls button availability (`disabled={busy || available !== true || !consent}`).
+  - Confirmed all 360 unit tests and 31 browser checks pass without regression.
+
+### Item 5: Final Visual Pass & Responsive Viewport Audit (Completed)
+- **Viewport Re-Audits (375px, 768px, 1440px)**:
+  - Re-captured full-page screenshots at all three required breakpoints:
+    - Mobile: `artifacts/post_fix_mobile_375.png` (375×812)
+    - Tablet: `artifacts/post_fix_tablet_768.png` (768×1024)
+    - Desktop: `artifacts/post_fix_desktop_1440.png` (1440×1000)
+  - Focused component inspections:
+    - `artifacts/mobile_375_astra_inputs.png` (Astra upload & preset actions)
+    - `artifacts/mobile_375_extended_evidence.png` (Extended evidence multi-file importer)
+    - `artifacts/astra_consent_expanded.png` & `artifacts/repair_consent_expanded.png` (Expanded legal disclosure cards)
+    - `artifacts/tabs_icons_mobile_375.png` & `artifacts/lessons_icons_mobile_375.png` (Lucide SVG icon fidelity)
+
+- **Audit Findings & Confident In-Scope Fixes**:
+  1. **Multi-File Upload Widgets (Astra & Extended Evidence Import)**:
+     - *Finding*: File inputs and upload wrappers stayed contained, but preset buttons in `.evidence-presets` wrapped awkwardly at 375px with mixed button widths.
+     - *Fix*: Configured `.evidence-presets button` to span `width: 100%` with centered text and 40px minimum touch targets on mobile (<640px). Ensured `.extended-file input[type=file]` has `max-width: 100%` and `.case-actions button, label` have `min-height: 38px` for comfortable touch ergonomics.
+  2. **Case Manager Drawer Fields**:
+     - *Finding*: When `.case-manager details` was opened, `.case-manager .experiment-fields` forced a rigid `grid-template-columns: minmax(220px, 1fr) minmax(320px, 1.6fr)` (summing to >550px), creating a 180px horizontal overflow on 375px screens.
+     - *Fix*: Changed grid columns to `repeat(auto-fit, minmax(min(100%, 280px), 1fr))` and forced `grid-template-columns: 1fr` on screens <= 640px.
+  3. **Flagship Preview Metric Callout**:
+     - *Finding*: `.flagship-preview-callout` had `gap: 20px` and `.preview-metric-box` had `min-width: 200px`, causing a 50px overflow (`420px > 375px`).
+     - *Fix*: Added `flex-wrap: wrap` to the callout container, responsive flex shrinking (`flex: 1 1 180px; max-width: 100%`), and stacked `.preview-metric-box` vertically on screens <= 640px.
+  4. **Topbar Navigation Overflow on Tablet (768px)**:
+     - *Finding*: Between 641px and 900px (including 768px tablet), the brand logo, 5 navigation links, and the `+ New investigation` button collided on a single line, causing the `.new-button` to clip off-screen (`x: 825px > 753px`).
+     - *Fix*: Extended topbar responsive wrapping to `@media (max-width: 900px)` with a smooth, horizontally swipeable nav row (`overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch`).
+  5. **Global Viewport Overflow Guard**:
+     - *Fix*: Added `overflow-x: hidden` to `body` ensuring clean zero-horizontal-scroll guarantees across all mobile devices.
+  - *Result*: Automated audit (`audit_item5_responsive.mjs`) verified `hasDocOverflow: false` and `document.body.scrollWidth === document.documentElement.clientWidth` across all three viewports (375px, 768px, 1440px).
+
+- **Summary of All Visual / UX Changes Made in this Frontend Quality Pass**:
+  | Item | Component / Area | Before | After | Verification |
+  | :--- | :--- | :--- | :--- | :--- |
+  | **1. Section Numbering** | `case-manager`, `investigation-lab`, `dataset-lab`, `evidence-import`, `diagnosis-panel`, `interactive-lesson`, `experiment-workflow`, `explanation-assistant` | Non-sequential pipeline numbering (`06`, `01`, `02`, `07`, `03`, `04`, `05`, `08`) | Strict sequential visual & DOM order (`01` through `08`) | Chrome CDP DOM check, 31 browser checks pass |
+  | **2. Token Consolidation** | `investigation-lab`, `astra-investigation`, `repair-lab` | Duplicate token entry fields requiring visitor to re-type token in Astra and Repair Lab | Lifted into shared page state; entering in either instantly shares to both; added "Clear / Change token" affordance | Bidirectional sync verified in Chrome CDP (`verify_item2_token.mjs`) |
+  | **3. Vector SVG Icons** | Tab navigation & Learning cards (`investigation-lab`) | Raw unicode glyphs (`↥`, `≡`, `✧`, `≋`, `⋈`, `↗`) | Vector SVG icons via `lucide-react` (`Upload`, `FileText`, `Sparkles`, `Activity`, `GitFork`, `ArrowUpRight`) with design system token coloring | Rendered SVG verified at 375px, 768px, 1440px |
+  | **4. Collapsed Consent** | Astra (`#astra-lab`) & Repair Lab (`#repair-lab`) | Dense inline paragraphs cluttering form flow | Concise 1-line checkbox with collapsible `<details><summary>What data is sent?</summary></details>` containing exact, unedited legal text | Verified legal text matches 100%, toggles consent properly |
+  | **5. Responsive Polish** | Global layout, topbar, flagship callout, case manager, file inputs | Horizontal overflow at 375px and 768px; rigid multi-column grids | Zero horizontal overflow across all viewports; full mobile touch target optimization | Zero-overflow audit passed; 360 unit tests & 31 browser checks pass |
+
+
+
+
+

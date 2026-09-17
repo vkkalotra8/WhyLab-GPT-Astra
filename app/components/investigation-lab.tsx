@@ -10,6 +10,7 @@ import { runIngestion } from "../lib/ingestion-client";
 import AstraInvestigation from './astra-investigation';
 import DatasetLab from "./dataset-lab";
 import EvidenceSummary from "./evidence-summary";
+import { Upload, FileText, Sparkles, Activity, GitFork, ArrowUpRight } from 'lucide-react';
 const sample = `[experiment] image_classifier_v3 / ResNet-18
 [epoch 26/30] train_loss=0.14 val_loss=0.15 train_accuracy=0.95 val_accuracy=0.948
 [epoch 27/30] train_loss=0.12 val_loss=0.16 train_accuracy=0.96 val_accuracy=0.946
@@ -31,6 +32,7 @@ function Chart() { return <div className="chart"><div className="chart-heading">
 export default function InvestigationLab() {
     const newCase = useNewCase();
     const [astraKey,setAstraKey]=useState(0);
+    const [deploymentToken, setDeploymentToken] = useState('');
     const [tab, setTab] = useCaseState("tab"), [logs, setLogs] = useCaseState("logs"), [file, setFile] = useState<File | null>(null), [analysis, setAnalysis] = useCaseState("analysis"), [drag, setDrag] = useState(false), [error, setError] = useState(""), [stage, setStage] = useState(-1), [complete, setComplete] = useCaseState("complete"), [expanded, setExpanded] = useState<number | null>(0);
     const input = useRef<HTMLInputElement>(null), result = useRef<HTMLElement>(null);
     const [evidence, setEvidence] = useCaseState("evidence");
@@ -135,10 +137,28 @@ export default function InvestigationLab() {
         }, 800);
     }
 
-    function example() {
+    async function example(autoRun: boolean | React.MouseEvent = true) {
+        const shouldRun = typeof autoRun === "boolean" ? autoRun : true;
         handleNavClick("examples");
         choose(2);
         document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" });
+        if (shouldRun) {
+            invalidate();
+            const current = request.current;
+            setReading(true);
+            const controller = new AbortController();
+            parserController.current = controller;
+            try {
+                const parsed = await runIngestion<import("../lib/evidence").Evidence>("analyze", [{ text: sample, name: "Example logs" }], controller.signal);
+                if (current !== request.current) return;
+                setEvidence(parsed);
+                setStage(0);
+            } catch (cause) {
+                if (current === request.current) setError(cause instanceof Error ? cause.message : "Unable to read this file. Try exporting it as UTF-8 text.");
+            } finally {
+                if (current === request.current) setReading(false);
+            }
+        }
     }
 
     function reset() {
@@ -192,7 +212,7 @@ export default function InvestigationLab() {
             type="button"
             className={activeNav === "examples" ? "nav-active" : undefined}
             disabled={busy}
-            onClick={example}
+            onClick={() => void example(true)}
           >
             Examples
           </button>
@@ -214,6 +234,17 @@ export default function InvestigationLab() {
               <span>Evidence, not guesswork</span>
               <span>Scientific clarity</span>
               <span>Built for curious engineers</span>
+            </div>
+            <div className="hero-distinction-banner" role="note">
+              <span className="distinction-item">
+                <strong className="distinction-tag tag-local">Local deterministic analysis</strong>
+                <span className="distinction-copy">Free, instant, runs completely in your browser without API keys.</span>
+              </span>
+              <span className="distinction-divider" aria-hidden="true">·</span>
+              <span className="distinction-item">
+                <strong className="distinction-tag tag-astra">Astra-powered investigation</strong>
+                <span className="distinction-copy">Autonomous AI diagnostics requiring your own API/deployment token.</span>
+              </span>
             </div>
             <div className="hero-actions">
               <a className="hero-primary" href="#astra-lab">
@@ -274,12 +305,20 @@ export default function InvestigationLab() {
 
         <FlagshipMelanoma key={`flagship-${astraKey}`} />
         <CaseStudies key={`cases-${astraKey}`} />
-        <AstraInvestigation key={astraKey} />
-        <RepairLab key={`repair-${astraKey}`} />
+        <AstraInvestigation
+          key={astraKey}
+          sharedToken={deploymentToken}
+          onSharedTokenChange={setDeploymentToken}
+        />
+        <RepairLab
+          key={`repair-${astraKey}`}
+          sharedToken={deploymentToken}
+          onSharedTokenChange={setDeploymentToken}
+        />
 
         <section id="workspace">
           <div className="section-heading">
-            <h2><span className="section-number">01 /</span> Investigation workspace</h2>
+            <h2><span className="section-number">02 /</span> Investigation workspace</h2>
             <span className="local-note"><span className="status-dot" /> LOCAL PROTOTYPE · IN-BROWSER EXECUTION</span>
           </div>
           <div className="workspace-grid">
@@ -312,7 +351,9 @@ export default function InvestigationLab() {
                       }
                     }}
                   >
-                    <span aria-hidden="true">{i === 0 ? "\u21a5" : i === 1 ? "\u2261" : "\u2727"}</span>
+                    <span aria-hidden="true" className="tab-glyph">
+                      {i === 0 ? <Upload size={14} /> : i === 1 ? <FileText size={14} /> : <Sparkles size={14} />}
+                    </span>
                     {item}
                   </button>
                 ))}
@@ -346,7 +387,19 @@ export default function InvestigationLab() {
                   </>
                 ) : (
                   <div className="logs-wrap">
-                    <label htmlFor="logs">{tab === 2 ? "IMAGE CLASSIFIER · SAMPLE LOGS" : "TRAINING LOGS & METRICS"}</label>
+                    <div className="logs-label-row">
+                      <label htmlFor="logs">{tab === 2 ? "IMAGE CLASSIFIER · SAMPLE LOGS" : "TRAINING LOGS & METRICS"}</label>
+                      {tab === 2 && (
+                        <button
+                          type="button"
+                          className="btn-text-run"
+                          disabled={busy}
+                          onClick={() => void example(true)}
+                        >
+                          ⚡ Run sample diagnosis (1-click)
+                        </button>
+                      )}
+                    </div>
                     <textarea
                       id="logs"
                       value={logs}
@@ -422,8 +475,8 @@ export default function InvestigationLab() {
               </div>
               <div className="case-bottom">
                 <span>3 hypotheses. A path to understanding.</span>
-                <button disabled={busy} onClick={example}>
-                  Use this example <Icon type="arrow" />
+                <button disabled={busy} onClick={() => void example(true)}>
+                  Run sample diagnosis (1-click) <Icon type="arrow" />
                 </button>
               </div>
             </section>
@@ -486,13 +539,13 @@ export default function InvestigationLab() {
             <p>A diagnosis is useful.<br />Understanding it changes everything.</p>
           </div>
           {[
-            { n: "01", title: "Read the signals", text: "See what loss curves, metrics, and data patterns are really telling you.", icon: "\u224b" },
-            { n: "02", title: "Think in hypotheses", text: "Connect evidence to likely causes. Learn why one explanation fits better.", icon: "\u22c8" },
-            { n: "03", title: "Test. Learn. Iterate.", text: "Turn a diagnosis into a focused experiment and a better next model.", icon: "\u2197" },
+            { n: "01", title: "Read the signals", text: "See what loss curves, metrics, and data patterns are really telling you.", Icon: Activity },
+            { n: "02", title: "Think in hypotheses", text: "Connect evidence to likely causes. Learn why one explanation fits better.", Icon: GitFork },
+            { n: "03", title: "Test. Learn. Iterate.", text: "Turn a diagnosis into a focused experiment and a better next model.", Icon: ArrowUpRight },
           ].map(item => (
             <div className="lesson" key={item.n}>
               <div className="lesson-top">
-                <span>{item.icon}</span>
+                <span aria-hidden="true" className="lesson-glyph"><item.Icon size={22} /></span>
                 <span>{item.n}</span>
               </div>
               <h3>{item.title}</h3>

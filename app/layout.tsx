@@ -13,10 +13,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://why-lab-gpt-astra.vercel.app");
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-  ),
+  metadataBase: new URL(siteUrl),
   title: "WhyLab — Investigate the failure. Prove the why.",
   description:
     "Let Astra investigate why your ML model failed, then repair the policy and prove what changed.",
@@ -25,12 +31,15 @@ export const metadata: Metadata = {
     description:
       "Evidence-linked diagnosis, measurable repair, and a retained re-test.",
     type: "website",
+    url: siteUrl,
+    siteName: "WhyLab",
     images: [
       {
-        url: "/launch/whylab-thumbnail.svg",
+        url: "/launch/whylab-thumbnail.png",
         width: 1270,
         height: 760,
         alt: "WhyLab evidence-linked ML investigation",
+        type: "image/png",
       },
     ],
   },
@@ -39,7 +48,7 @@ export const metadata: Metadata = {
     title: "WhyLab — Investigate the failure. Prove the why.",
     description:
       "Evidence-linked diagnosis, measurable repair, and a retained re-test.",
-    images: ["/launch/whylab-thumbnail.svg"],
+    images: ["/launch/whylab-thumbnail.png"],
   },
 };
 

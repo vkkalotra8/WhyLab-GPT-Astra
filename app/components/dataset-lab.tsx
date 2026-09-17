@@ -66,7 +66,7 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
     <section className="panel dataset-lab" aria-labelledby="dataset-heading">
       <div className="section-heading">
         <div>
-          <span className="eyebrow cyan">02 / DATASET INVESTIGATION</span>
+          <span className="eyebrow cyan">03 / DATASET INVESTIGATION</span>
           <h2 id="dataset-heading">Look inside your data.</h2>
         </div>
         <button

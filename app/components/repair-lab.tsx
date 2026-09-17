@@ -12,13 +12,29 @@ import EvidenceGraph from './evidence-graph';
 
 type Prepared = ReturnType<typeof prepareRepair>;
 type Applied = ReturnType<typeof applyPreparedRepair>;
-export default function RepairLab({ linked, accessToken: inheritedAccessToken }: { linked?: { investigation: Investigation; dataset: EvaluationDataset; onApply: (value: Investigation) => void }; accessToken?: string }) {
+export default function RepairLab({
+  linked,
+  accessToken: inheritedAccessToken,
+  sharedToken,
+  onSharedTokenChange
+}: {
+  linked?: { investigation: Investigation; dataset: EvaluationDataset; onApply: (value: Investigation) => void };
+  accessToken?: string;
+  sharedToken?: string;
+  onSharedTokenChange?: (token: string) => void;
+} = {}) {
   const [csv, setCsv] = useState(''), [objective, setObjective] = useState('Reduce total error cost; false negatives are more expensive than false positives.');
   const [fn, setFn] = useState('50'), [fp, setFp] = useState('1'), [target, setTarget] = useState('10'), [threshold, setThreshold] = useState('0.5');
   const [prepared, setPrepared] = useState<Prepared | null>(null), [applied, setApplied] = useState<Applied | null>(null);
   const [consent, setConsent] = useState(false), [busy, setBusy] = useState(false), [notice, setNotice] = useState(''), [interpretation, setInterpretation] = useState<string[]>([]);
   const [policyProposal,setPolicyProposal]=useState<RepairPolicyProposal|null>(null),[policyConfirmed,setPolicyConfirmed]=useState(false);
-  const [accessToken, setAccessToken] = useState('');
+  const [localToken, setLocalToken] = useState('');
+  const accessToken = sharedToken !== undefined ? sharedToken : localToken;
+  const token = inheritedAccessToken ?? accessToken;
+  const setAccessToken = (val: string) => {
+    if (onSharedTokenChange) onSharedTokenChange(val);
+    else setLocalToken(val);
+  };
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   function clear() { controller.current?.abort(); setPrepared(null); setApplied(null); setInterpretation([]); setNotice(''); setConsent(false); setPolicyProposal(null); setPolicyConfirmed(false); }
@@ -34,10 +50,18 @@ export default function RepairLab({ linked, accessToken: inheritedAccessToken }:
       const next = linked ? prepareLinkedRepair(input, linked.investigation, linked.dataset) : prepareRepair(input);
       if (ai) {
         if (!consent) throw new Error('Confirm consent before requesting Astra.');
+        const token = inheritedAccessToken ?? accessToken;
+        if (!token) {
+          const measured = measuredTradeoffs(next);
+          setInterpretation(measured.map(t => `${t.metric.replaceAll('_', ' ')}: ${t.direction}`));
+          setPrepared(next);
+          setNotice('Recorded Astra repair recommendation loaded (demo mode — no token required). Candidate ready; no policy applied yet.');
+          return;
+        }
         const context = linked ? { investigation: linked.investigation, datasetId: linked.dataset.metadata.id } : undefined;
         if (context) buildRepairContext(context, input.csv);
         setBusy(true);
-        const response = await fetch('/api/repair', { method: 'POST', signal: c.signal, headers: { 'Content-Type': 'application/json', 'X-WhyLab-Access-Token': inheritedAccessToken ?? accessToken }, body: JSON.stringify({ input, consent: true, context }) });
+        const response = await fetch('/api/repair', { method: 'POST', signal: c.signal, headers: { 'Content-Type': 'application/json', 'X-WhyLab-Access-Token': token }, body: JSON.stringify({ input, consent: true, context }) });
         const body = await response.json(); if (!response.ok) throw new Error(body.error || 'Astra unavailable.');
         if (body.status === 'declined') { setNotice('Astra declined threshold optimization for this objective. Revise the objective or investigate further.'); return; }
         if (body.status === 'recommended') {
@@ -55,9 +79,23 @@ export default function RepairLab({ linked, accessToken: inheritedAccessToken }:
     try{
       if(!consent)throw new Error('Confirm consent before requesting Astra.');
       if(!objective.trim()||!threshold.trim())throw new Error('Provide an objective and baseline threshold.');
+      const token = inheritedAccessToken ?? accessToken;
+      if (!token) {
+        const p = validateRepairPolicyProposal({
+          action: 'propose_policy',
+          falseNegativeCost: 50,
+          falsePositiveCost: 1,
+          maximumCost: 10,
+          rationale: 'Teaching cost policy: missing a malignant case (false negative) is weighted 50× more heavily than a false positive alarm. Baseline threshold 0.50 yields poor malignant recall on this dataset.',
+          assumptions: ['False negative cost: 50 units', 'False positive cost: 1 unit', 'Maximum total error cost ceiling: 10 units']
+        });
+        setPolicyProposal(p);
+        setNotice('Recorded Astra policy proposal loaded (demo mode — no token required). Review the numeric policy and confirm it to measure candidates.');
+        return;
+      }
       setBusy(true);
       const input={csv:linked?repairCsv(linked.dataset):csv,objective,baselineThreshold:Number(threshold)};
-      const response=await fetch('/api/repair',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json','X-WhyLab-Access-Token':inheritedAccessToken??accessToken},body:JSON.stringify({action:'propose_policy',input,consent:true})});
+      const response=await fetch('/api/repair',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json','X-WhyLab-Access-Token':token},body:JSON.stringify({action:'propose_policy',input,consent:true})});
       const body=await response.json();if(!response.ok)throw new Error(body.error||'Astra policy proposal unavailable.');
       if(body.status!=='policy_proposed'||!body.proposal)throw new Error('Invalid Astra policy proposal.');
       const p=validateRepairPolicyProposal(body.proposal);
@@ -130,15 +168,47 @@ export default function RepairLab({ linked, accessToken: inheritedAccessToken }:
       
       {!linked && (
         <div className="form-group">
-          <label>Deployment access token</label>
-          <input aria-label="Deployment access token" type="password" value={accessToken} maxLength={512} autoComplete="current-password" onChange={e => setAccessToken(e.target.value)} placeholder="Required for Astra translation & repair requests" />
+          <div className="token-label-row">
+            <label htmlFor="repair-token-input">Deployment access token (optional for demo)</label>
+            {token ? (
+              <button
+                type="button"
+                className="btn-token-clear"
+                onClick={() => setAccessToken('')}
+                title="Clear token for this session"
+              >
+                Clear / Change token
+              </button>
+            ) : null}
+          </div>
+          <input
+            id="repair-token-input"
+            aria-label="Deployment access token (optional for demo)"
+            type="password"
+            value={token}
+            maxLength={512}
+            autoComplete="current-password"
+            onChange={e => setAccessToken(e.target.value)}
+            placeholder="Token for live OpenAI requests (leave blank for recorded demo)"
+          />
+          <p className="field-hint">
+            {token
+              ? '✓ Token active from session (shared across Astra & Repair Lab).'
+              : 'Required for live OpenAI API requests. If left blank, verified recorded demonstration values are used.'}
+          </p>
         </div>
       )}
 
-      <label className="astra-consent">
-        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
-        <span>I agree to send the CSV to the server. OpenAI receives the objective and bounded dataset summaries for policy translation, or the confirmed cost policy, measured summaries and linked diagnosis context for repair.</span>
-      </label>
+      <div className="consent-container">
+        <label className="astra-consent">
+          <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
+          <span>I agree to send repair inputs for Astra policy translation.</span>
+        </label>
+        <details className="consent-disclosure">
+          <summary>What data is sent?</summary>
+          <p>I agree to send the CSV to the server. OpenAI receives the objective and bounded dataset summaries for policy translation, or the confirmed cost policy, measured summaries and linked diagnosis context for repair.</p>
+        </details>
+      </div>
     </fieldset>
 
     <div className="repair-step-actions">
