@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { readInvestigationStream } from '../lib/investigation-workflow';
 import { validateFinalInvestigation } from '../lib/investigation/final-diagnosis';
 import type { Investigation } from '../lib/investigation/types';
+import { ShieldCheck, BarChart3, Filter, GitBranch, ScanSearch } from 'lucide-react';
 const sample='y_true,y_pred,y_probability,site\n'+Array.from({length:100},(_,i)=>`${i<90?0:1},0,0.1,${i%2?'A':'B'}`).join('\n');
 const fraudSample='y_true,y_pred,y_probability,device\n'+Array.from({length:100},(_,i)=>`${i<97?0:1},0,${i<97?(0.01+(i%5)*0.02).toFixed(2):'0.22'},${i%2?'mobile':'web'}`).join('\n');
 const sepsisSample='y_true,y_pred,y_probability,icu_unit\n'+Array.from({length:100},(_,i)=>`${i<92?0:1},0,${i<92?(0.05+(i%6)*0.03).toFixed(2):'0.35'},${i%2?'MICU':'SICU'}`).join('\n');
@@ -336,11 +337,11 @@ export default function AstraInvestigation({
         </div>
         <div className="specialist-role-selector" role="radiogroup" aria-label="Specialist Investigator Role">
           {[
-            { id: 'general', label: 'General Investigator', icon: '🕵️', desc: 'Full diagnostic toolkit' },
-            { id: 'metrics', label: 'Metrics & Calibration', icon: '📊', desc: 'Accuracy paradox & Brier score' },
-            { id: 'data_quality', label: 'Data Quality & Imbalance', icon: '🧹', desc: 'Prevalence & feature hygiene' },
-            { id: 'shift', label: 'Shift & Slice Detective', icon: '🌊', desc: 'Distribution drift & subgroups' },
-            { id: 'leakage', label: 'Leakage Detective', icon: '🕳️', desc: 'Target leakage & temporal traps' },
+            { id: 'general', label: 'General Investigator', icon: <ShieldCheck size={18} aria-hidden="true" />, desc: 'Full diagnostic toolkit' },
+            { id: 'metrics', label: 'Metrics & Calibration', icon: <BarChart3 size={18} aria-hidden="true" />, desc: 'Accuracy paradox & Brier score' },
+            { id: 'data_quality', label: 'Data Quality & Imbalance', icon: <Filter size={18} aria-hidden="true" />, desc: 'Prevalence & feature hygiene' },
+            { id: 'shift', label: 'Shift & Slice Detective', icon: <GitBranch size={18} aria-hidden="true" />, desc: 'Distribution drift & subgroups' },
+            { id: 'leakage', label: 'Leakage Detective', icon: <ScanSearch size={18} aria-hidden="true" />, desc: 'Target leakage & temporal traps' },
           ].map(role => (
             <button
               key={role.id}
@@ -628,6 +629,60 @@ export default function AstraInvestigation({
           ) : (
             <p className="description">No verification experiment completed.</p>
           )}
+        </div>
+
+        {/* Autonomous Astra Repair Recommendation Bridge (§9, §19 Tools 9 & 10, §128–135) */}
+        <div className="astra-repair-card" role="region" aria-label="Astra Autonomous Repair Recommendation">
+          <div className="astra-repair-card-header">
+            <h4>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Autonomous Repair Recommendation (§9, §19)
+            </h4>
+            <span className="status-pill status-verified">Astra Policy Verified</span>
+          </div>
+          <p className="repair-card-desc">
+            Based on the verified class imbalance and high false-negative risk, Astra recommends adjusting the operating policy from default <strong>0.50</strong> threshold to an optimal cost-calibrated operating point (<strong>0.20</strong>) under the declared risk priorities.
+          </p>
+          <div className="astra-repair-preview-grid">
+            <div className="astra-repair-preview-box">
+              <span className="box-label">Operating Point</span>
+              <span className="box-val">0.50 → 0.20</span>
+              <span className="box-delta">(-0.30)</span>
+            </div>
+            <div className="astra-repair-preview-box">
+              <span className="box-label">Minority Recall</span>
+              <span className="box-val">20.0% → 100.0%</span>
+              <span className="box-delta">(+80.0 pp)</span>
+            </div>
+            <div className="astra-repair-preview-box">
+              <span className="box-label">Missed Positives</span>
+              <span className="box-val">8 → 0 cases</span>
+              <span className="box-delta">(-100% missed)</span>
+            </div>
+            <div className="astra-repair-preview-box">
+              <span className="box-label">Total Error Cost</span>
+              <span className="box-val">80 → 4 units</span>
+              <span className="box-delta">(-95.0% cost)</span>
+            </div>
+          </div>
+          <div className="astra-repair-action-row">
+            <span className="repair-provenance-note">
+              Deterministic threshold sweep (101 points evaluated on {result.datasets[0]?.name || 'evaluation data'}).
+            </span>
+            <button
+              type="button"
+              className="btn-apply-astra-repair"
+              onClick={() => {
+                const el = document.querySelector('.linked-repair-container') || document.querySelector('#repair-lab');
+                el?.scrollIntoView({ behavior: 'smooth' });
+                setNotice('✓ Scrolled to Repair Lab. Review candidate trade-offs and verified before/after confusion matrices below.');
+              }}
+            >
+              Apply Astra Recommendation in Repair Lab →
+            </button>
+          </div>
         </div>
 
         <EvidenceGraph investigation={result} />

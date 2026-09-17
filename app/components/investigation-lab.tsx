@@ -245,12 +245,12 @@ export default function InvestigationLab() {
         <section className="hero">
           <div>
             <div className="eyebrow cyan">
-              <span className="status-dot" /> AI RELIABILITY &amp; ML INCIDENT INVESTIGATOR
+              <span className="status-dot" /> AI ML RELIABILITY INVESTIGATOR
             </div>
+            <h1>Every failed model is trying <br className="desktop-break" />to tell you <span>something.</span></h1>
             <div className="mental-model-badge">
               <span>Sentry for software</span> · <span>Datadog for infra</span> · <strong className="cyan-text">WhyLab for machine learning</strong>
             </div>
-            <h1>Find why your ML model fails in production, <br className="desktop-break" /><span>prove the cause</span>, and repair it.</h1>
             <p className="hero-lead">Upload your evaluation data. WhyLab investigates why your model is failing, proves the root cause with counterfactual experiments, and repairs your operating policy.</p>
 
             <div className="hero-tension-card" role="region" aria-label="Incident Tension Callout">

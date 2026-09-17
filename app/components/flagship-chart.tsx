@@ -89,20 +89,16 @@ export default function FlagshipChart() {
 
             <defs>
               <linearGradient id={`${chartId}-cost-grad`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ff708f" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#ff708f" stopOpacity="0.02" />
+                <stop offset="0%" stopColor="#e11d48" stopOpacity="0.12" />
+                <stop offset="100%" stopColor="#e11d48" stopOpacity="0.01" />
               </linearGradient>
-              <filter id={`${chartId}-glow`} x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
             </defs>
 
             {/* Grid lines */}
             {[0, 0.25, 0.5, 0.75, 1.0].map(val => (
-              <g key={val} stroke="#1b2a3a" strokeDasharray="3 4">
+              <g key={val} stroke="#e2e8f0" strokeDasharray="3 4">
                 <line x1={padL} y1={padT + (1 - val) * plotH} x2={padL + plotW} y2={padT + (1 - val) * plotH} />
-                <text x={padL - 8} y={padT + (1 - val) * plotH + 4} fill="#627d98" fontSize="10" textAnchor="end">
+                <text x={padL - 8} y={padT + (1 - val) * plotH + 4} fill="#64748b" fontSize="10" textAnchor="end">
                   {Math.round(val * 100)}%
                 </text>
               </g>
@@ -111,8 +107,8 @@ export default function FlagshipChart() {
             {/* X-axis tick labels */}
             {[0, 0.2, 0.4, 0.6, 0.8, 1.0].map(val => (
               <g key={`x-${val}`}>
-                <line x1={x(val)} y1={padT} x2={x(val)} y2={padT + plotH} stroke="#172433" strokeDasharray="2 4" />
-                <text x={x(val)} y={padT + plotH + 16} fill="#627d98" fontSize="10" textAnchor="middle">
+                <line x1={x(val)} y1={padT} x2={x(val)} y2={padT + plotH} stroke="#e2e8f0" strokeDasharray="2 4" />
+                <text x={x(val)} y={padT + plotH + 16} fill="#64748b" fontSize="10" textAnchor="middle">
                   T={val.toFixed(1)}
                 </text>
               </g>
@@ -125,19 +121,18 @@ export default function FlagshipChart() {
             <path
               d={costPath}
               fill="none"
-              stroke="#ff708f"
+              stroke="#e11d48"
               strokeWidth="2.5"
               strokeDasharray="4 3"
-              opacity="0.85"
+              opacity="0.9"
             />
 
-            {/* Recall curve (Cyan solid glowing) */}
+            {/* Recall curve (Cyan solid) */}
             <path
               d={recallPath}
               fill="none"
-              stroke="#56dfce"
+              stroke="#0d9488"
               strokeWidth="3.5"
-              filter={`url(#${chartId}-glow)`}
             />
 
             {/* Vertical operating line for Baseline (0.50) */}
@@ -146,7 +141,7 @@ export default function FlagshipChart() {
               y1={padT}
               x2={x(basePoint.t)}
               y2={padT + plotH}
-              stroke="#ff708f"
+              stroke="#e11d48"
               strokeWidth="1.5"
               strokeDasharray="2 2"
             />
@@ -155,11 +150,11 @@ export default function FlagshipChart() {
               cx={x(basePoint.t)}
               cy={yRecall(basePoint.recall)}
               r="6"
-              fill="#ff708f"
-              stroke="#0b1726"
+              fill="#e11d48"
+              stroke="#ffffff"
               strokeWidth="2"
             />
-            <text x={x(basePoint.t) + 8} y={yRecall(basePoint.recall) + 4} fill="#ff708f" fontSize="11" fontWeight="700">
+            <text x={x(basePoint.t) + 8} y={yRecall(basePoint.recall) + 4} fill="#be123c" fontSize="11" fontWeight="700">
               Baseline (T=0.5)
             </text>
 
@@ -169,7 +164,7 @@ export default function FlagshipChart() {
               y1={padT}
               x2={x(optPoint.t)}
               y2={padT + plotH}
-              stroke="#56dfce"
+              stroke="#0d9488"
               strokeWidth="1.5"
               strokeDasharray="2 2"
             />
@@ -178,11 +173,11 @@ export default function FlagshipChart() {
               cx={x(optPoint.t)}
               cy={yRecall(optPoint.recall)}
               r="7"
-              fill="#56dfce"
-              stroke="#0b1726"
+              fill="#0d9488"
+              stroke="#ffffff"
               strokeWidth="2"
             />
-            <text x={x(optPoint.t) - 8} y={yRecall(optPoint.recall) - 10} fill="#56dfce" fontSize="11" fontWeight="700" textAnchor="end">
+            <text x={x(optPoint.t) - 8} y={yRecall(optPoint.recall) - 10} fill="#0f766e" fontSize="11" fontWeight="700" textAnchor="end">
               Repaired (T=0.2)
             </text>
 

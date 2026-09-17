@@ -23,11 +23,11 @@ const siteUrl =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "WhyLab — Investigate the failure. Prove the why.",
+  title: "WhyLab — Every failed model is trying to tell you something.",
   description:
     "Let Astra investigate why your ML model failed, then repair the policy and prove what changed.",
   openGraph: {
-    title: "WhyLab — Investigate the failure. Prove the why.",
+    title: "WhyLab — Every failed model is trying to tell you something.",
     description:
       "Evidence-linked diagnosis, measurable repair, and a retained re-test.",
     type: "website",

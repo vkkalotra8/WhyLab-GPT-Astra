@@ -53,3 +53,18 @@ test('composite reliability score calculates after-repair progression 38 -> 81 (
   assert.equal(profile.compositeScore.afterRepairRiskBand, 'LOW RISK / RELIABLE');
   assert.equal(profile.compositeScore.scoreDelta, 43);
 });
+
+test('composite reliability score dynamically recalculates on custom datasets', () => {
+  const v = fixture();
+  // Change dataset name to simulate custom user dataset
+  const custom = structuredClone(v);
+  custom.datasets[0].name = 'custom-credit-risk.csv';
+  const profile = buildReliabilityProfile(custom);
+
+  assert.ok(profile.compositeScore);
+  assert.ok(profile.compositeScore.afterRepairScore !== null);
+  // Custom dataset uses measured after metrics (96% acc, 97.8% BA, 100% recall, cost 4 vs 80)
+  assert.ok(profile.compositeScore.afterRepairScore > profile.compositeScore.score);
+  assert.ok(profile.compositeScore.scoreDelta !== null && profile.compositeScore.scoreDelta > 0);
+});
+

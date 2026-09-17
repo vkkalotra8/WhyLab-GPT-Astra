@@ -253,7 +253,7 @@ export default function VisionLab() {
       {/* Header Banner */}
       <div className="section-heading">
         <div>
-          <span className="eyebrow cyan">05 / WHYLAB VISION · COMPUTER VISION INCIDENT INVESTIGATOR</span>
+          <span className="eyebrow cyan">MULTIMODAL EXTENSION · COMPUTER VISION INCIDENT INVESTIGATOR</span>
           <h2 id={`${uid}-title`}>Multimodal Hypotheses. Deterministic Falsification.</h2>
           <p className="description">
             Astra looks at your worst vision failures and hypothesizes visual error concepts. WhyLab then tests each concept against held-out images using Benjamini–Hochberg False Discovery Rate control and Cohen&apos;s &kappa; labeller audits.

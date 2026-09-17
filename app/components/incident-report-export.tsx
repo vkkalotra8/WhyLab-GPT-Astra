@@ -5,12 +5,14 @@ import {
   incidentReportMarkdown,
   incidentIssueMarkdown,
   deriveCiPolicy,
+  generateWorkflowYaml,
   defaultReportContext
 } from '../lib/investigation/incident-report';
 import type { Investigation } from '../lib/investigation/types';
 
 export default function IncidentReportExport({ investigation }: { investigation: Investigation }) {
   const [model, setModel] = useState(''), [severity, setSeverity] = useState('unassessed'), [rationale, setRationale] = useState('');
+  const [targetRepo, setTargetRepo] = useState('vkkalotra8/WhyLab-GPT-Astra');
   const [notice, setNotice] = useState('');
 
   function getReport() {
@@ -39,6 +41,28 @@ export default function IncidentReportExport({ investigation }: { investigation:
       await navigator.clipboard.writeText(issueBody);
       setNotice('GitHub issue markdown copied to clipboard! Ready to paste into GitHub Issues.');
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Could not copy GitHub issue.'); }
+  }
+
+  function openOnGitHub() {
+    try {
+      const report = getReport();
+      const issueBody = incidentIssueMarkdown(report);
+      const title = `ML Incident: ${investigation.id} (${report.modelIdentifier.value}) - ${report.severity.level.toUpperCase()}`;
+      const repo = targetRepo.trim() || 'vkkalotra8/WhyLab-GPT-Astra';
+      const url = `https://github.com/${repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(issueBody)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setNotice(`Opened pre-filled GitHub issue for ${repo} in a new tab.`);
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Could not open GitHub issue.'); }
+  }
+
+  function downloadWorkflowYaml() {
+    try {
+      const report = getReport();
+      const yaml = generateWorkflowYaml(report);
+      const url = URL.createObjectURL(new Blob([yaml], { type: 'text/yaml;charset=utf-8' }));
+      const link = document.createElement('a'); link.href = url; link.download = 'whylab-gate.yml'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice('Runnable GitHub Actions workflow (.github/workflows/whylab-gate.yml) downloaded.');
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Could not generate GitHub Actions workflow.'); }
   }
 
   function downloadCiGate() {
@@ -164,6 +188,10 @@ jobs:
           </select>
         </label>
         <label>
+          Target GitHub repo (owner/repo)
+          <input maxLength={200} value={targetRepo} onChange={e => setTargetRepo(e.target.value)} placeholder="owner/repo for 1-click issue filing" />
+        </label>
+        <label>
           Severity rationale
           <textarea maxLength={4000} value={rationale} onChange={e => setRationale(e.target.value)} placeholder="Describe observed operational impact; avoid inferring it from accuracy alone." />
         </label>
@@ -182,6 +210,12 @@ jobs:
           </svg>
           Export incident JSON
         </button>
+        <button type="button" onClick={openOnGitHub} title="Open pre-filled GitHub Issue in browser" className="btn-open-github" style={{ background: '#238636', color: '#fff', borderColor: '#2ea043' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+          </svg>
+          Open on GitHub
+        </button>
         <button type="button" onClick={copyGitHubIssue} title="Copy GitHub Issue markdown to clipboard">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
@@ -189,9 +223,16 @@ jobs:
           </svg>
           Copy GitHub Issue
         </button>
-        <button type="button" onClick={downloadCiGate} title="Download executable CI no-regression policy">
+        <button type="button" onClick={downloadWorkflowYaml} title="Download ready-to-commit GitHub Actions CI workflow">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          Download CI Workflow (.yml)
+        </button>
+        <button type="button" onClick={downloadCiGate} title="Download executable CI no-regression policy">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
           </svg>
           Download CI Gate JSON
         </button>

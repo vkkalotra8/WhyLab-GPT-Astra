@@ -56,7 +56,7 @@ export const READINESS_CHECKLIST: ReadinessItem[] = [
     criterion: 'Repair Lab Measurable Before-vs-After Change',
     category: 'core',
     status: 'passed',
-    evidence: 'Operating boundary optimization producing measured before-vs-after delta: FN 776 → 148 (-81%), recall 22.4% → 85.2%, and 2x2 confusion matrix.',
+    evidence: 'Operating boundary optimization producing measured before-vs-after delta: FN 776 → 148 (-81%), recall 22.4% → 85.2%, and 2x2 confusion matrix. Autonomous Astra repair recommendation card bridges diagnosis directly to Repair Lab with dynamic reliability score recalculation.',
     verificationCmd: 'npm test (repair-reevaluation.test.mjs)'
   },
   {
