@@ -9,6 +9,7 @@ import { prepareLinkedRepair, repairCsv } from '../lib/investigation/linked-repa
 import type { Investigation } from '../lib/investigation/types';
 import type { EvaluationDataset } from '../lib/investigation/evaluation-ingestion';
 import EvidenceGraph from './evidence-graph';
+import ConfusionMatrixHeatmap from './confusion-matrix-heatmap';
 
 type Prepared = ReturnType<typeof prepareRepair>;
 type Applied = ReturnType<typeof applyPreparedRepair>;
@@ -439,7 +440,24 @@ export default function RepairLab({
           </table>
         </div>
 
-        <h4>Confusion Matrix at Active Operating Point</h4>
+        <ConfusionMatrixHeatmap
+          baseline={{
+            title: 'Baseline Operating Point',
+            threshold: prepared.baseline.threshold,
+            confusion: prepared.baseline.confusion
+          }}
+          repaired={prepared.suggested ? {
+            title: 'Proposed Candidate Policy',
+            threshold: prepared.suggested.threshold,
+            confusion: prepared.suggested.confusion
+          } : null}
+          labels={{
+            positive: 'Positive (1)',
+            negative: 'Negative (0)'
+          }}
+        />
+
+        <h4>Metrics Summary at Active Operating Point</h4>
         <div className="flagship-metrics">
           {live && Object.entries(live.confusion).map(([name, value]) => (
             <div key={name}>

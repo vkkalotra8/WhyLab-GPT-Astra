@@ -206,6 +206,44 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
 
       {training ? (
         <>
+          <div className="byom-pipeline-bridges" role="region" aria-label="BYOM Pipeline Actions">
+            <div className="byom-meta-summary">
+              <span className="byom-chip">
+                <strong>{training.rows.length.toLocaleString()}</strong> training rows
+              </span>
+              {datasets.Validation && (
+                <span className="byom-chip">
+                  <strong>{datasets.Validation.rows.length.toLocaleString()}</strong> validation rows
+                </span>
+              )}
+              {datasets.Production && (
+                <span className="byom-chip">
+                  <strong>{datasets.Production.rows.length.toLocaleString()}</strong> production rows
+                </span>
+              )}
+              <span className="byom-chip">
+                Target: <strong>{target || 'None selected'}</strong>
+              </span>
+            </div>
+
+            <div className="byom-bridge-actions">
+              <a
+                href="#astra-lab"
+                className="bridge-btn primary"
+                title="Launch GPT-6 Astra autonomous investigation on this dataset (§4, §11)"
+              >
+                🔬 Investigate in Astra Lab <span aria-hidden="true">→</span>
+              </a>
+              <a
+                href="#repair-lab"
+                className="bridge-btn secondary"
+                title="Optimize operating thresholds and decision policies in Repair Lab (§9)"
+              >
+                ⚙️ Optimize in Repair Lab <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+
           <div className="dataset-options">
             <label>
               <span className="option-title">Task type</span>

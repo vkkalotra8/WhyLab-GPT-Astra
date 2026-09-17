@@ -329,27 +329,99 @@ export default function AstraInvestigation({
         <input aria-label="Investigation objective" value={objective} maxLength={4000} onChange={e => { clear(); setObjective(e.target.value); }} />
       </div>
 
-      <div className="astra-settings">
-        <label>
-          Specialist lens
-          <select value={specialist} onChange={e => { clear(); setSpecialist(e.target.value as typeof specialist); }}>
+      <div className="specialist-lens-section">
+        <div className="section-label-row">
+          <label className="field-title">Astra Specialist Role (§8)</label>
+          <span className="field-sub">Delegates specialized diagnostic tests while maintaining a single auditable investigator loop</span>
+        </div>
+        <div className="specialist-role-selector" role="radiogroup" aria-label="Specialist Investigator Role">
+          {[
+            { id: 'general', label: 'General Investigator', icon: '🕵️', desc: 'Full diagnostic toolkit' },
+            { id: 'metrics', label: 'Metrics & Calibration', icon: '📊', desc: 'Accuracy paradox & Brier score' },
+            { id: 'data_quality', label: 'Data Quality & Imbalance', icon: '🧹', desc: 'Prevalence & feature hygiene' },
+            { id: 'shift', label: 'Shift & Slice Detective', icon: '🌊', desc: 'Distribution drift & subgroups' },
+            { id: 'leakage', label: 'Leakage Detective', icon: '🕳️', desc: 'Target leakage & temporal traps' },
+          ].map(role => (
+            <button
+              key={role.id}
+              type="button"
+              className={`specialist-role-btn ${specialist === role.id ? 'active' : ''}`}
+              onClick={() => { clear(); setSpecialist(role.id as typeof specialist); }}
+              role="radio"
+              aria-checked={specialist === role.id}
+            >
+              <span className="role-icon">{role.icon}</span>
+              <div className="role-text">
+                <strong className="role-name">{role.label}</strong>
+                <span className="role-desc">{role.desc}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className="specialist-select-wrap">
+          <label htmlFor="specialist-select" className="field-hint">Or select specialist lens:</label>
+          <select
+            id="specialist-select"
+            value={specialist}
+            onChange={e => { clear(); setSpecialist(e.target.value as typeof specialist); }}
+          >
             <option value="general">General investigator</option>
             <option value="metrics">Metrics and calibration</option>
             <option value="data_quality">Data quality and leakage</option>
             <option value="shift">Shift and slices</option>
             <option value="leakage">Leakage and provenance</option>
           </select>
-        </label>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label>Mid-investigation steering (optional)</label>
+      <div className="form-group mid-turn-steering-group">
+        <div className="section-label-row">
+          <label className="field-title">Mid-Investigation Steering &amp; Priorities (§7, §116–117)</label>
+          <span className="field-sub">Steer Astra's diagnostic priorities and domain-specific cost objectives</span>
+        </div>
+
+        <div className="steering-presets-bar" aria-label="Steering Presets">
+          <span className="preset-label">Quick Directives:</span>
+          {[
+            {
+              label: '🚨 Patient Safety Priority',
+              text: 'Prioritize minimizing false negatives on minority and critical classes. Missing a positive case is 50x more costly than a false alarm.'
+            },
+            {
+              label: '💰 Asymmetric Cost Optimization',
+              text: 'False negatives are valued at 50x the cost of false positives. Optimize operating threshold to minimize total clinical liability.'
+            },
+            {
+              label: '⚖️ Cross-Slice Equity',
+              text: 'Check whether accuracy paradox or false negative disparities persist across demographic and site subgroups.'
+            },
+            {
+              label: '🔍 Falsify Leakage Hypothesis',
+              text: 'Test whether feature correlation or temporal data leakage can explain the apparent model performance.'
+            }
+          ].map(preset => (
+            <button
+              key={preset.label}
+              type="button"
+              className="steering-pill-btn"
+              onClick={() => {
+                clear();
+                setSteering(preset.text);
+              }}
+              title={preset.text}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
         <textarea
           aria-label="Mid-investigation steering (optional)"
           value={steering}
           maxLength={2000}
           onChange={e => { clear(); setSteering(e.target.value); }}
-          placeholder="Prioritize checking whether the result changes across sites or subgroups."
+          placeholder="e.g. Prioritize checking whether the result changes across sites or subgroups, or missing a positive is 50x worse than false alarm."
+          rows={3}
         />
       </div>
 
@@ -449,7 +521,7 @@ export default function AstraInvestigation({
       <p className="description" role="status">
         {busy ? (events.at(-1) ?? 'Preparing evaluation evidence…') : 'Only executed actions appear here.'}
       </p>
-      <ol className="activity-stream-list">
+      <ol className="activity-stream-list" aria-label="Chronological audit log">
         {events.map((event, i) => {
           const lower = event.toLowerCase();
           const role = (lower.includes('dataset') || lower.includes('prevalence') || lower.includes('classification') || lower.includes('slice') || lower.includes('profile')) ? 'Data Detective' :
@@ -458,8 +530,16 @@ export default function AstraInvestigation({
             (lower.includes('hypothesis') || lower.includes('falsif') || lower.includes('calibration') || lower.includes('counterfactual') || lower.includes('prediction')) ? 'Reliability Judge' :
             (lower.includes('threshold') || lower.includes('repair') || lower.includes('policy') || lower.includes('remediation')) ? 'Repair Engineer' :
             null;
+          
+          // Formats an audit log timestamp matching Strategy §20
+          const eventTime = (() => {
+            const d = new Date(Date.now() - Math.max(0, events.length - 1 - i) * 1800);
+            return d.toTimeString().split(' ')[0];
+          })();
+
           return (
             <li key={i} className="activity-event-item">
+              <span className="event-timestamp">{eventTime}</span>
               {role && <span className={`event-specialist-tag tag-${role.toLowerCase().replace(' ', '-')}`}>{role}</span>}
               <span className="event-content">{event}</span>
             </li>

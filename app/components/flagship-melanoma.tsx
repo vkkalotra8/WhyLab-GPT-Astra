@@ -6,6 +6,7 @@ import IncidentReportExport from './incident-report-export';
 import EvidenceGraph from './evidence-graph';
 import FlagshipChart from './flagship-chart';
 import InvestigationReportModal from './investigation-report-modal';
+import ConfusionMatrixHeatmap from './confusion-matrix-heatmap';
 
 import { useState } from 'react';
 import { investigateMelanoma } from '../lib/investigation/flagship-melanoma';
@@ -186,6 +187,22 @@ export default function FlagshipMelanoma() {
             <span className="status-pill status-verified">Verification: {result.comparison.status}</span>
             <span>Criterion: <strong>{result.improvement}</strong></span>
           </div>
+          <ConfusionMatrixHeatmap
+            baseline={{
+              title: 'Baseline Policy (Threshold 0.50)',
+              threshold: result.comparison.baselinePolicy.threshold,
+              confusion: result.baseline.confusion
+            }}
+            repaired={{
+              title: 'Repaired Policy (Threshold 0.19)',
+              threshold: result.comparison.afterPolicy.threshold,
+              confusion: result.after.confusion
+            }}
+            labels={{
+              positive: 'Malignant',
+              negative: 'Benign'
+            }}
+          />
           <p className="flagship-note">Simulated impact under the supplied cost model.</p>
           <div className="flagship-table">
             <table>
