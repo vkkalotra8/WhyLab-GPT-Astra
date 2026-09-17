@@ -208,5 +208,27 @@ Target: GPT-6 Astra Challenge (Product Hunt)
     - Captured visual verification screenshots: `tabs_icons_mobile_375.png`, `tabs_icons_desktop_1440.png`, `lessons_icons_mobile_375.png`, `lessons_icons_desktop_1440.png`.
   - Confirmed all 360 unit tests and 31 browser checks pass with zero errors.
 
+### Item 4: Collapse Consent / Data-Usage Text (Completed)
+- **Problem**: In both the Astra investigation section (`#astra-lab`) and Repair Lab (`#repair-lab`), dense inline legal consent paragraphs cluttered the visual flow, creating wall-of-text fatigue before user interaction.
+- **Changes Made**:
+  - Maintained the exact class hooks (`.astra-consent`, `.astra-consent input`) required for existing test automation and accessibility contracts.
+  - Formatted each consent block into a clean, modern `.consent-container` with:
+    1. A concise, one-line checkbox label:
+       - Astra: *"I agree to send diagnostics and logs for Astra analysis."*
+       - Repair Lab: *"I agree to send repair inputs for Astra policy translation."*
+    2. An expandable/collapsible disclosure `<details className="consent-disclosure"><summary>What data is sent?</summary><p>...</p></details>` containing the complete, 100% unedited legal and data-handling notice:
+       - Astra: *"I agree to send these CSVs to the WhyLab server and their metadata, diagnostic results, and training-log text to OpenAI for diagnosis."*
+       - Repair Lab: *"I agree to send the CSV to the server. OpenAI receives the objective and bounded dataset summaries for policy translation, or the confirmed cost policy, measured summaries and linked diagnosis context for repair."*
+  - Styled `.consent-container` and `.consent-disclosure` in `app/globals.css` with clean surface background, subtle dashed separator, interactive cyan summary affordance, and dedicated message box for the disclosure body.
+- **Browser Verifications**:
+  - Ran Chrome CDP automated test (`verify_item4_consent.mjs`):
+    - Confirmed disclosure starts collapsed by default in both sections.
+    - Verified exact unedited legal text matches original byte-for-byte inside the disclosure paragraph.
+    - Clicked `summary` to expand in both sections and confirmed `details.open === true`.
+    - Captured visual verification screenshots: `astra_consent_expanded.png` and `repair_consent_expanded.png`.
+    - Verified checkbox click toggles state and correctly controls button availability (`disabled={busy || available !== true || !consent}`).
+  - Confirmed all 360 unit tests and 31 browser checks pass without regression.
+
+
 
 

@@ -199,10 +199,16 @@ export default function RepairLab({
         </div>
       )}
 
-      <label className="astra-consent">
-        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
-        <span>I agree to send the CSV to the server. OpenAI receives the objective and bounded dataset summaries for policy translation, or the confirmed cost policy, measured summaries and linked diagnosis context for repair.</span>
-      </label>
+      <div className="consent-container">
+        <label className="astra-consent">
+          <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
+          <span>I agree to send repair inputs for Astra policy translation.</span>
+        </label>
+        <details className="consent-disclosure">
+          <summary>What data is sent?</summary>
+          <p>I agree to send the CSV to the server. OpenAI receives the objective and bounded dataset summaries for policy translation, or the confirmed cost policy, measured summaries and linked diagnosis context for repair.</p>
+        </details>
+      </div>
     </fieldset>
 
     <div className="repair-step-actions">

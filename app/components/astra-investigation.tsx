@@ -394,10 +394,16 @@ export default function AstraInvestigation({
         </button>
       </div>
 
-      <label className="astra-consent">
-        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
-        <span>I agree to send these CSVs to the WhyLab server and their metadata, diagnostic results, and training-log text to OpenAI for diagnosis.</span>
-      </label>
+      <div className="consent-container">
+        <label className="astra-consent">
+          <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
+          <span>I agree to send diagnostics and logs for Astra analysis.</span>
+        </label>
+        <details className="consent-disclosure">
+          <summary>What data is sent?</summary>
+          <p>I agree to send these CSVs to the WhyLab server and their metadata, diagnostic results, and training-log text to OpenAI for diagnosis.</p>
+        </details>
+      </div>
     </fieldset>
 
     <div className="case-actions astra-main-actions">
