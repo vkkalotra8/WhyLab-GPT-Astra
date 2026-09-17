@@ -13,6 +13,8 @@ import { readInvestigationStream } from '../lib/investigation-workflow';
 import { validateFinalInvestigation } from '../lib/investigation/final-diagnosis';
 import type { Investigation } from '../lib/investigation/types';
 const sample='y_true,y_pred,y_probability,site\n'+Array.from({length:100},(_,i)=>`${i<90?0:1},0,0.1,${i%2?'A':'B'}`).join('\n');
+const fraudSample='y_true,y_pred,y_probability,device\n'+Array.from({length:100},(_,i)=>`${i<97?0:1},0,${i<97?(0.01+(i%5)*0.02).toFixed(2):'0.22'},${i%2?'mobile':'web'}`).join('\n');
+const sepsisSample='y_true,y_pred,y_probability,icu_unit\n'+Array.from({length:100},(_,i)=>`${i<92?0:1},0,${i<92?(0.05+(i%6)*0.03).toFixed(2):'0.35'},${i%2?'MICU':'SICU'}`).join('\n');
 const draftKey='whylab-astra-draft-v1';
 type LocalDraft={csv:string;trainingLog:string;trainingLogName:string;positive:string;negative:string;objective:string;gap:string;specialist:'general'|'metrics'|'data_quality'|'shift'|'leakage';steering:string};
 function readDraft():LocalDraft|null{try{const value=JSON.parse(localStorage.getItem(draftKey)??'null');if(!value||typeof value!=='object')return null;const strings=['csv','trainingLog','trainingLogName','positive','negative','objective','gap','steering'];if(strings.some(key=>typeof value[key]!=='string'))return null;if(!['general','metrics','data_quality','shift','leakage'].includes(value.specialist)||value.csv.length>2000000||value.trainingLog.length>16000)return null;return value as LocalDraft;}catch{return null;}}
@@ -244,6 +246,26 @@ export default function AstraInvestigation({
         <button type="button" onClick={() => {
           clear();
           setFiles([]);
+          if (fileInput.current) fileInput.current.value = '';
+          setCsv(fraudSample);
+          setPositive('1');
+          setNegative('0');
+          setObjective('Investigate why transaction fraud detection reports 97% accuracy while missing high-risk anomalies.');
+          setNotice('Financial fraud evaluation loaded. 97% accuracy masks critical missed fraud.');
+        }}>Load fraud example</button>
+        <button type="button" onClick={() => {
+          clear();
+          setFiles([]);
+          if (fileInput.current) fileInput.current.value = '';
+          setCsv(sepsisSample);
+          setPositive('1');
+          setNegative('0');
+          setObjective('Investigate why clinical sepsis triage misses emergency ICU deteriorations.');
+          setNotice('Clinical sepsis evaluation loaded. Threshold 0.50 misses early onset sepsis.');
+        }}>Load ICU sepsis example</button>
+        <button type="button" onClick={() => {
+          clear();
+          setFiles([]);
           setCsv('');
           setTrainingLog('');
           if (fileInput.current) fileInput.current.value = '';
@@ -420,14 +442,29 @@ export default function AstraInvestigation({
     {notice && <p role="status" className="notice-banner">{notice}</p>}
 
     <section aria-label="Investigation activity" className="astra-activity">
-      <h3>Observable Activity Stream</h3>
+      <div className="activity-header-row">
+        <h3>Observable Activity Stream</h3>
+        <span className="specialist-team-pill">Multi-Agent Specialist Swarm</span>
+      </div>
       <p className="description" role="status">
         {busy ? (events.at(-1) ?? 'Preparing evaluation evidence…') : 'Only executed actions appear here.'}
       </p>
-      <ol>
-        {events.map((event, i) => (
-          <li key={i}>{event}</li>
-        ))}
+      <ol className="activity-stream-list">
+        {events.map((event, i) => {
+          const lower = event.toLowerCase();
+          const role = (lower.includes('dataset') || lower.includes('prevalence') || lower.includes('classification') || lower.includes('slice') || lower.includes('profile')) ? 'Data Detective' :
+            lower.includes('leakage') ? 'Leakage Detective' :
+            (lower.includes('distribution') || lower.includes('drift')) ? 'Drift Detective' :
+            (lower.includes('hypothesis') || lower.includes('falsif') || lower.includes('calibration') || lower.includes('counterfactual') || lower.includes('prediction')) ? 'Reliability Judge' :
+            (lower.includes('threshold') || lower.includes('repair') || lower.includes('policy') || lower.includes('remediation')) ? 'Repair Engineer' :
+            null;
+          return (
+            <li key={i} className="activity-event-item">
+              {role && <span className={`event-specialist-tag tag-${role.toLowerCase().replace(' ', '-')}`}>{role}</span>}
+              <span className="event-content">{event}</span>
+            </li>
+          );
+        })}
       </ol>
     </section>
 
@@ -441,6 +478,18 @@ export default function AstraInvestigation({
             </span>
           </div>
         )}
+
+        <div className="specialist-team-banner">
+          <span className="team-banner-title">INTERNAL SPECIALIST AGENTS DEPLOYED (§8):</span>
+          <div className="team-tags-row">
+            <span className="agent-badge badge-data">● Data Detective</span>
+            <span className="agent-badge badge-leakage">● Leakage Detective</span>
+            <span className="agent-badge badge-drift">● Drift Detective</span>
+            <span className="agent-badge badge-judge">● Reliability Judge</span>
+            <span className="agent-badge badge-repair">● Repair Engineer</span>
+          </div>
+        </div>
+
         <div className="result-header-card">
           <span className="eyebrow cyan">FINAL SYNTHESIS</span>
           <h3 ref={heading} tabIndex={-1}>Diagnosis: {result.diagnosis!.status}</h3>

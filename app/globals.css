@@ -2650,6 +2650,77 @@ select:focus {
   margin: 6px 0 4px;
 }
 
+/* Dataset Presets Bar (§11 Bring Your Own Model) */
+.dataset-preset-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin: 16px 0 8px;
+}
+
+.preset-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--brand);
+  white-space: nowrap;
+}
+
+.preset-spark-icon {
+  font-size: 14px;
+}
+
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+
+.preset-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.preset-pill-btn:hover {
+  background: #f0fdfa;
+  border-color: #0d9488;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.1);
+}
+
+.preset-domain {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0d9488;
+  background: rgba(13, 148, 136, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.preset-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
 .dataset-uploads {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5139,4 +5210,722 @@ footer {
     display: none !important;
   }
 }
+
+/* ============================================================
+   RELIABILITY SCORE DASHBOARD STYLING
+   ============================================================ */
+.reliability-score-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 16px 0 24px;
+}
+
+.score-hero-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 20px;
+  background: linear-gradient(135deg, #090d16 0%, #111827 100%);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  padding: 22px 26px;
+  color: #f8fafc;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.score-main-gauge {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.score-pre-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #38bdf8;
+}
+
+.score-number-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.score-big {
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  font-feature-settings: 'tnum';
+  letter-spacing: -0.03em;
+}
+
+.score-denom {
+  font-size: 18px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.risk-badge {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+.risk-badge.risk-high {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.risk-badge.risk-mod {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.risk-badge.risk-low {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.score-repair-comparison {
+  flex: 1.2 1 320px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.repair-badge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.improvement-callout {
+  font-size: 12px;
+  font-weight: 800;
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.15);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.score-transition-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.score-before {
+  font-size: 26px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.score-arrow {
+  font-size: 20px;
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.score-after {
+  font-size: 34px;
+  font-weight: 800;
+  color: #10b981;
+}
+
+.score-after-denom {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.repair-impact-note {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.sub-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.sub-score-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.sub-score-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sub-score-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.sub-score-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sub-score-val small {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.sub-score-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sub-score-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease-out;
+}
+
+.sub-score-bar-fill.bar-critical {
+  background: #ef4444;
+}
+
+.sub-score-bar-fill.bar-warning {
+  background: #f59e0b;
+}
+
+.sub-score-bar-fill.bar-good {
+  background: #10b981;
+}
+
+.sub-score-meta {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.score-formula-details {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.score-formula-details summary {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+  cursor: pointer;
+}
+
+.formula-card {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.dimension-evidence-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+}
+
+.dimension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.dimension-header h5 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.dimension-limitation {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+/* ============================================================
+   ADVERSARIAL REVIEW STYLING
+   ============================================================ */
+.adversarial-confidence-banner {
+  background: linear-gradient(135deg, #090d16 0%, #171d2c 100%);
+  border: 1px solid rgba(147, 51, 234, 0.35);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 16px 0 20px;
+  color: #f8fafc;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.confidence-banner-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.confidence-shift-badge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+.confidence-shift-badge.shift-up {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.confidence-shift-badge.shift-down {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.confidence-shift-badge.shift-neutral {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.confidence-verdict-lead {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.canonical-alternatives-section {
+  margin: 18px 0;
+}
+
+.canonical-alternatives-section h4 {
+  font-size: 13px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+  margin-bottom: 10px;
+}
+
+.alternatives-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.alternative-cause-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.cause-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cause-header strong {
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.cause-summary {
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.4;
+  margin: 0;
+  flex: 1;
+}
+
+.cause-impact {
+  font-size: 10px;
+  font-weight: 700;
+  color: #0f766e;
+  margin-top: 4px;
+}
+
+.status-pill.pill-supported {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-pill.pill-weak_evidence,
+.status-pill.pill-inconsistent_with_logs {
+  background: rgba(148, 163, 184, 0.12);
+  color: #475569;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.status-pill.pill-survives_challenge {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* ============================================================
+   SPECIALIST AGENTS (§8) STYLING
+   ============================================================ */
+.activity-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.specialist-team-pill {
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(14, 165, 233, 0.1);
+  color: #0284c7;
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.activity-stream-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activity-event-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.event-specialist-tag {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.event-specialist-tag.tag-data-detective {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.event-specialist-tag.tag-leakage-detective {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.event-specialist-tag.tag-drift-detective {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.event-specialist-tag.tag-reliability-judge {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.event-specialist-tag.tag-repair-engineer {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.specialist-team-banner {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.team-banner-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.team-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agent-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.agent-badge.badge-data {
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+}
+
+.agent-badge.badge-leakage {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fde047;
+}
+
+.agent-badge.badge-drift {
+  background: rgba(192, 132, 252, 0.15);
+  color: #e9d5ff;
+}
+
+.agent-badge.badge-judge {
+  background: rgba(244, 114, 182, 0.15);
+  color: #fbcfe8;
+}
+
+.agent-badge.badge-repair {
+  background: rgba(52, 211, 153, 0.15);
+  color: #a7f3d0;
+}
+
+/* ============================================================
+   REPAIR DELTA CARD (§9 & §16 CLIMAX)
+   ============================================================ */
+.repair-delta-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0 24px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  color: #f8fafc;
+}
+
+.repair-delta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  padding-bottom: 16px;
+}
+
+.repair-delta-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.delta-mono {
+  font-family: var(--font-geist-mono), monospace;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+
+.delta-highlight {
+  background: rgba(6, 182, 212, 0.2);
+  color: #22d3ee;
+  border-color: rgba(6, 182, 212, 0.4);
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
+}
+
+.repair-delta-sub {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.repair-delta-sub strong {
+  color: #e2e8f0;
+}
+
+.repair-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.repair-impact-item {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.repair-impact-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.impact-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.impact-values {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.impact-before {
+  font-size: 15px;
+  color: #64748b;
+  text-decoration: line-through;
+}
+
+.impact-arrow {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.impact-after {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.impact-success .impact-after {
+  color: #34d399;
+}
+
+.impact-recall .impact-after {
+  color: #38bdf8;
+}
+
+.impact-tradeoff .impact-after {
+  color: #fbbf24;
+}
+
+.impact-cost .impact-after {
+  color: #a78bfa;
+}
+
+.impact-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.impact-badge.badge-positive {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.impact-badge.badge-tradeoff {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.impact-badge.badge-neutral {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.repair-credibility-disclaimer {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #94a3b8;
+  background: rgba(0, 0, 0, 0.25);
+  border-left: 3px solid #38bdf8;
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  margin: 0;
+}
+
+.repair-credibility-disclaimer strong {
+  color: #e2e8f0;
+}
+
+
+
+
 

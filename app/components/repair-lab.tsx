@@ -297,6 +297,122 @@ export default function RepairLab({
           </div>
         </div>
 
+        {prepared.suggested && (() => {
+          const fnBefore = prepared.baseline.confusion.falseNegative;
+          const fnAfter = prepared.suggested.confusion.falseNegative;
+          const fnDelta = fnAfter - fnBefore;
+
+          const fpBefore = prepared.baseline.confusion.falsePositive;
+          const fpAfter = prepared.suggested.confusion.falsePositive;
+          const fpDelta = fpAfter - fpBefore;
+
+          const getMetricVal = (mList: typeof prepared.baseline.metrics, name: string) => {
+            const m = mList.find(x => x.name === name);
+            return m && m.status === 'measured' ? m.value : null;
+          };
+
+          const recallBefore = getMetricVal(prepared.baseline.metrics, 'recall') ?? getMetricVal(prepared.baseline.metrics, 'minority_recall');
+          const recallAfter = getMetricVal(prepared.suggested.metrics, 'recall') ?? getMetricVal(prepared.suggested.metrics, 'minority_recall');
+          const recallDelta = recallBefore !== null && recallAfter !== null ? recallAfter - recallBefore : null;
+
+          const costBefore = getMetricVal(prepared.baseline.metrics, 'expected_cost');
+          const costAfter = getMetricVal(prepared.suggested.metrics, 'expected_cost');
+          const costDelta = costBefore !== null && costAfter !== null ? costAfter - costBefore : null;
+
+          return (
+            <div className="repair-delta-card" aria-label="Operating Policy Before vs After Delta Summary">
+              <div className="repair-delta-header">
+                <div>
+                  <span className="eyebrow cyan">CLIMAX: OPERATING POINT SHIFT</span>
+                  <h4 className="repair-delta-title">
+                    Decision Boundary: <span className="delta-mono">{prepared.baseline.threshold}</span> → <span className="delta-mono delta-highlight">{prepared.suggested.threshold}</span>
+                  </h4>
+                  <p className="repair-delta-sub">
+                    Optimization objective: <strong>{prepared.input.objective}</strong> · Stated weights: {prepared.input.falseNegativeCost}× FN vs {prepared.input.falsePositiveCost}× FP.
+                  </p>
+                </div>
+                <div className="repair-status-tag">
+                  {applied ? (
+                    <span className="status-pill status-verified">✓ Applied & Verified</span>
+                  ) : (
+                    <span className="status-pill status-ready">Candidate Ready</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="repair-impact-grid">
+                <div className="repair-impact-item impact-success">
+                  <span className="impact-label">False Negatives (Critical Misses)</span>
+                  <div className="impact-values">
+                    <span className="impact-before">{fnBefore.toLocaleString()}</span>
+                    <span className="impact-arrow">→</span>
+                    <strong className="impact-after">{fnAfter.toLocaleString()}</strong>
+                  </div>
+                  {fnDelta < 0 ? (
+                    <span className="impact-badge badge-positive">
+                      {Math.abs(fnDelta).toLocaleString()} misses prevented
+                    </span>
+                  ) : fnDelta === 0 ? (
+                    <span className="impact-badge badge-neutral">Unchanged</span>
+                  ) : (
+                    <span className="impact-badge badge-tradeoff">+{fnDelta.toLocaleString()} misses</span>
+                  )}
+                </div>
+
+                <div className="repair-impact-item impact-recall">
+                  <span className="impact-label">Minority / Target Recall</span>
+                  <div className="impact-values">
+                    <span className="impact-before">{recallBefore !== null ? (recallBefore * 100).toFixed(1) + '%' : '—'}</span>
+                    <span className="impact-arrow">→</span>
+                    <strong className="impact-after">{recallAfter !== null ? (recallAfter * 100).toFixed(1) + '%' : '—'}</strong>
+                  </div>
+                  {recallDelta !== null && (
+                    <span className={`impact-badge ${recallDelta > 0 ? 'badge-positive' : 'badge-neutral'}`}>
+                      {recallDelta > 0 ? `+${(recallDelta * 100).toFixed(1)}%` : `${(recallDelta * 100).toFixed(1)}%`}
+                    </span>
+                  )}
+                </div>
+
+                <div className="repair-impact-item impact-tradeoff">
+                  <span className="impact-label">False Positives (Review Burden)</span>
+                  <div className="impact-values">
+                    <span className="impact-before">{fpBefore.toLocaleString()}</span>
+                    <span className="impact-arrow">→</span>
+                    <strong className="impact-after">{fpAfter.toLocaleString()}</strong>
+                  </div>
+                  {fpDelta > 0 ? (
+                    <span className="impact-badge badge-tradeoff">
+                      +{fpDelta.toLocaleString()} trade-off
+                    </span>
+                  ) : fpDelta === 0 ? (
+                    <span className="impact-badge badge-neutral">Unchanged</span>
+                  ) : (
+                    <span className="impact-badge badge-positive">{fpDelta.toLocaleString()} alarms</span>
+                  )}
+                </div>
+
+                <div className="repair-impact-item impact-cost">
+                  <span className="impact-label">Simulated Expected Error Cost</span>
+                  <div className="impact-values">
+                    <span className="impact-before">{costBefore !== null ? costBefore.toLocaleString() : '—'}</span>
+                    <span className="impact-arrow">→</span>
+                    <strong className="impact-after">{costAfter !== null ? costAfter.toLocaleString() : '—'}</strong>
+                  </div>
+                  {costDelta !== null && (
+                    <span className={`impact-badge ${costDelta < 0 ? 'badge-positive' : 'badge-neutral'}`}>
+                      {costDelta < 0 ? `${costDelta.toLocaleString()} units` : `+${costDelta.toLocaleString()}`}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <p className="repair-credibility-disclaimer">
+                ⚖ <strong>Credibility Assurance:</strong> Simulated clinical and operational impact under the stated cost model ({prepared.input.falseNegativeCost}× FN / {prepared.input.falsePositiveCost}× FP). Evaluated strictly over unchanged evaluation rows; probabilities are untouched and no model weights were retrained.
+              </p>
+            </div>
+          );
+        })()}
+
         <div className="flagship-table">
           <table>
             <caption>Live metrics and candidate preview (evaluated on unchanged rows)</caption>
