@@ -175,3 +175,20 @@ Target: GPT-6 Astra Challenge (Product Hunt)
   - Verified in browser across DOM tree that section numbers now proceed strictly sequentially from `01` to `08`.
   - Confirmed all 360 unit tests and 31 automated browser checks pass without regression.
 
+### Item 2: Consolidate Deployment Access Token (Completed)
+- **Problem**: The "Deployment access token" field appeared independently in two separate sections: "Investigate with Astra" (`#astra-lab`) and "Repair Lab" (`#repair-lab`). A visitor entering a token in one section had to re-enter it in the other, causing friction.
+- **Changes Made**:
+  - Lifted deployment token state (`deploymentToken`, `setDeploymentToken`) into shared page state inside `app/components/investigation-lab.tsx`.
+  - Passed `sharedToken={deploymentToken}` and `onSharedTokenChange={setDeploymentToken}` into both `<AstraInvestigation />` and `<RepairLab />`.
+  - Updated both components to synchronize with shared state while preserving optional standalone local fallback (`localToken`).
+  - Added a "Clear / Change token" affordance (`.btn-token-clear`) adjacent to the label in both sections when a token is active, with supportive status text ("✓ Token active for this session (shared across Astra & Repair Lab)").
+  - Styled `.token-label-row` and `.btn-token-clear` in `app/globals.css` with sleek dark button styling, subtle hover states, and accessibility focus outlines.
+- **Browser Verifications**:
+  - Ran Chrome CDP automated test (`verify_item2_token.mjs`):
+    - Entered token into Astra section `#astra-token-input`.
+    - Verified Repair Lab section `#repair-token-input` instantly received the shared token value.
+    - Verified "Clear / Change token" button rendered in both sections.
+    - Clicked "Clear / Change token" in Repair Lab and verified token was cleared in both sections simultaneously.
+  - Confirmed all 360 unit tests and all 31 automated browser checks pass.
+
+

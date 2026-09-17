@@ -12,13 +12,29 @@ import EvidenceGraph from './evidence-graph';
 
 type Prepared = ReturnType<typeof prepareRepair>;
 type Applied = ReturnType<typeof applyPreparedRepair>;
-export default function RepairLab({ linked, accessToken: inheritedAccessToken }: { linked?: { investigation: Investigation; dataset: EvaluationDataset; onApply: (value: Investigation) => void }; accessToken?: string }) {
+export default function RepairLab({
+  linked,
+  accessToken: inheritedAccessToken,
+  sharedToken,
+  onSharedTokenChange
+}: {
+  linked?: { investigation: Investigation; dataset: EvaluationDataset; onApply: (value: Investigation) => void };
+  accessToken?: string;
+  sharedToken?: string;
+  onSharedTokenChange?: (token: string) => void;
+} = {}) {
   const [csv, setCsv] = useState(''), [objective, setObjective] = useState('Reduce total error cost; false negatives are more expensive than false positives.');
   const [fn, setFn] = useState('50'), [fp, setFp] = useState('1'), [target, setTarget] = useState('10'), [threshold, setThreshold] = useState('0.5');
   const [prepared, setPrepared] = useState<Prepared | null>(null), [applied, setApplied] = useState<Applied | null>(null);
   const [consent, setConsent] = useState(false), [busy, setBusy] = useState(false), [notice, setNotice] = useState(''), [interpretation, setInterpretation] = useState<string[]>([]);
   const [policyProposal,setPolicyProposal]=useState<RepairPolicyProposal|null>(null),[policyConfirmed,setPolicyConfirmed]=useState(false);
-  const [accessToken, setAccessToken] = useState('');
+  const [localToken, setLocalToken] = useState('');
+  const accessToken = sharedToken !== undefined ? sharedToken : localToken;
+  const token = inheritedAccessToken ?? accessToken;
+  const setAccessToken = (val: string) => {
+    if (onSharedTokenChange) onSharedTokenChange(val);
+    else setLocalToken(val);
+  };
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   function clear() { controller.current?.abort(); setPrepared(null); setApplied(null); setInterpretation([]); setNotice(''); setConsent(false); setPolicyProposal(null); setPolicyConfirmed(false); }
@@ -152,17 +168,34 @@ export default function RepairLab({ linked, accessToken: inheritedAccessToken }:
       
       {!linked && (
         <div className="form-group">
-          <label>Deployment access token (optional for demo)</label>
+          <div className="token-label-row">
+            <label htmlFor="repair-token-input">Deployment access token (optional for demo)</label>
+            {token ? (
+              <button
+                type="button"
+                className="btn-token-clear"
+                onClick={() => setAccessToken('')}
+                title="Clear token for this session"
+              >
+                Clear / Change token
+              </button>
+            ) : null}
+          </div>
           <input
+            id="repair-token-input"
             aria-label="Deployment access token (optional for demo)"
             type="password"
-            value={accessToken}
+            value={token}
             maxLength={512}
             autoComplete="current-password"
             onChange={e => setAccessToken(e.target.value)}
             placeholder="Token for live OpenAI requests (leave blank for recorded demo)"
           />
-          <p className="field-hint">Required for live OpenAI API requests. If left blank, verified recorded demonstration values are used.</p>
+          <p className="field-hint">
+            {token
+              ? '✓ Token active from session (shared across Astra & Repair Lab).'
+              : 'Required for live OpenAI API requests. If left blank, verified recorded demonstration values are used.'}
+          </p>
         </div>
       )}
 

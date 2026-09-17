@@ -31,6 +31,7 @@ function Chart() { return <div className="chart"><div className="chart-heading">
 export default function InvestigationLab() {
     const newCase = useNewCase();
     const [astraKey,setAstraKey]=useState(0);
+    const [deploymentToken, setDeploymentToken] = useState('');
     const [tab, setTab] = useCaseState("tab"), [logs, setLogs] = useCaseState("logs"), [file, setFile] = useState<File | null>(null), [analysis, setAnalysis] = useCaseState("analysis"), [drag, setDrag] = useState(false), [error, setError] = useState(""), [stage, setStage] = useState(-1), [complete, setComplete] = useCaseState("complete"), [expanded, setExpanded] = useState<number | null>(0);
     const input = useRef<HTMLInputElement>(null), result = useRef<HTMLElement>(null);
     const [evidence, setEvidence] = useCaseState("evidence");
@@ -303,8 +304,16 @@ export default function InvestigationLab() {
 
         <FlagshipMelanoma key={`flagship-${astraKey}`} />
         <CaseStudies key={`cases-${astraKey}`} />
-        <AstraInvestigation key={astraKey} />
-        <RepairLab key={`repair-${astraKey}`} />
+        <AstraInvestigation
+          key={astraKey}
+          sharedToken={deploymentToken}
+          onSharedTokenChange={setDeploymentToken}
+        />
+        <RepairLab
+          key={`repair-${astraKey}`}
+          sharedToken={deploymentToken}
+          onSharedTokenChange={setDeploymentToken}
+        />
 
         <section id="workspace">
           <div className="section-heading">

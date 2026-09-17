@@ -16,11 +16,22 @@ const sample='y_true,y_pred,y_probability,site\n'+Array.from({length:100},(_,i)=
 const draftKey='whylab-astra-draft-v1';
 type LocalDraft={csv:string;trainingLog:string;trainingLogName:string;positive:string;negative:string;objective:string;gap:string;specialist:'general'|'metrics'|'data_quality'|'shift'|'leakage';steering:string};
 function readDraft():LocalDraft|null{try{const value=JSON.parse(localStorage.getItem(draftKey)??'null');if(!value||typeof value!=='object')return null;const strings=['csv','trainingLog','trainingLogName','positive','negative','objective','gap','steering'];if(strings.some(key=>typeof value[key]!=='string'))return null;if(!['general','metrics','data_quality','shift','leakage'].includes(value.specialist)||value.csv.length>2000000||value.trainingLog.length>16000)return null;return value as LocalDraft;}catch{return null;}}
-export default function AstraInvestigation(){
+export default function AstraInvestigation({
+  sharedToken,
+  onSharedTokenChange
+}: {
+  sharedToken?: string;
+  onSharedTokenChange?: (token: string) => void;
+} = {}){
   const [repairDatasets,setRepairDatasets]=useState<EvaluationDataset[]>([]),[repairDatasetId,setRepairDatasetId]=useState('');
   const [available,setAvailable]=useState<boolean|null>(null),[configError,setConfigError]=useState(false);
   const [trainingLog,setTrainingLog]=useState(''),[trainingLogName,setTrainingLogName]=useState('training-log.txt');
-  const [accessToken,setAccessToken]=useState('');
+  const [localToken, setLocalToken] = useState('');
+  const accessToken = sharedToken !== undefined ? sharedToken : localToken;
+  const setAccessToken = (token: string) => {
+    if (onSharedTokenChange) onSharedTokenChange(token);
+    else setLocalToken(token);
+  };
   const [csv,setCsv]=useState(''),[files,setFiles]=useState<File[]>([]),[positive,setPositive]=useState('1'),[negative,setNegative]=useState('0');
   const [objective,setObjective]=useState('Investigate why classification accuracy may be misleading.'),[gap,setGap]=useState('10'),[consent,setConsent]=useState(false),[specialist,setSpecialist]=useState<'general'|'metrics'|'data_quality'|'shift'|'leakage'>('general'),[steering,setSteering]=useState('');
   const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[events,setEvents]=useState<string[]>([]),[result,setResult]=useState<Investigation|null>(null),[saveDraft,setSaveDraft]=useState(false),[sessionId,setSessionId]=useState<string|null>(null),[restoreSessionId,setRestoreSessionId]=useState('');
@@ -337,8 +348,21 @@ export default function AstraInvestigation(){
       </div>
 
       <div className="form-group">
-        <label>Deployment access token</label>
+        <div className="token-label-row">
+          <label htmlFor="astra-token-input">Deployment access token</label>
+          {accessToken ? (
+            <button
+              type="button"
+              className="btn-token-clear"
+              onClick={() => setAccessToken('')}
+              title="Clear token for this session"
+            >
+              Clear / Change token
+            </button>
+          ) : null}
+        </div>
         <input
+          id="astra-token-input"
           aria-label="Deployment access token"
           type="password"
           value={accessToken}
@@ -348,7 +372,11 @@ export default function AstraInvestigation(){
           aria-describedby="access-token-help"
           placeholder="Token for OpenAI investigation requests"
         />
-        <p id="access-token-help" className="field-hint">Required for paid Astra requests. Kept only in this page session and sent to the same-origin server.</p>
+        <p id="access-token-help" className="field-hint">
+          {accessToken
+            ? '✓ Token active for this session (shared across Astra & Repair Lab).'
+            : 'Required for paid Astra requests. Kept only in this page session and sent to the same-origin server.'}
+        </p>
       </div>
 
       <div className="case-actions session-restore-row">
@@ -506,7 +534,13 @@ export default function AstraInvestigation(){
               </select>
             </label>
             {repairDatasets.filter(d => d.metadata.id === repairDatasetId).map(dataset => (
-              <RepairLab key={dataset.metadata.id} accessToken={accessToken} linked={{ investigation: result, dataset, onApply: setResult }} />
+              <RepairLab
+                key={dataset.metadata.id}
+                accessToken={accessToken}
+                sharedToken={accessToken}
+                onSharedTokenChange={setAccessToken}
+                linked={{ investigation: result, dataset, onApply: setResult }}
+              />
             ))}
           </div>
         )}
