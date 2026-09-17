@@ -191,4 +191,22 @@ Target: GPT-6 Astra Challenge (Product Hunt)
     - Clicked "Clear / Change token" in Repair Lab and verified token was cleared in both sections simultaneously.
   - Confirmed all 360 unit tests and all 31 automated browser checks pass.
 
+### Item 3: Replace Unicode Icon Glyphs with Real Icons (Completed)
+- **Problem**: Several tabs and educational headers used raw unicode characters as icons (`\u21a5` / ↥ for Upload, `\u2261` / ≡ for Paste logs, `\u2727` / ✧ for Try an example, `\u224b` / ≋ for Read the signals, `\u22c8` / ⋈ for Think in hypotheses, `\u2197` / ↗ for Test. Learn. Iterate.). These rendered inconsistently across operating systems and browser fonts, looking misaligned or pixelated on high-DPI and mobile screens.
+- **Changes Made**:
+  - Adopted `lucide-react` (installed and added to `package.json`).
+  - In `app/components/investigation-lab.tsx`:
+    - Swapped tab glyphs for `<Upload size={14} />`, `<FileText size={14} />`, and `<Sparkles size={14} />`.
+    - Swapped educational lesson glyphs for `<Activity size={22} />` (Read the signals), `<GitFork size={22} />` (Think in hypotheses), and `<ArrowUpRight size={22} />` (Test. Learn. Iterate.).
+  - In `app/globals.css`:
+    - Added `.tab-glyph` with `inline-flex` centering to guarantee exact vertical baseline alignment with tab labels.
+    - Updated `.lesson-top > span:first-child` with `display: inline-flex; align-items: center; justify-content: center;`, maintaining the cyan, violet, and amber category accent colors with crisp vector geometry.
+- **Browser Verifications**:
+  - Automated Chrome CDP test across all three required breakpoints (375px mobile, 768px tablet, 1440px desktop) via `verify_item3_icons.mjs`:
+    - Verified all 3 tab buttons contain valid SVG vector paths and responsive sizing (14px).
+    - Verified all 3 lesson headers contain valid SVG vector paths (22px) and retain theme colors.
+    - Captured visual verification screenshots: `tabs_icons_mobile_375.png`, `tabs_icons_desktop_1440.png`, `lessons_icons_mobile_375.png`, `lessons_icons_desktop_1440.png`.
+  - Confirmed all 360 unit tests and 31 browser checks pass with zero errors.
+
+
 

@@ -2073,6 +2073,12 @@ input[type=file]::file-selector-button:active {
   margin-bottom: -1px;
 }
 
+.tab-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .tabs button[aria-selected=true] {
   color: var(--brand);
   border-color: var(--cyan);
@@ -3853,6 +3859,9 @@ select:focus {
 }
 
 .lesson-top > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--cyan);
   font-size: 22px;
 }

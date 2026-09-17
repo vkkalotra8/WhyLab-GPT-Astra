@@ -10,6 +10,7 @@ import { runIngestion } from "../lib/ingestion-client";
 import AstraInvestigation from './astra-investigation';
 import DatasetLab from "./dataset-lab";
 import EvidenceSummary from "./evidence-summary";
+import { Upload, FileText, Sparkles, Activity, GitFork, ArrowUpRight } from 'lucide-react';
 const sample = `[experiment] image_classifier_v3 / ResNet-18
 [epoch 26/30] train_loss=0.14 val_loss=0.15 train_accuracy=0.95 val_accuracy=0.948
 [epoch 27/30] train_loss=0.12 val_loss=0.16 train_accuracy=0.96 val_accuracy=0.946
@@ -350,7 +351,9 @@ export default function InvestigationLab() {
                       }
                     }}
                   >
-                    <span aria-hidden="true">{i === 0 ? "\u21a5" : i === 1 ? "\u2261" : "\u2727"}</span>
+                    <span aria-hidden="true" className="tab-glyph">
+                      {i === 0 ? <Upload size={14} /> : i === 1 ? <FileText size={14} /> : <Sparkles size={14} />}
+                    </span>
                     {item}
                   </button>
                 ))}
@@ -536,13 +539,13 @@ export default function InvestigationLab() {
             <p>A diagnosis is useful.<br />Understanding it changes everything.</p>
           </div>
           {[
-            { n: "01", title: "Read the signals", text: "See what loss curves, metrics, and data patterns are really telling you.", icon: "\u224b" },
-            { n: "02", title: "Think in hypotheses", text: "Connect evidence to likely causes. Learn why one explanation fits better.", icon: "\u22c8" },
-            { n: "03", title: "Test. Learn. Iterate.", text: "Turn a diagnosis into a focused experiment and a better next model.", icon: "\u2197" },
+            { n: "01", title: "Read the signals", text: "See what loss curves, metrics, and data patterns are really telling you.", Icon: Activity },
+            { n: "02", title: "Think in hypotheses", text: "Connect evidence to likely causes. Learn why one explanation fits better.", Icon: GitFork },
+            { n: "03", title: "Test. Learn. Iterate.", text: "Turn a diagnosis into a focused experiment and a better next model.", Icon: ArrowUpRight },
           ].map(item => (
             <div className="lesson" key={item.n}>
               <div className="lesson-top">
-                <span>{item.icon}</span>
+                <span aria-hidden="true" className="lesson-glyph"><item.Icon size={22} /></span>
                 <span>{item.n}</span>
               </div>
               <h3>{item.title}</h3>
