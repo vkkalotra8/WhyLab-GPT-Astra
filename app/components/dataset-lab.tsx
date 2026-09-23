@@ -51,20 +51,37 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
     setError('');
     setReading(true);
     try {
-      if (!/\.csv$/i.test(file.name) || file.size > 2_000_000) {
-        throw new Error('Choose a UTF-8 CSV no larger than 2 MB.');
+      if (!/\.csv$/i.test(file.name) || file.size > 100_000_000) {
+        throw new Error('Choose a UTF-8 CSV no larger than 100 MB.');
       }
       const text = await file.text();
       if (request !== generation.current) return;
       if (text.includes('\uFFFD') || text.includes('\0')) {
         throw new Error('Export this file as UTF-8 text.');
       }
-      const [headers, ...rows] = parseCsv(text.replace(/^\uFEFF/, ''));
-      if (headers.length > 100 || rows.length > 10000) {
-        throw new Error('Use at most 100 columns and 10,000 rows for interactive profiling.');
+      const [headers, ...allRows] = parseCsv(text.replace(/^\uFEFF/, ''));
+      if (headers.length > 300) {
+        throw new Error('Use at most 300 columns for interactive profiling.');
       }
+      if (allRows.length > 500_000) {
+        throw new Error('Use at most 500,000 rows for interactive profiling.');
+      }
+
+      const totalRows = allRows.length;
+      let rows = allRows;
+      let sampled = false;
+      const MAX_INTERACTIVE_ROWS = 25_000;
+      if (totalRows > MAX_INTERACTIVE_ROWS) {
+        sampled = true;
+        const step = totalRows / MAX_INTERACTIVE_ROWS;
+        rows = [];
+        for (let i = 0; i < MAX_INTERACTIVE_ROWS; i++) {
+          rows.push(allRows[Math.floor(i * step)]);
+        }
+      }
+
       setRevision(r => r + 1);
-      setDatasets(previous => ({ ...previous, [role]: { name: file.name, headers, rows } }));
+      setDatasets(previous => ({ ...previous, [role]: { name: file.name, headers, rows, totalRows, sampled } }));
       if (role === 'Training') setTarget('');
     } catch (cause) {
       if (request === generation.current) setError(cause instanceof Error ? cause.message : 'Unable to read CSV.');
@@ -97,7 +114,7 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
 
       <p className="description">
         Profile a training CSV, then add validation or production data to compare. All analysis stays in your browser.
-        Up to 2 MB, 10,000 rows, and 100 columns per file.
+        Supports Kaggle, OpenML &amp; platform datasets up to 100 MB, 500,000 rows, and 300 columns.
       </p>
 
       {/* Quick Select Presets (§11 Bring Your Own Model) */}
@@ -145,7 +162,10 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
                 <div className="dataset-file-info">
                   <div className="file-meta">
                     <strong title={currentDataset!.name}>{currentDataset!.name}</strong>
-                    <span>{currentDataset!.rows.length.toLocaleString()} rows · {currentDataset!.headers.length} cols</span>
+                    <span>
+                      {(currentDataset!.totalRows ?? currentDataset!.rows.length).toLocaleString()} rows
+                      {currentDataset!.sampled ? ` (sampled ${currentDataset!.rows.length.toLocaleString()})` : ''} · {currentDataset!.headers.length} cols
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -209,16 +229,19 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
           <div className="byom-pipeline-bridges" role="region" aria-label="BYOM Pipeline Actions">
             <div className="byom-meta-summary">
               <span className="byom-chip">
-                <strong>{training.rows.length.toLocaleString()}</strong> training rows
+                <strong>{(training.totalRows ?? training.rows.length).toLocaleString()}</strong> training rows
+                {training.sampled ? ` (sampled ${training.rows.length.toLocaleString()})` : ''}
               </span>
               {datasets.Validation && (
                 <span className="byom-chip">
-                  <strong>{datasets.Validation.rows.length.toLocaleString()}</strong> validation rows
+                  <strong>{(datasets.Validation.totalRows ?? datasets.Validation.rows.length).toLocaleString()}</strong> validation rows
+                  {datasets.Validation.sampled ? ` (sampled ${datasets.Validation.rows.length.toLocaleString()})` : ''}
                 </span>
               )}
               {datasets.Production && (
                 <span className="byom-chip">
-                  <strong>{datasets.Production.rows.length.toLocaleString()}</strong> production rows
+                  <strong>{(datasets.Production.totalRows ?? datasets.Production.rows.length).toLocaleString()}</strong> production rows
+                  {datasets.Production.sampled ? ` (sampled ${datasets.Production.rows.length.toLocaleString()})` : ''}
                 </span>
               )}
               <span className="byom-chip">

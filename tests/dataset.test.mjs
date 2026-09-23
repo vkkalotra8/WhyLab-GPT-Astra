@@ -1,4 +1,4 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import {profileDataset,compareDatasets} from '../app/lib/dataset.ts';
 const data={name:'train',headers:['id','x','label','copy'],rows:[['a','1','yes','yes'],['b','','yes','yes'],['c','3','no','no']]};
@@ -9,3 +9,4 @@ test('overlap matches reordered feature columns and excludes labels',()=>{const 
 test('schema differences do not fabricate overlap',()=>{assert.ok(compareDatasets(data,{name:'val',headers:['x'],rows:[['8']]},'label').some(s=>s.includes('not checked')));});
 test('numeric mean shifts and missingness are reported',()=>{const a={name:'a',headers:['x'],rows:[['1'],['2']]},b={name:'b',headers:['x'],rows:[['10'],['']]};const m=compareDatasets(a,b,'');assert.ok(m.some(s=>s.includes('mean changes')));assert.ok(m.some(s=>s.includes('missingness')));});
 test('numeric classification labels get split-share comparisons',()=>{const a={name:'a',headers:['label'],rows:[['0'],['0'],['1']]},b={name:'b',headers:['label'],rows:[['1'],['1']]};assert.ok(compareDatasets(a,b,'label').some(s=>s.includes('Target class')));assert.equal(compareDatasets(a,b,'label','regression').some(s=>s.includes('Target class')),false);});
+test('handles large sampled dataset profiling accurately',()=>{const largeSampled={name:'kaggle_dataset.csv',headers:['feature_1','feature_2','label'],rows:Array.from({length:1000},(_,i)=>[String(i),i%2===0?'10':'20',i%5===0?'yes':'no']),totalRows:150000,sampled:true};const profiles=profileDataset(largeSampled,'label','classification');assert.equal(profiles.length,3);assert.equal(profiles[0].distinct,1000);assert.equal(profiles[2].type,'Categorical / text');});

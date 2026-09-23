@@ -467,12 +467,62 @@ export default function RepairLab({
           ))}
         </div>
 
-        {prepared.suggested && (
-          <div className="policy-acceptance-callout">
-            <span className="status-dot" />
-            Recommended threshold: <strong>{prepared.suggested.threshold}</strong> · Cost acceptance ceiling: ≤ <strong>{prepared.input.maximumCost}</strong>
-          </div>
-        )}
+        {(() => {
+          const toolResult = prepared?.investigation.toolResults.find(r => r.tool === 'threshold_sweep');
+          const sweepPoints = (toolResult?.output as { points?: Array<{ threshold: number; confusion: { falseNegative: number; falsePositive: number; trueNegative: number; truePositive: number }; metrics: Array<{ name: string; value: number }> }> })?.points ?? [];
+          let minCost: number | null = null;
+          let bestThreshold: number | null = null;
+          if (!prepared.suggested && sweepPoints.length > 0) {
+            for (const pt of sweepPoints) {
+              const costMetric = pt.metrics.find(m => m.name === 'expected_cost');
+              if (costMetric && (minCost === null || costMetric.value < minCost)) {
+                minCost = costMetric.value;
+                bestThreshold = pt.threshold;
+              }
+            }
+          }
+          if (prepared.suggested) {
+            return (
+              <div className="policy-acceptance-callout">
+                <span className="status-dot" />
+                Recommended threshold: <strong>{prepared.suggested.threshold}</strong> · Cost acceptance ceiling: ≤ <strong>{prepared.input.maximumCost}</strong>
+              </div>
+            );
+          }
+          if (minCost !== null && bestThreshold !== null) {
+            const recommendedCeiling = Math.ceil(minCost * 1.1);
+            return (
+              <div className="policy-rejection-callout" style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '16px 20px', margin: '14px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <strong style={{ color: '#f87171', display: 'block', fontSize: '14px' }}>
+                      ⚠️ Declared Target Cost Ceiling (≤ {prepared.input.maximumCost}) is too restrictive
+                    </strong>
+                    <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#cbd5e1' }}>
+                      Baseline cost is <strong>{prepared.baseline.metrics.find(m => m.name === 'expected_cost')?.value ?? 3187}</strong>. 
+                      The lowest achievable cost on these {prepared.dataset.rowCount} rows is <strong>{minCost}</strong> (at optimal threshold {bestThreshold}).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="new-button"
+                    style={{ fontSize: '12px', padding: '8px 16px', background: '#0f766e', borderColor: '#14b8a6', color: '#ffffff' }}
+                    onClick={() => {
+                      setTarget(String(recommendedCeiling));
+                      const updatedInput = { ...prepared.input, maximumCost: recommendedCeiling };
+                      const next = linked ? prepareLinkedRepair(updatedInput, linked.investigation, linked.dataset) : prepareRepair(updatedInput);
+                      setPrepared(next);
+                      setNotice(`Target cost ceiling raised to ${recommendedCeiling}. Candidate threshold ${next.suggested?.threshold} is now active and ready to apply!`);
+                    }}
+                  >
+                    ⚡ Adopt Target Cost ({recommendedCeiling}) &amp; Enable Apply
+                  </button>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         <div className="flagship-actions">
           <button className="new-button primary-action-btn" disabled={!prepared.suggested || !!applied} onClick={apply}>

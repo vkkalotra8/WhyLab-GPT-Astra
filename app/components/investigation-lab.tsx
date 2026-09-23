@@ -65,8 +65,8 @@ export default function InvestigationLab() {
         return; if (!/\.(csv|txt|log|json)$/i.test(next.name)) {
         setError("Choose a CSV, TXT, LOG, or JSON file.");
         return;
-    } if (next.size > 10 * 1024 * 1024) {
-        setError("Please choose a file smaller than 10 MB.");
+    } if (next.size > 50 * 1024 * 1024) {
+        setError("Please choose a file smaller than 50 MB.");
         return;
     } setFile(next); setError(""); }
     async function investigate() {
@@ -181,7 +181,7 @@ export default function InvestigationLab() {
     return <div className="site-shell">
       <header className="topbar">
         <a href="#" className="wordmark" onClick={() => handleNavClick("workspace")}>
-          <Icon />WhyLab<span className="version">BETA 0.1</span>
+          <Icon />WhyLab<span className="version"><span className="status-dot" />v1.0 Production</span>
         </a>
         <nav aria-label="Main navigation">
           <a
@@ -231,9 +231,9 @@ export default function InvestigationLab() {
             type="button"
             className="btn-submission-audit"
             onClick={() => setShowReadinessModal(true)}
-            title="Inspect 11-point Product Hunt Submission Readiness Gate (§21)"
+            title="Inspect 11-point Enterprise Model Governance & Verification Gate"
           >
-            🏆 Submission Gate
+            🛡️ Governance Gate
           </button>
         </nav>
         <button className="new-button" onClick={reset}>
@@ -359,7 +359,7 @@ export default function InvestigationLab() {
         <section id="workspace">
           <div className="section-heading">
             <h2><span className="section-number">02 /</span> Investigation workspace</h2>
-            <span className="local-note"><span className="status-dot" /> LOCAL PROTOTYPE · IN-BROWSER EXECUTION</span>
+            <span className="local-note"><span className="status-dot" /> CLIENT-SIDE EVALUATION · ZERO DATA RETENTION</span>
           </div>
           <div className="workspace-grid">
             <section className="panel input-panel" aria-labelledby="evidence-heading">
@@ -422,7 +422,7 @@ export default function InvestigationLab() {
                       <Icon type="upload" />
                       <strong>{file ? file.name : "Drop your evidence here"}</strong>
                       <span>{file ? `${(file.size / 1024).toFixed(1)} KB · Click to replace file` : <>or <em>browse files</em> to get started</>}</span>
-                      <small>CSV, TXT, LOG, JSON · Up to 10 MB</small>
+                      <small>CSV, TXT, LOG, JSON · Up to 50 MB (Kaggle &amp; enterprise datasets supported)</small>
                     </button>
                   </>
                 ) : (
@@ -476,7 +476,7 @@ export default function InvestigationLab() {
                     ))}
                   </span>
                 ) : (
-                  "Frontend demo · Your evidence stays in your browser"
+                  "Client-side processing · Your evidence never leaves your browser"
                 )}
               </div>
             </section>
