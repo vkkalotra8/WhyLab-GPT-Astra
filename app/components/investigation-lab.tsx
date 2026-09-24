@@ -13,6 +13,9 @@ import VisionLab from "./vision-lab";
 import EvidenceSummary from "./evidence-summary";
 import SubmissionReadinessModal from './submission-readiness-modal';
 import DemoTour from './demo-tour';
+import StageStepper from './stage-stepper';
+import type { Investigation } from '../lib/investigation/types';
+import type { EvaluationDataset } from '../lib/investigation/evaluation-ingestion';
 import { Upload, FileText, Sparkles, Activity, GitFork, ArrowUpRight } from 'lucide-react';
 const sample = `[experiment] image_classifier_v3 / ResNet-18
 [epoch 26/30] train_loss=0.14 val_loss=0.15 train_accuracy=0.95 val_accuracy=0.948
@@ -37,6 +40,16 @@ export default function InvestigationLab() {
     const [astraKey,setAstraKey]=useState(0);
     const [deploymentToken, setDeploymentToken] = useState('');
     const [showReadinessModal, setShowReadinessModal] = useState(false);
+    const [activeStage, setActiveStage] = useState(1);
+    const [sharedEvaluationData, setSharedEvaluationData] = useState<{
+        name: string;
+        csv: string;
+        positive?: string;
+        negative?: string;
+    } | null>(null);
+    const [activeInvestigation, setActiveInvestigation] = useState<Investigation | null>(null);
+    const [boundRepairDatasets, setBoundRepairDatasets] = useState<EvaluationDataset[]>([]);
+    const [isStale, setIsStale] = useState(false);
     const [tab, setTab] = useCaseState("tab"), [logs, setLogs] = useCaseState("logs"), [file, setFile] = useState<File | null>(null), [analysis, setAnalysis] = useCaseState("analysis"), [drag, setDrag] = useState(false), [error, setError] = useState(""), [stage, setStage] = useState(-1), [complete, setComplete] = useCaseState("complete"), [expanded, setExpanded] = useState<number | null>(0);
     const input = useRef<HTMLInputElement>(null), result = useRef<HTMLElement>(null);
     const [evidence, setEvidence] = useCaseState("evidence");
@@ -46,7 +59,7 @@ export default function InvestigationLab() {
     const [extendedBusy,setExtendedBusy]=useState(false);
     const busy = stage >= 0 || reading || extendedBusy;
     const hypotheses = evidence ? filterFindings(evidence, analysis) : [];
-    function invalidate() { parserController.current?.abort(); request.current++; setEvidence(null); setComplete(false); setError(""); setExpanded(0); }
+    function invalidate() { parserController.current?.abort(); request.current++; setEvidence(null); setComplete(false); setError(""); setExpanded(0); if (activeInvestigation) setIsStale(true); }
     useEffect(() => () => { parserController.current?.abort(); request.current++; }, []);
     useEffect(() => { if (stage < 0)
         return; const timer = window.setTimeout(() => { if (stage < 2)
@@ -65,8 +78,8 @@ export default function InvestigationLab() {
         return; if (!/\.(csv|txt|log|json)$/i.test(next.name)) {
         setError("Choose a CSV, TXT, LOG, or JSON file.");
         return;
-    } if (next.size > 10 * 1024 * 1024) {
-        setError("Please choose a file smaller than 10 MB.");
+    } if (next.size > 50 * 1024 * 1024) {
+        setError("Please choose a file smaller than 50 MB.");
         return;
     } setFile(next); setError(""); }
     async function investigate() {
@@ -91,6 +104,72 @@ export default function InvestigationLab() {
             if (current === request.current) setReading(false);
         }
     }
+    const handleTransferToAstra = (data: { name: string; csv: string; positive?: string; negative?: string }) => {
+        setSharedEvaluationData(data);
+        setIsStale(true);
+        setActiveStage(3);
+        document.getElementById('astra-lab')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const handleNavigateToStage = (stageName: string) => {
+        const map: Record<string, number> = {
+            ingest: 1,
+            profile: 2,
+            investigate: 3,
+            verify: 4,
+            repair: 5,
+            report: 6
+        };
+        const targetNum = map[stageName] || 3;
+        handleStageSelect(targetNum);
+    };
+
+    const handleInvestigationComplete = (inv: Investigation, bound: EvaluationDataset[]) => {
+        setActiveInvestigation(inv);
+        setBoundRepairDatasets(bound);
+        setIsStale(false);
+    };
+
+    const handleFlagshipComplete = (inv: Investigation) => {
+        setActiveInvestigation(inv);
+        setIsStale(false);
+    };
+
+    function handleStageSelect(stageId: number) {
+        setActiveStage(stageId);
+        const targetMap: Record<number, string> = {
+            1: 'stage-ingest',
+            2: 'stage-profile',
+            3: 'stage-investigate',
+            4: 'stage-verify',
+            5: 'stage-repair',
+            6: 'stage-report'
+        };
+        const targetId = targetMap[stageId] || 'stage-ingest';
+        const el = document.getElementById(targetId);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    const stagesCompleted: Record<number, boolean> = {
+        1: Boolean(file || (logs && logs.trim().length > 0) || sharedEvaluationData),
+        2: Boolean(complete || (evidence && evidence.metrics && evidence.metrics.length > 0)),
+        3: Boolean(activeInvestigation !== null),
+        4: Boolean(activeInvestigation && activeInvestigation.hypotheses.some(h => h.status === 'supported' || h.status === 'confirmed' || h.status === 'rejected')),
+        5: Boolean(activeInvestigation && activeInvestigation.comparisons && activeInvestigation.comparisons.length > 0),
+        6: Boolean(complete || activeInvestigation)
+    };
+
+    const stagesAvailable: Record<number, boolean> = {
+        1: true,
+        2: true,
+        3: Boolean(file || (logs && logs.trim().length > 0) || sharedEvaluationData || complete || activeInvestigation),
+        4: Boolean(complete || (activeInvestigation && activeInvestigation.hypotheses.length > 0)),
+        5: Boolean(activeInvestigation || sharedEvaluationData || complete),
+        6: Boolean(complete || activeInvestigation)
+    };
+
     const [activeNav, setActiveNav] = useState("workspace");
     const isNavClicking = useRef(false);
     const navClickTimeout = useRef<number | null>(null);
@@ -98,20 +177,55 @@ export default function InvestigationLab() {
     useEffect(() => {
         function checkHash() {
             const h = window.location.hash.replace("#", "");
-            if (["workspace", "flagship", "astra-lab", "repair-lab", "vision-lab"].includes(h)) {
+            if (["workspace", "flagship", "examples", "case-studies", "astra-lab", "repair-lab", "vision-lab", "governance", "stage-ingest", "stage-profile", "stage-investigate", "stage-verify", "stage-repair", "stage-report"].includes(h)) {
                 setActiveNav(h);
+                const stageMap: Record<string, number> = {
+                    workspace: 1,
+                    'stage-ingest': 1,
+                    'stage-profile': 2,
+                    examples: 3,
+                    flagship: 3,
+                    'case-studies': 3,
+                    'astra-lab': 3,
+                    'stage-investigate': 3,
+                    'stage-verify': 4,
+                    'repair-lab': 5,
+                    'stage-repair': 5,
+                    governance: 6,
+                    'stage-report': 6
+                };
+                if (stageMap[h]) {
+                    setActiveStage(stageMap[h]);
+                }
             }
         }
         checkHash();
         window.addEventListener("hashchange", checkHash);
 
-        const ids = ["workspace", "flagship", "astra-lab", "repair-lab", "vision-lab"];
+        const ids = ["stage-ingest", "stage-profile", "stage-investigate", "stage-verify", "stage-repair", "stage-report", "workspace", "flagship", "case-studies", "astra-lab", "repair-lab", "vision-lab"];
         const observer = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver((entries) => {
             if (isNavClicking.current) return;
             const visible = entries.filter(e => e.isIntersecting);
             if (visible.length > 0) {
                 visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-                setActiveNav(visible[0].target.id);
+                const targetId = visible[0].target.id;
+                setActiveNav(targetId);
+                const stageMap: Record<string, number> = {
+                    'stage-ingest': 1,
+                    workspace: 1,
+                    'stage-profile': 2,
+                    'stage-investigate': 3,
+                    'astra-lab': 3,
+                    flagship: 3,
+                    'case-studies': 3,
+                    'stage-verify': 4,
+                    'stage-repair': 5,
+                    'repair-lab': 5,
+                    'stage-report': 6
+                };
+                if (stageMap[targetId]) {
+                    setActiveStage(stageMap[targetId]);
+                }
             }
         }, {
             rootMargin: "-90px 0px -50% 0px",
@@ -166,9 +280,20 @@ export default function InvestigationLab() {
     }
 
     function reset() {
+        const hasUnsaved = Boolean(complete || evidence || (logs && logs.trim()) || file || activeInvestigation);
+        if (hasUnsaved && typeof window !== 'undefined' && typeof window.confirm === 'function') {
+            if (!window.confirm('Start a new investigation? Unsaved evidence and findings will be cleared.')) {
+                return;
+            }
+        }
         setAstraKey(k => k + 1);
         newCase();
         invalidate();
+        setActiveInvestigation(null);
+        setBoundRepairDatasets([]);
+        setSharedEvaluationData(null);
+        setIsStale(false);
+        setActiveStage(1);
         handleNavClick("workspace");
         if (typeof window !== "undefined") {
             if (window.location.hash) {
@@ -180,37 +305,38 @@ export default function InvestigationLab() {
 
     return <div className="site-shell">
       <header className="topbar">
-        <a href="#" className="wordmark" onClick={() => handleNavClick("workspace")}>
-          <Icon />WhyLab<span className="version">BETA 0.1</span>
+        <a href="#workspace" className="wordmark" onClick={(e) => {
+          e.preventDefault();
+          handleNavClick("workspace");
+          handleStageSelect(1);
+          document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" });
+        }}>
+          <Icon />WhyLab<span className="version"><span className="status-dot" />v1.0 Production</span>
         </a>
         <nav aria-label="Main navigation">
           <a
-            className={activeNav === "workspace" ? "nav-active" : undefined}
+            className={activeNav === "workspace" || activeNav === "stage-ingest" ? "nav-active" : undefined}
             href="#workspace"
-            onClick={() => handleNavClick("workspace")}
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick("workspace");
+              handleStageSelect(1);
+              document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" });
+            }}
           >
-            Investigation Lab
+            Workspace
           </a>
           <a
-            className={activeNav === "flagship" ? "nav-active" : undefined}
+            className={activeNav === "examples" || activeNav === "flagship" || activeNav === "case-studies" ? "nav-active" : undefined}
             href="#flagship"
-            onClick={() => handleNavClick("flagship")}
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick("examples");
+              handleStageSelect(3);
+              document.getElementById("flagship")?.scrollIntoView({ behavior: "smooth" });
+            }}
           >
-            Flagship Case
-          </a>
-          <a
-            className={activeNav === "astra-lab" ? "nav-active" : undefined}
-            href="#astra-lab"
-            onClick={() => handleNavClick("astra-lab")}
-          >
-            Astra Investigator
-          </a>
-          <a
-            className={activeNav === "repair-lab" ? "nav-active" : undefined}
-            href="#repair-lab"
-            onClick={() => handleNavClick("repair-lab")}
-          >
-            Repair Lab
+            Examples
           </a>
           <a
             className={activeNav === "vision-lab" ? "nav-active" : undefined}
@@ -219,22 +345,18 @@ export default function InvestigationLab() {
           >
             Vision Lab
           </a>
-          <button
-            type="button"
-            className={activeNav === "examples" ? "nav-active" : undefined}
-            disabled={busy}
-            onClick={() => void example(true)}
+          <a
+            className={activeNav === "stage-report" || activeNav === "governance" ? "nav-active" : undefined}
+            href="#stage-report"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick("stage-report");
+              handleStageSelect(6);
+              document.getElementById("stage-report")?.scrollIntoView({ behavior: "smooth" });
+            }}
           >
-            Examples
-          </button>
-          <button
-            type="button"
-            className="btn-submission-audit"
-            onClick={() => setShowReadinessModal(true)}
-            title="Inspect 11-point Product Hunt Submission Readiness Gate (§21)"
-          >
-            🏆 Submission Gate
-          </button>
+            Governance
+          </a>
         </nav>
         <button className="new-button" onClick={reset}>
           <span>+</span> New investigation
@@ -336,263 +458,480 @@ export default function InvestigationLab() {
           </div>
         </section>
 
-        <ol className="workbench-flow" aria-label="WhyLab investigation workflow">
-          <li><strong>01</strong><span>Observe<br /><small>the failure signal</small></span></li>
-          <li><strong>02</strong><span>Investigate<br /><small>with measured evidence</small></span></li>
-          <li><strong>03</strong><span>Test<br /><small>the strongest hypothesis</small></span></li>
-          <li><strong>04</strong><span>Repair<br /><small>and re-evaluate</small></span></li>
-        </ol>
-
-        <FlagshipMelanoma key={`flagship-${astraKey}`} />
-        <CaseStudies key={`cases-${astraKey}`} />
-        <AstraInvestigation
-          key={astraKey}
-          sharedToken={deploymentToken}
-          onSharedTokenChange={setDeploymentToken}
-        />
-        <RepairLab
-          key={`repair-${astraKey}`}
-          sharedToken={deploymentToken}
-          onSharedTokenChange={setDeploymentToken}
+        <StageStepper
+          activeStage={activeStage}
+          onSelectStage={handleStageSelect}
+          stagesCompleted={stagesCompleted}
+          stagesAvailable={stagesAvailable}
+          isStale={isStale}
         />
 
-        <section id="workspace">
-          <div className="section-heading">
-            <h2><span className="section-number">02 /</span> Investigation workspace</h2>
-            <span className="local-note"><span className="status-dot" /> LOCAL PROTOTYPE · IN-BROWSER EXECUTION</span>
+        <section id="stage-ingest" className={`stage-section ${activeStage === 1 ? 'stage-active' : ''}`} aria-labelledby="stage-01-title">
+          <div className="stage-banner-header">
+            <div className="stage-banner-left">
+              <span className="stage-banner-num">STAGE 01</span>
+              <span className="stage-banner-sep">/</span>
+              <span className="stage-banner-title" id="stage-01-title">INGEST — Evidence &amp; Log Acquisition</span>
+            </div>
+            <span className="stage-banner-tag">EVALUATION CSV · LOGS · PRESETS</span>
           </div>
-          <div className="workspace-grid">
-            <section className="panel input-panel" aria-labelledby="evidence-heading">
-              <div className="panel-heading">
-                <div>
-                  <span className="eyebrow">START WITH THE EVIDENCE</span>
-                  <h3 id="evidence-heading">What went wrong?</h3>
-                </div>
-                <span className="step-number">01</span>
-              </div>
-              <p className="description">Bring your logs, metrics, or dataset. Let’s connect the dots.</p>
-              <div role="tablist" aria-label="Evidence source" className="tabs">
-                {tabs.map((item, i) => (
-                  <button
-                    key={item}
-                    id={`tab-${i}`}
-                    role="tab"
-                    aria-selected={tab === i}
-                    aria-controls="evidence-panel"
-                    tabIndex={tab === i ? 0 : -1}
-                    disabled={busy}
-                    onClick={() => choose(i)}
-                    onKeyDown={e => {
-                      if (["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) {
-                        e.preventDefault();
-                        const next = e.key === "Home" ? 0 : e.key === "End" ? 2 : (i + (e.key === "ArrowRight" ? 1 : 2)) % 3;
-                        choose(next);
-                        document.getElementById(`tab-${next}`)?.focus();
-                      }
-                    }}
-                  >
-                    <span aria-hidden="true" className="tab-glyph">
-                      {i === 0 ? <Upload size={14} /> : i === 1 ? <FileText size={14} /> : <Sparkles size={14} />}
-                    </span>
-                    {item}
-                  </button>
-                ))}
-              </div>
-              <div id="evidence-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
-                {tab === 0 ? (
-                  <>
-                    <input
-                      ref={input}
-                      className="sr-only"
-                      type="file"
-                      tabIndex={-1}
-                      aria-label="Evidence file"
-                      accept=".csv,.txt,.log,.json"
-                      disabled={busy}
-                      onChange={e => accept(e.target.files?.[0])}
-                    />
-                    <button
-                      className={`dropzone ${drag ? "dragging" : ""}`}
-                      disabled={busy}
-                      onClick={() => input.current?.click()}
-                      onDragOver={e => { e.preventDefault(); if (!busy) setDrag(true); }}
-                      onDragLeave={() => setDrag(false)}
-                      onDrop={e => { e.preventDefault(); if (!busy) accept(e.dataTransfer.files[0]); }}
-                    >
-                      <Icon type="upload" />
-                      <strong>{file ? file.name : "Drop your evidence here"}</strong>
-                      <span>{file ? `${(file.size / 1024).toFixed(1)} KB · Click to replace file` : <>or <em>browse files</em> to get started</>}</span>
-                      <small>CSV, TXT, LOG, JSON · Up to 10 MB</small>
-                    </button>
-                  </>
-                ) : (
-                  <div className="logs-wrap">
-                    <div className="logs-label-row">
-                      <label htmlFor="logs">{tab === 2 ? "IMAGE CLASSIFIER · SAMPLE LOGS" : "TRAINING LOGS & METRICS"}</label>
-                      {tab === 2 && (
-                        <button
-                          type="button"
-                          className="btn-text-run"
-                          disabled={busy}
-                          onClick={() => void example(true)}
-                        >
-                          ⚡ Run sample diagnosis (1-click)
-                        </button>
-                      )}
-                    </div>
-                    <textarea
-                      id="logs"
-                      value={logs}
-                      disabled={busy}
-                      onChange={e => { invalidate(); setLogs(e.target.value); }}
-                      placeholder="Paste epoch logs, metrics, or experiment notes..."
-                      spellCheck={false}
-                    />
-                  </div>
-                )}
-              </div>
-              <label className="select-label" htmlFor="analysis">
-                Analysis type <span>Choose your investigation lens</span>
-              </label>
-              <select id="analysis" value={analysis} disabled={busy} onChange={e => { invalidate(); setAnalysis(e.target.value); }}>
-                <option>General diagnosis</option>
-                <option>Data quality & distribution</option>
-                <option>Training & optimization</option>
-                <option>Evaluation & leakage</option>
-              </select>
-              <p className="error" role="alert">{error}</p>
-              <button className="investigate-button" disabled={busy} onClick={investigate}>
-                <Icon type="spark" />
-                {reading ? "Reading evidence…" : stage >= 0 ? stages[stage] : "Investigate failure"}
-                <Icon type="arrow" />
-              </button>
-              <div className="input-footnote" role="status">
-                {busy ? (
-                  <span className="stages">
-                    {stages.map((label, i) => (
-                      <span key={label} className={i <= stage ? "cyan" : ""}>
-                        {i < stage ? "\u2713" : `0${i + 1}`} {label}
-                      </span>
-                    ))}
-                  </span>
-                ) : (
-                  "Frontend demo · Your evidence stays in your browser"
-                )}
-              </div>
-            </section>
 
-            <section className="panel preview-panel" aria-labelledby="case-heading">
-              <div className="case-top">
-                <span className="eyebrow">· CASE FILE / 001</span>
-                <span className="badge">SAMPLE INVESTIGATION</span>
-              </div>
-              <h3 id="case-heading">Great in validation.<br />Lost in production.</h3>
-              <p className="description">An image classifier with a real-world reality check.</p>
-              <div className="model-tags">
-                <span>Computer vision</span>
-                <span>ResNet-18</span>
-                <span>30 epochs</span>
-              </div>
-              <div className="metrics">
-                <div>
-                  <span>Validation accuracy</span>
-                  <strong className="cyan">94.2<small>%</small></strong>
-                  <span>Looking good in the lab</span>
+          <section id="workspace">
+            <div className="section-heading">
+              <h2><span className="section-number">01 /</span> Investigation workspace</h2>
+              <span className="local-note"><span className="status-dot" /> CLIENT-SIDE EVALUATION · ZERO DATA RETENTION</span>
+            </div>
+            <div className="workspace-grid">
+              <section className="panel input-panel" aria-labelledby="evidence-heading">
+                <div className="panel-heading">
+                  <div>
+                    <span className="eyebrow">START WITH THE EVIDENCE</span>
+                    <h3 id="evidence-heading">What went wrong?</h3>
+                  </div>
+                  <span className="step-number">01</span>
                 </div>
-                <div>
-                  <span>Production accuracy</span>
-                  <strong className="violet">61.8<small>%</small></strong>
-                  <span>A different story outside</span>
+                <p className="description">Bring your logs, metrics, or dataset. Let’s connect the dots.</p>
+                <div role="tablist" aria-label="Evidence source" className="tabs">
+                  {tabs.map((item, i) => (
+                    <button
+                      key={item}
+                      id={`tab-${i}`}
+                      role="tab"
+                      aria-selected={tab === i}
+                      aria-controls="evidence-panel"
+                      tabIndex={tab === i ? 0 : -1}
+                      disabled={busy}
+                      onClick={() => choose(i)}
+                      onKeyDown={e => {
+                        if (["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) {
+                          e.preventDefault();
+                          const next = e.key === "Home" ? 0 : e.key === "End" ? 2 : (i + (e.key === "ArrowRight" ? 1 : 2)) % 3;
+                          choose(next);
+                          document.getElementById(`tab-${next}`)?.focus();
+                        }
+                      }}
+                    >
+                      <span aria-hidden="true" className="tab-glyph">
+                        {i === 0 ? <Upload size={14} /> : i === 1 ? <FileText size={14} /> : <Sparkles size={14} />}
+                      </span>
+                      {item}
+                    </button>
+                  ))}
                 </div>
-              </div>
-              <Chart />
-              <div className="gap-note">
-                <span>↘</span>
-                <p>
-                  <strong>32.4 percentage points. One important question.</strong><br />
-                  What changed between validation and the real world?
-                </p>
-              </div>
-              <div className="case-bottom">
-                <span>3 hypotheses. A path to understanding.</span>
-                <button disabled={busy} onClick={() => void example(true)}>
-                  Run sample diagnosis (1-click) <Icon type="arrow" />
+                <div id="evidence-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
+                  {tab === 0 ? (
+                    <>
+                      <input
+                        ref={input}
+                        className="sr-only"
+                        type="file"
+                        tabIndex={-1}
+                        aria-label="Evidence file"
+                        accept=".csv,.txt,.log,.json"
+                        disabled={busy}
+                        onChange={e => accept(e.target.files?.[0])}
+                      />
+                      <button
+                        className={`dropzone ${drag ? "dragging" : ""}`}
+                        disabled={busy}
+                        onClick={() => input.current?.click()}
+                        onDragOver={e => { e.preventDefault(); if (!busy) setDrag(true); }}
+                        onDragLeave={() => setDrag(false)}
+                        onDrop={e => { e.preventDefault(); if (!busy) accept(e.dataTransfer.files[0]); }}
+                      >
+                        <Icon type="upload" />
+                        <strong>{file ? file.name : "Drop your evidence here"}</strong>
+                        <span>{file ? `${(file.size / 1024).toFixed(1)} KB · Click to replace file` : <>or <em>browse files</em> to get started</>}</span>
+                        <small>CSV, TXT, LOG, JSON · Up to 50 MB (Kaggle &amp; enterprise datasets supported)</small>
+                      </button>
+                    </>
+                  ) : (
+                    <div className="logs-wrap">
+                      <div className="logs-label-row">
+                        <label htmlFor="logs">{tab === 2 ? "IMAGE CLASSIFIER · SAMPLE LOGS" : "TRAINING LOGS & METRICS"}</label>
+                        {tab === 2 && (
+                          <button
+                            type="button"
+                            className="btn-text-run"
+                            disabled={busy}
+                            onClick={() => void example(true)}
+                          >
+                            ⚡ Run sample diagnosis (1-click)
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        id="logs"
+                        value={logs}
+                        disabled={busy}
+                        onChange={e => { invalidate(); setLogs(e.target.value); }}
+                        placeholder="Paste epoch logs, metrics, or experiment notes..."
+                        spellCheck={false}
+                      />
+                    </div>
+                  )}
+                </div>
+                <label className="select-label" htmlFor="analysis">
+                  Analysis type <span>Choose your investigation lens</span>
+                </label>
+                <select id="analysis" value={analysis} disabled={busy} onChange={e => { invalidate(); setAnalysis(e.target.value); }}>
+                  <option>General diagnosis</option>
+                  <option>Data quality & distribution</option>
+                  <option>Training & optimization</option>
+                  <option>Evaluation & leakage</option>
+                </select>
+                <p className="error" role="alert">{error}</p>
+                <button className="investigate-button" disabled={busy} onClick={investigate}>
+                  <Icon type="spark" />
+                  {reading ? "Reading evidence…" : stage >= 0 ? stages[stage] : "Investigate failure"}
+                  <Icon type="arrow" />
                 </button>
-              </div>
-            </section>
+                <div className="input-footnote" role="status">
+                  {busy ? (
+                    <span className="stages">
+                      {stages.map((label, i) => (
+                        <span key={label} className={i <= stage ? "cyan" : ""}>
+                          {i < stage ? "\u2713" : `0${i + 1}`} {label}
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    "Client-side processing · Your evidence never leaves your browser"
+                  )}
+                </div>
+              </section>
+
+              <section className="panel preview-panel" aria-labelledby="case-heading">
+                <div className="case-top">
+                  <span className="eyebrow">· CASE FILE / 001</span>
+                  <span className="badge">SAMPLE INVESTIGATION</span>
+                </div>
+                <h3 id="case-heading">Great in validation.<br />Lost in production.</h3>
+                <p className="description">An image classifier with a real-world reality check.</p>
+                <div className="model-tags">
+                  <span>Computer vision</span>
+                  <span>ResNet-18</span>
+                  <span>30 epochs</span>
+                </div>
+                <div className="metrics">
+                  <div>
+                    <span>Validation accuracy</span>
+                    <strong className="cyan">94.2<small>%</small></strong>
+                    <span>Looking good in the lab</span>
+                  </div>
+                  <div>
+                    <span>Production accuracy</span>
+                    <strong className="violet">61.8<small>%</small></strong>
+                    <span>A different story outside</span>
+                  </div>
+                </div>
+                <Chart />
+                <div className="gap-note">
+                  <span>↘</span>
+                  <p>
+                    <strong>32.4 percentage points. One important question.</strong><br />
+                    What changed between validation and the real world?
+                  </p>
+                </div>
+                <div className="case-bottom">
+                  <span>3 hypotheses. A path to understanding.</span>
+                  <div className="case-bottom-actions">
+                    <button disabled={busy} onClick={() => void example(true)}>
+                      Run sample diagnosis (1-click) <Icon type="arrow" />
+                    </button>
+                    <a
+                      href="#flagship"
+                      className="link-flagship-preview"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleStageSelect(3);
+                        document.getElementById('flagship')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                    >
+                      Or explore Flagship Melanoma Demo →
+                    </a>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <EvidenceImport disabled={stage >= 0 || reading} onBusyChange={setExtendedBusy} />
+
+          <div className="stage-nav-footer">
+            <div />
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-next"
+              onClick={() => handleStageSelect(2)}
+            >
+              Next: Stage 02 Profile →
+            </button>
           </div>
         </section>
 
-        {complete && (
-          <section className="results panel" ref={result} tabIndex={-1} aria-labelledby="results-heading">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow cyan">INVESTIGATION COMPLETE / LOCAL EVIDENCE</span>
-                <h2 id="results-heading">Follow the evidence.</h2>
-              </div>
-              <span className="badge">{analysis}</span>
+        <section id="stage-profile" className={`stage-section ${activeStage === 2 ? 'stage-active' : ''}`} aria-labelledby="stage-02-title">
+          <div className="stage-banner-header">
+            <div className="stage-banner-left">
+              <span className="stage-banner-num">STAGE 02</span>
+              <span className="stage-banner-sep">/</span>
+              <span className="stage-banner-title" id="stage-02-title">PROFILE — Data Ingestion &amp; Drift Check</span>
             </div>
-            <p className="description">Rule-based suggestions from your evidence, not confirmed causes. Evidence strength describes the supporting signal; it is not a probability.</p>
-            {evidence && <EvidenceSummary evidence={evidence} />}
-            {hypotheses.length === 0 && (
-              <p className="empty-findings">No supported hypotheses for this analysis lens. This does not mean the experiment is healthy. Add comparable train, validation, and production metrics, or choose General diagnosis.</p>
-            )}
-            {hypotheses.map((h, i) => (
-              <article className={`hypothesis tone-${i}`} key={h.title}>
-                <button
-                  className="hypothesis-toggle"
-                  aria-expanded={expanded === i}
-                  aria-controls={`hypothesis-${i}`}
-                  onClick={() => setExpanded(expanded === i ? null : i)}
-                >
-                  <span className="rank">0{i + 1}</span>
-                  <span className="hypothesis-title">{h.title}</span>
-                  <span className="confidence">
-                    {h.strength}<small>evidence strength</small>
-                  </span>
-                  <span>{expanded === i ? "−" : "+"}</span>
-                </button>
-                {expanded === i && (
-                  <div id={`hypothesis-${i}`} className="hypothesis-detail">
-                    <div>
-                      <span className="eyebrow">EVIDENCE EXCERPT</span>
-                      <p>{h.evidence}</p>
+            <span className="stage-banner-tag">COLUMN TYPES · DISTRIBUTIONS · CLASS FREQUENCY</span>
+          </div>
+
+          <DatasetLab
+            evidence={complete ? evidence : null}
+            sharedToken={deploymentToken}
+            onSharedTokenChange={setDeploymentToken}
+            onTransferToAstra={handleTransferToAstra}
+            onNavigateToStage={handleNavigateToStage}
+          />
+
+          <div className="stage-nav-footer">
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-prev"
+              onClick={() => handleStageSelect(1)}
+            >
+              ← Previous: Stage 01 Ingest
+            </button>
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-next"
+              onClick={() => handleStageSelect(3)}
+            >
+              Next: Stage 03 Investigate →
+            </button>
+          </div>
+        </section>
+
+        <section id="stage-investigate" className={`stage-section ${activeStage === 3 ? 'stage-active' : ''}`} aria-labelledby="stage-03-title">
+          <div className="stage-banner-header">
+            <div className="stage-banner-left">
+              <span className="stage-banner-num">STAGE 03</span>
+              <span className="stage-banner-sep">/</span>
+              <span className="stage-banner-title" id="stage-03-title">INVESTIGATE — Autonomous AI &amp; Case Diagnostics</span>
+            </div>
+            <span className="stage-banner-tag">ASTRA AGENT · DETERMINISTIC LOCAL PROTOCOL</span>
+          </div>
+
+          <AstraInvestigation
+            key={astraKey}
+            sharedToken={deploymentToken}
+            onSharedTokenChange={setDeploymentToken}
+            incomingEvaluationData={sharedEvaluationData}
+            onInvestigationComplete={handleInvestigationComplete}
+          />
+          <FlagshipMelanoma
+            key={`flagship-${astraKey}`}
+            onInvestigationComplete={handleFlagshipComplete}
+          />
+          <CaseStudies key={`cases-${astraKey}`} />
+
+          <div className="stage-nav-footer">
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-prev"
+              onClick={() => handleStageSelect(2)}
+            >
+              ← Previous: Stage 02 Profile
+            </button>
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-next"
+              onClick={() => handleStageSelect(4)}
+            >
+              Next: Stage 04 Verify →
+            </button>
+          </div>
+        </section>
+
+        <section id="stage-verify" className={`stage-section ${activeStage === 4 ? 'stage-active' : ''}`} aria-labelledby="stage-04-title">
+          <div className="stage-banner-header">
+            <div className="stage-banner-left">
+              <span className="stage-banner-num">STAGE 04</span>
+              <span className="stage-banner-sep">/</span>
+              <span className="stage-banner-title" id="stage-04-title">VERIFY — Falsification &amp; Controlled Experiments</span>
+            </div>
+            <span className="stage-banner-tag">EVIDENCE GRAPH · COUNTERFACTUAL TESTS · LESSONS</span>
+          </div>
+
+          {complete && (
+            <section className="results panel" ref={result} tabIndex={-1} aria-labelledby="results-heading">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow cyan">INVESTIGATION COMPLETE / LOCAL EVIDENCE</span>
+                  <h2 id="results-heading">Follow the evidence.</h2>
+                </div>
+                <span className="badge">{analysis}</span>
+              </div>
+              <p className="description">Rule-based suggestions from your evidence, not confirmed causes. Evidence strength describes the supporting signal; it is not a probability.</p>
+              {evidence && <EvidenceSummary evidence={evidence} />}
+              {hypotheses.length === 0 && (
+                <p className="empty-findings">No supported hypotheses for this analysis lens. This does not mean the experiment is healthy. Add comparable train, validation, and production metrics, or choose General diagnosis.</p>
+              )}
+              {hypotheses.map((h, i) => (
+                <article className={`hypothesis tone-${i}`} key={h.title}>
+                  <button
+                    className="hypothesis-toggle"
+                    aria-expanded={expanded === i}
+                    aria-controls={`hypothesis-${i}`}
+                    onClick={() => setExpanded(expanded === i ? null : i)}
+                  >
+                    <span className="rank">0{i + 1}</span>
+                    <span className="hypothesis-title">{h.title}</span>
+                    <span className="confidence">
+                      {h.strength}<small>evidence strength</small>
+                    </span>
+                    <span>{expanded === i ? "−" : "+"}</span>
+                  </button>
+                  {expanded === i && (
+                    <div id={`hypothesis-${i}`} className="hypothesis-detail">
+                      <div>
+                        <span className="eyebrow">EVIDENCE EXCERPT</span>
+                        <p>{h.evidence}</p>
+                      </div>
+                      <div>
+                        <span className="eyebrow">VERIFICATION EXPERIMENT</span>
+                        <p>{h.experiment}</p>
+                      </div>
                     </div>
-                    <div>
-                      <span className="eyebrow">VERIFICATION EXPERIMENT</span>
-                      <p>{h.experiment}</p>
-                    </div>
-                  </div>
-                )}
-              </article>
+                  )}
+                </article>
+              ))}
+            </section>
+          )}
+
+          <VisionLab />
+
+          <section className="learning" aria-labelledby="learning-heading">
+            <div className="learning-intro">
+              <span className="eyebrow">FAILURE IS A STARTING POINT</span>
+              <h2 id="learning-heading">What you’ll learn.</h2>
+              <p>A diagnosis is useful.<br />Understanding it changes everything.</p>
+            </div>
+            {[
+              { n: "01", title: "Read the signals", text: "See what loss curves, metrics, and data patterns are really telling you.", Icon: Activity },
+              { n: "02", title: "Think in hypotheses", text: "Connect evidence to likely causes. Learn why one explanation fits better.", Icon: GitFork },
+              { n: "03", title: "Test. Learn. Iterate.", text: "Turn a diagnosis into a focused experiment and a better next model.", Icon: ArrowUpRight },
+            ].map(item => (
+              <div className="lesson" key={item.n}>
+                <div className="lesson-top">
+                  <span aria-hidden="true" className="lesson-glyph"><item.Icon size={22} /></span>
+                  <span>{item.n}</span>
+                </div>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </div>
             ))}
           </section>
-        )}
 
-        <EvidenceImport disabled={stage >= 0 || reading} onBusyChange={setExtendedBusy} />
-        <DatasetLab evidence={complete ? evidence : null} />
-        <VisionLab />
-
-        <section className="learning" aria-labelledby="learning-heading">
-          <div className="learning-intro">
-            <span className="eyebrow">FAILURE IS A STARTING POINT</span>
-            <h2 id="learning-heading">What you’ll learn.</h2>
-            <p>A diagnosis is useful.<br />Understanding it changes everything.</p>
+          <div className="stage-nav-footer">
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-prev"
+              onClick={() => handleStageSelect(3)}
+            >
+              ← Previous: Stage 03 Investigate
+            </button>
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-next"
+              onClick={() => handleStageSelect(5)}
+            >
+              Next: Stage 05 Repair →
+            </button>
           </div>
-          {[
-            { n: "01", title: "Read the signals", text: "See what loss curves, metrics, and data patterns are really telling you.", Icon: Activity },
-            { n: "02", title: "Think in hypotheses", text: "Connect evidence to likely causes. Learn why one explanation fits better.", Icon: GitFork },
-            { n: "03", title: "Test. Learn. Iterate.", text: "Turn a diagnosis into a focused experiment and a better next model.", Icon: ArrowUpRight },
-          ].map(item => (
-            <div className="lesson" key={item.n}>
-              <div className="lesson-top">
-                <span aria-hidden="true" className="lesson-glyph"><item.Icon size={22} /></span>
-                <span>{item.n}</span>
-              </div>
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
+        </section>
+
+        <section id="stage-repair" className={`stage-section ${activeStage === 5 ? 'stage-active' : ''}`} aria-labelledby="stage-05-title">
+          <div className="stage-banner-header">
+            <div className="stage-banner-left">
+              <span className="stage-banner-num">STAGE 05</span>
+              <span className="stage-banner-sep">/</span>
+              <span className="stage-banner-title" id="stage-05-title">REPAIR — Decision Threshold Sweeps &amp; Policy Optimization</span>
             </div>
-          ))}
+            <span className="stage-banner-tag">COST MODELS · CONFUSION MATRIX BEFORE/AFTER</span>
+          </div>
+
+          <RepairLab
+            key={`repair-${astraKey}`}
+            sharedToken={deploymentToken}
+            onSharedTokenChange={setDeploymentToken}
+          />
+
+          <div className="stage-nav-footer">
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-prev"
+              onClick={() => handleStageSelect(4)}
+            >
+              ← Previous: Stage 04 Verify
+            </button>
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-next"
+              onClick={() => handleStageSelect(6)}
+            >
+              Next: Stage 06 Report →
+            </button>
+          </div>
+        </section>
+
+        <section id="stage-report" className={`stage-section ${activeStage === 6 ? 'stage-active' : ''}`} aria-labelledby="stage-06-title">
+          <div className="stage-banner-header">
+            <div className="stage-banner-left">
+              <span className="stage-banner-num">STAGE 06</span>
+              <span className="stage-banner-sep">/</span>
+              <span className="stage-banner-title" id="stage-06-title">REPORT — Enterprise Governance &amp; Audit Synthesis</span>
+            </div>
+            <span className="stage-banner-tag">COMPLIANCE GATE · INCIDENT EXPORT · PROVENANCE</span>
+          </div>
+
+          <div className="stage-report-card">
+            <div className="report-card-heading">
+              <h3>Enterprise Model Governance &amp; Executive Synthesis</h3>
+              <span className="badge">Audit Ready</span>
+            </div>
+            <p className="description">
+              Produce certified verification artifacts, evaluate production deployment safety gates, and export reproducible JSON/Markdown audit evidence with full counterfactual test provenance.
+              {boundRepairDatasets.length > 0 && ` (${boundRepairDatasets.length} evaluation dataset bound for verified repair audit).`}
+            </p>
+            <div className="report-card-actions">
+              <button
+                type="button"
+                className="btn-submission-audit"
+                onClick={() => setShowReadinessModal(true)}
+              >
+                🛡️ Open 11-Point Governance Gate
+              </button>
+              <a
+                href="#stage-investigate"
+                className="bridge-btn secondary"
+                onClick={() => handleStageSelect(3)}
+              >
+                🔬 Inspect Incident Export in Investigation Lab →
+              </a>
+            </div>
+          </div>
+
+          <div className="stage-nav-footer">
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-prev"
+              onClick={() => handleStageSelect(5)}
+            >
+              ← Previous: Stage 05 Repair
+            </button>
+            <button
+              type="button"
+              className="btn-stage-nav btn-stage-next"
+              onClick={() => handleStageSelect(1)}
+            >
+              ↺ Return to Stage 01 Ingest
+            </button>
+          </div>
         </section>
       </main>
 

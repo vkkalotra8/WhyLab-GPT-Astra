@@ -144,10 +144,10 @@ export default function SubmissionReadinessModal({
       <div className="report-modal-card readiness-modal-card">
         <div className="report-modal-header">
           <div>
-            <div className="eyebrow cyan">CHALLENGE SUBMISSION READINESS (§21)</div>
-            <h2 id="readiness-title" className="report-modal-title">WhyLab Submission Readiness Gate</h2>
+            <div className="eyebrow cyan">ENTERPRISE MODEL GOVERNANCE & INTEGRITY GATE (§21)</div>
+            <h2 id="readiness-title" className="report-modal-title">WhyLab Model Reliability & Governance Gate</h2>
             <p className="readiness-subtitle">
-              All 11 mandatory criteria from the winning roadmap verified. Scheduled launch: <strong>September 18, 2026</strong>.
+              All 11 mandatory verification criteria verified. Production audit snapshot active. Scheduled launch: <strong>September 18, 2026</strong>.
             </p>
           </div>
           <button type="button" className="report-close-btn" onClick={onClose} aria-label="Close readiness audit modal">
@@ -162,10 +162,10 @@ export default function SubmissionReadinessModal({
           </div>
           <div className="readiness-stat">
             <span className="stat-label">Status</span>
-            <strong className="stat-val text-success">SUBMISSION READY</strong>
+            <strong className="stat-val text-success">VERIFIED READY</strong>
           </div>
           <div className="readiness-stat">
-            <span className="stat-label">Product Hunt Launch</span>
+            <span className="stat-label">Release Target</span>
             <strong className="stat-val text-white">SEPT 18, 2026</strong>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function SubmissionReadinessModal({
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
             </svg>
-            Download Submission Audit JSON
+            Download Governance Audit JSON
           </button>
           <button type="button" className="btn-secondary" onClick={onClose}>
             Close Audit Gate

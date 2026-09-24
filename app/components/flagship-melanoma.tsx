@@ -16,7 +16,11 @@ import type { Measurement } from '../lib/investigation/primitives';
 type Result = ReturnType<typeof investigateMelanoma>;
 const format = (metric: Measurement) => metric.status === 'undefined' ? `Undefined: ${metric.reason}` : metric.unit === 'ratio' ? `${(metric.value * 100).toFixed(1)}%` : metric.value.toFixed(1);
 
-export default function FlagshipMelanoma() {
+export default function FlagshipMelanoma({
+  onInvestigationComplete
+}: {
+  onInvestigationComplete?: (investigation: Result['investigation']) => void;
+} = {}) {
   const [result, setResult] = useState<Result | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -33,7 +37,9 @@ export default function FlagshipMelanoma() {
       } catch {
         text = 'y_true,y_pred,y_probability\n' + Array(86).fill('0,0,0.1').concat(Array(4).fill('0,0,0.35'), Array(7).fill('1,0,0.4'), ['1,0,0.2'], Array(2).fill('1,1,0.8')).join('\n');
       }
-      setResult(investigateMelanoma(text));
+      const res = investigateMelanoma(text);
+      setResult(res);
+      onInvestigationComplete?.(res.investigation);
       setShowRepair(false);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'The investigation failed. Please retry.'); }
     finally { setBusy(false); }

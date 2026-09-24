@@ -1,6 +1,6 @@
 import { isMissing, summarizeColumn } from './column-profile.ts';
 export { isMissing } from './column-profile.ts';
-export type Dataset = { name: string; headers: string[]; rows: string[][] };
+export type Dataset = { name: string; headers: string[]; rows: string[][]; totalRows?: number; sampled?: boolean };
 
 export function profileDataset(data: Dataset, target: string, task: string) {
   return data.headers.map((name, index) => {

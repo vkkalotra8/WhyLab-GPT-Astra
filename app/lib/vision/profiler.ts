@@ -383,16 +383,22 @@ export function computeAHash(gray: Float32Array, width: number, height: number):
 
 /** Computes Hamming distance between two 16-hex perceptual hashes (0 to 64) */
 export function hammingDistance(hashHexA: string, hashHexB: string): number {
-  if (hashHexA.length !== 16 || hashHexB.length !== 16) return 64;
-  const a = BigInt('0x' + hashHexA);
-  const b = BigInt('0x' + hashHexB);
-  let xor = a ^ b;
-  let dist = 0;
-  const zeroBig = BigInt(0);
-  const oneBig = BigInt(1);
-  while (xor > zeroBig) {
-    dist += Number(xor & oneBig);
-    xor >>= oneBig;
+  if (!hashHexA || !hashHexB) return 64;
+  const aHex = hashHexA.slice(-16).padStart(16, '0');
+  const bHex = hashHexB.slice(-16).padStart(16, '0');
+  try {
+    const a = BigInt('0x' + aHex);
+    const b = BigInt('0x' + bHex);
+    let xor = a ^ b;
+    let dist = 0;
+    const zeroBig = BigInt(0);
+    const oneBig = BigInt(1);
+    while (xor > zeroBig) {
+      dist += Number(xor & oneBig);
+      xor >>= oneBig;
+    }
+    return dist;
+  } catch {
+    return 64;
   }
-  return dist;
 }

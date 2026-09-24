@@ -21,10 +21,14 @@ type LocalDraft={csv:string;trainingLog:string;trainingLogName:string;positive:s
 function readDraft():LocalDraft|null{try{const value=JSON.parse(localStorage.getItem(draftKey)??'null');if(!value||typeof value!=='object')return null;const strings=['csv','trainingLog','trainingLogName','positive','negative','objective','gap','steering'];if(strings.some(key=>typeof value[key]!=='string'))return null;if(!['general','metrics','data_quality','shift','leakage'].includes(value.specialist)||value.csv.length>2000000||value.trainingLog.length>16000)return null;return value as LocalDraft;}catch{return null;}}
 export default function AstraInvestigation({
   sharedToken,
-  onSharedTokenChange
+  onSharedTokenChange,
+  incomingEvaluationData,
+  onInvestigationComplete
 }: {
   sharedToken?: string;
   onSharedTokenChange?: (token: string) => void;
+  incomingEvaluationData?: { name: string; csv: string; positive?: string; negative?: string } | null;
+  onInvestigationComplete?: (investigation: Investigation, datasets: EvaluationDataset[]) => void;
 } = {}){
   const [repairDatasets,setRepairDatasets]=useState<EvaluationDataset[]>([]),[repairDatasetId,setRepairDatasetId]=useState('');
   const [available,setAvailable]=useState<boolean|null>(null),[configError,setConfigError]=useState(false);
@@ -42,6 +46,21 @@ export default function AstraInvestigation({
   const [showReport, setShowReport] = useState(false);
   const controller=useRef<AbortController|null>(null),generation=useRef(0),heading=useRef<HTMLHeadingElement>(null),fileInput=useRef<HTMLInputElement>(null);
   const cancelActive=useCallback(()=>{controller.current?.abort();generation.current++;},[]);
+  useEffect(()=>{
+    if (!incomingEvaluationData) return;
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      clear();
+      setFiles([]);
+      if (fileInput.current) fileInput.current.value = '';
+      setCsv(incomingEvaluationData.csv);
+      if (incomingEvaluationData.positive) setPositive(incomingEvaluationData.positive);
+      if (incomingEvaluationData.negative) setNegative(incomingEvaluationData.negative);
+      setNotice(`✓ Evaluation dataset '${incomingEvaluationData.name}' received from Dataset Lab. Review settings, confirm consent, then start the live investigation.`);
+    });
+    return () => { active = false; };
+  },[incomingEvaluationData]);
   useEffect(()=>{const draft=readDraft();if(!draft)return;let active=true;queueMicrotask(()=>{if(!active)return;setCsv(draft.csv);setTrainingLog(draft.trainingLog);setTrainingLogName(draft.trainingLogName);setPositive(draft.positive);setNegative(draft.negative);setObjective(draft.objective);setGap(draft.gap);setSpecialist(draft.specialist);setSteering(draft.steering);setSaveDraft(true);setNotice('Local draft restored. Reconfirm consent before starting; file uploads must be selected again.');});return()=>{active=false;};},[]);
   useEffect(()=>{if(!saveDraft)return;try{localStorage.setItem(draftKey,JSON.stringify({csv,trainingLog,trainingLogName,positive,negative,objective,gap,specialist,steering} satisfies LocalDraft));}catch{queueMicrotask(()=>setNotice('This browser could not save the local draft.'));}},[saveDraft,csv,trainingLog,trainingLogName,positive,negative,objective,gap,specialist,steering]);
   const discardDraft=useCallback(()=>{try{localStorage.removeItem(draftKey);}catch{}setSaveDraft(false);setNotice('Saved local draft discarded.');},[]);
@@ -89,14 +108,17 @@ export default function AstraInvestigation({
 
       const metadata=validated.datasets[0];
       const source=validated.sources.find(s=>s.id===metadata?.sourceId)||validated.sources[0];
+      let boundDatasets: EvaluationDataset[] = [];
       if(metadata&&source){
         const parsed=ingestEvaluationCsv(csvText,metadata.name,{labels:{positive:'1',negative:'0'},datasetId:metadata.id,sourceId:source.id});
         const bound:EvaluationDataset={...parsed,source};
-        setRepairDatasets([bound]);
+        boundDatasets = [bound];
+        setRepairDatasets(boundDatasets);
         setRepairDatasetId(bound.metadata.id);
       }
 
       setResult(validated);
+      onInvestigationComplete?.(validated, boundDatasets);
       setIsRecordedExample(true);
       setEvents([
         'Dataset parsed: 100 evaluation rows',
@@ -141,7 +163,7 @@ export default function AstraInvestigation({
             bound.push({...parsed,source});
           } catch { /* Diagnosis stays available when a dataset cannot safely be rebound. */ }
         }
-        setRepairDatasets(bound);setRepairDatasetId(bound[0]?.metadata.id??'');setResult(final.investigation);setSessionId(final.sessionId);setNotice(final.investigation.status==='failed'?'Investigation stopped. Available evidence is shown below.':final.investigation.diagnosis?.status==='inconclusive'?'Investigation is inconclusive. Review the missing evidence below.':final.sessionId?'Investigation finished and a 24-hour restore snapshot was saved.':'Investigation finished. Review the evidence and verification below.');requestAnimationFrame(()=>heading.current?.focus());}
+        setRepairDatasets(bound);setRepairDatasetId(bound[0]?.metadata.id??'');setResult(final.investigation);setSessionId(final.sessionId);onInvestigationComplete?.(final.investigation, bound);setNotice(final.investigation.status==='failed'?'Investigation stopped. Available evidence is shown below.':final.investigation.diagnosis?.status==='inconclusive'?'Investigation is inconclusive. Review the missing evidence below.':final.sessionId?'Investigation finished and a 24-hour restore snapshot was saved.':'Investigation finished. Review the evidence and verification below.');requestAnimationFrame(()=>heading.current?.focus());}
     }catch(error){if(generation.current===id)setNotice(c.signal.aborted?'Investigation cancelled. No completed diagnosis was received.':error instanceof Error?error.message:'Investigation failed. Try again.');}
     finally{if(generation.current===id)setBusy(false);}
   }
@@ -273,7 +295,7 @@ export default function AstraInvestigation({
         }}>Clear evidence</button>
       </div>
 
-      <div className="form-group">
+      <div className="form-group log-upload-group">
         <label>Training / log artifact (optional)</label>
         <input
           aria-label="Training / log artifact (optional)"
@@ -297,7 +319,7 @@ export default function AstraInvestigation({
         />
       </div>
 
-      <div className="form-group">
+      <div className="form-group log-paste-group">
         <label>Or paste training / log artifact</label>
         <textarea
           aria-label="Or paste training / log artifact"
@@ -312,7 +334,7 @@ export default function AstraInvestigation({
 
       <TrainingLogPreview text={trainingLog} />
 
-      <div className="case-actions">
+      <div className="case-actions synthetic-log-actions">
         <button type="button" onClick={() => {
           clear();
           setTrainingLog('epoch=1 train_loss=0.80 val_loss=0.85\nepoch=2 train_loss=0.40 val_loss=0.70\nepoch=3 train_loss=0.15 val_loss=0.95\nepoch=4 train_loss=0.10 val_loss=1.1\nepoch=5 train_loss=0.08 val_loss=1.2');

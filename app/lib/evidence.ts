@@ -1,13 +1,14 @@
-﻿export type Finding = { title: string; evidence: string; experiment: string; strength: string; category: string };
+import { buildCsvDecisionBasis, buildLogDecisionBasis, type DecisionBasis, type MetricExtractionDetail } from './decision-basis.ts';
+export type Finding = { title: string; evidence: string; experiment: string; strength: string; category: string };
 export type EpochPoint = { epoch: number; metrics: Record<string, number>; sources: string[] };
-export type Evidence = { source: string; format: string; metrics: { label: string; value: string; source: string }[]; warnings: string[]; findings: Finding[]; history: EpochPoint[]; rows?: number; columns?: number };
+export type Evidence = { source: string; format: string; metrics: { label: string; value: string; source: string }[]; warnings: string[]; findings: Finding[]; history: EpochPoint[]; rows?: number; columns?: number; decisionBasis?: DecisionBasis };
 const MAX_CHARS = 10_000_000;
 
 // CSV state machine: quoted commas, escaped quotes, CRLF, and multiline cells.
-export function parseCsv(text: string): string[][] {
+export function parseCsv(text: string, maxCells = 25_000_000): string[][] {
   const rows: string[][] = [];
   let row: string[] = [], cell = '', quoted = false, closed = false, cells = 0;
-  function field() { if (++cells > 1_000_000) throw new Error('CSV exceeds one million cells; export a smaller subset.'); row.push(cell.trim()); cell = ''; closed = false; }
+  function field() { if (++cells > maxCells) throw new Error(`CSV exceeds ${maxCells.toLocaleString()} cells; export a smaller subset.`); row.push(cell.trim()); cell = ''; closed = false; }
   function record() { field(); if (row.length > 1 || row.some(Boolean)) rows.push(row); row = []; }
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
@@ -53,7 +54,7 @@ export function analyzeEvidence(raw: string, source = 'Pasted logs'): Evidence {
     result.metrics.push({ label: 'Missing cells', value: `${missing} / ${rows.length * headers.length}`, source: 'All data rows' }, { label: 'Repeated rows', value: String(duplicates), source: 'Exact full-row comparison' });
     if (missing) add('Missing feature values', `${missing} cells are empty or marked NA, NaN, N/A, or null.`, 'Inspect missingness by column and split. Fit imputation only on the training split, then compare held-out performance.', 'Observed', 'data');
     if (duplicates) add('Repeated observations', `${duplicates} data rows repeat an earlier row. This alone does not establish leakage.`, 'Check whether duplicates represent valid repeated measurements. Audit overlap across train and validation before splitting by entity.', 'Observed', 'evaluation');
-    const labelIndex = headers.findIndex(h => /^(label|class|target)$/i.test(h));
+    const labelIndex = headers.findIndex(h => /^(label|class|target|stroke|survived|churn|fraud|outcome|y_true|default)$/i.test(h));
     if (labelIndex >= 0) {
       const counts = new Map<string, number>();
       for (const row of rows) if (row[labelIndex] && !/^(null|na|nan|n\/a)$/i.test(row[labelIndex])) counts.set(row[labelIndex], (counts.get(row[labelIndex]) ?? 0) + 1);
@@ -65,6 +66,8 @@ export function analyzeEvidence(raw: string, source = 'Pasted logs'): Evidence {
         if (share >= .7) add('Possible class imbalance', `Class "${label}" accounts for ${(share * 100).toFixed(1)}% of nonmissing labels in column "${headers[labelIndex]}".`, 'Confirm this is a classification target. Compare class counts across splits and inspect macro F1 and per-class recall before trying class weights.', 'Supported', 'data');
       } else result.warnings.push('Class balance was not inferred: the target has fewer than two or more than 50 distinct values.');
     } else result.warnings.push('No label, class, or target column found. Class balance was not evaluated.');
+    // Construct rich decision basis and provenance for the CSV
+    result.decisionBasis = buildCsvDecisionBasis(headers, rows, source);
     // Metric tables are supported only when headers explicitly name metrics.
     lines = rows.map((row, i) => `row ${i + 2}: ` + headers.flatMap((h, j) => /^(?:(?:val|validation|prod|production|train|training|test)_(?:accuracy|acc|loss|mae|mse|rmse|r2|precision|recall|f1|auc)|majority|minority_recall|epoch)$/i.test(h) && /^[+-]?(?:\d*\.)?\d+(?:e[+-]?\d+)?%?$/i.test(row[j]) ? [`${h}=${row[j]}`] : []).join(' '));
   } else if (/\.json$/i.test(source) || /^\{/.test(text) || /^\[\s*[\{\["]/.test(text)) {
@@ -86,7 +89,8 @@ export function analyzeEvidence(raw: string, source = 'Pasted logs'): Evidence {
       }
     } else flatten(data, '', 0);
   } else lines = normalizeLogs(text).split(/\r?\n/);
-  const values = new Map<string, { value: number; source: string }>();
+  const values = new Map<string, { value: number; source: string; lineIndex?: number }>();
+  const extractions: MetricExtractionDetail[] = [];
   const aliases: Record<string, string> = { val_accuracy: 'Validation accuracy', validation_accuracy: 'Validation accuracy', val_acc: 'Validation accuracy', production_accuracy: 'Production accuracy', prod_accuracy: 'Production accuracy', train_accuracy: 'Training accuracy', training_accuracy: 'Training accuracy', train_acc: 'Training accuracy', train_loss: 'Training loss', training_loss: 'Training loss', val_loss: 'Validation loss', validation_loss: 'Validation loss', majority: 'Majority share', minority_recall: 'Minority recall' };
   for (const [prefix, label] of Object.entries({train:'Training',training:'Training',val:'Validation',validation:'Validation',test:'Test',production:'Production',prod:'Production'})) {
     for (const metric of ['accuracy','acc','loss','mae','mse','rmse','r2','precision','recall','f1','auc']) aliases[prefix+'_'+metric]=label+' '+(metric==='acc'?'accuracy':metric==='accuracy'||metric==='loss'?metric:metric.toUpperCase());
@@ -106,7 +110,14 @@ export function analyzeEvidence(raw: string, source = 'Pasted logs'): Evidence {
       const bounded = rate(label);
       if (match[3] && bounded) value /= 100;
       if (!Number.isFinite(value) || (value < 0 && !label.endsWith('R2')) || (label.endsWith('R2') && value > 1) || (bounded && value > 1) || (!bounded && match[3])) { result.warnings.push(`Invalid or ambiguous ${label.toLowerCase()} at record ${index + 1}; use 0-1 or explicit % for rates, finite nonnegative errors, and R2 at most 1 (negative is valid).`); continue; }
-      values.set(label, { value, source: original.slice(0, 240) });
+      values.set(label, { value, source: original.slice(0, 240), lineIndex: index + 1 });
+      extractions.push({
+        metric: label,
+        extractedValue: bounded ? `${(value * 100).toFixed(1)}%` : String(value),
+        sourceLineText: original.slice(0, 240),
+        sourceLineNumber: index + 1,
+        matchingRule: `Matched token "${match[1]}" mapped to metric "${label}"`,
+      });
       if (point && /^(Training|Validation) (accuracy|loss)$/.test(label)) point.metrics[label] = value;
     }
     if (point && Object.keys(point.metrics).length) {
@@ -133,6 +144,9 @@ export function analyzeEvidence(raw: string, source = 'Pasted logs'): Evidence {
   result.findings.sort((a, b) => ['Observed','Supported','Suggested'].indexOf(a.strength) - ['Observed','Supported','Suggested'].indexOf(b.strength));
   if (result.history.length > 1000) { result.history = result.history.slice(-1000); result.warnings.push('Chart history is limited to the last 1,000 recorded epochs; summary metrics still use the full input.'); }
   if (result.warnings.length > 200) { const count=result.warnings.length; result.warnings=result.warnings.slice(0,200); result.warnings.push('Showing 200 of '+count+' parsing warnings.'); }
+  if (!result.decisionBasis) {
+    result.decisionBasis = buildLogDecisionBasis(lines, source, extractions, result.findings, result.history);
+  }
   return result;
 }
 export function filterFindings(evidence: Evidence, lens: string): Finding[] {
@@ -190,5 +204,6 @@ export function combineEvidence(items: Evidence[]): Evidence {
   const findings=new Map<string,Finding>();
   for(const item of items)for(const f of item.findings){const previous=findings.get(f.title);const excerpt=`${item.source}: ${f.evidence}`;findings.set(f.title,previous?{...previous,evidence:previous.evidence+' | '+excerpt}:{...f,evidence:excerpt});}
   const primary=items.find(item=>item.history.length);
-  return {source:items.map(item=>item.source).join(' + '),format:'Evidence bundle',metrics:items.flatMap(item=>item.metrics.map(m=>({...m,label:`${item.source} / ${m.label}`,source:`${item.source}: ${m.source}`}))),warnings:[...items.flatMap(item=>item.warnings.map(w=>`${item.source}: ${w}`)),'Files are analyzed independently; cross-file metric gaps are not inferred. Verify that these files describe the same experiment.',primary?`Epoch chart uses ${primary.source} only; histories from other files are not merged.`:'No epoch history found.'],findings:[...findings.values()],history:primary?.history??[]};
+  const primaryBasis = items.find(item => item.decisionBasis)?.decisionBasis;
+  return {source:items.map(item=>item.source).join(' + '),format:'Evidence bundle',metrics:items.flatMap(item=>item.metrics.map(m=>({...m,label:`${item.source} / ${m.label}`,source:`${item.source}: ${m.source}`}))),warnings:[...items.flatMap(item=>item.warnings.map(w=>`${item.source}: ${w}`)),'Files are analyzed independently; cross-file metric gaps are not inferred. Verify that these files describe the same experiment.',primary?`Epoch chart uses ${primary.source} only; histories from other files are not merged.`:'No epoch history found.'],findings:[...findings.values()],history:primary?.history??[],decisionBasis:primaryBasis};
 }
