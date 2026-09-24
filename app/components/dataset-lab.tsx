@@ -15,11 +15,24 @@ const roleDescriptions: Record<typeof roles[number], string> = {
   Production: 'Live inference stream to monitor real-world drift and novel anomalies.'
 };
 
-export default function DatasetLab({ evidence }: { evidence: Evidence | null }) {
+export default function DatasetLab({
+  evidence,
+  sharedToken,
+  onSharedTokenChange,
+  onTransferToAstra,
+  onNavigateToStage
+}: {
+  evidence: Evidence | null;
+  sharedToken?: string;
+  onSharedTokenChange?: (token: string) => void;
+  onTransferToAstra?: (data: { name: string; csv: string; positive?: string; negative?: string }) => void;
+  onNavigateToStage?: (stage: string) => void;
+}) {
   const [datasets, setDatasets] = useCaseState('datasets');
   const [target, setTarget] = useCaseState('target');
   const [task, setTask] = useCaseState('task');
   const [error, setError] = useState('');
+  const [guidanceNotice, setGuidanceNotice] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
   const generation = useRef(0);
   const [revision, setRevision] = useState(0);
@@ -87,6 +100,74 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
       if (request === generation.current) setError(cause instanceof Error ? cause.message : 'Unable to read CSV.');
     } finally {
       if (request === generation.current) setReading(false);
+    }
+  }
+
+  function findEvaluationCandidate(): { role: typeof roles[number]; dataset: NonNullable<typeof datasets[typeof roles[number]]> } | null {
+    const order: Array<typeof roles[number]> = ['Validation', 'Production', 'Training'];
+    for (const r of order) {
+      const ds = datasets[r];
+      if (ds) {
+        const lowerHeaders = ds.headers.map(h => h.toLowerCase().trim());
+        const hasTrue = lowerHeaders.includes('y_true');
+        const hasPred = lowerHeaders.includes('y_pred');
+        const hasProb = lowerHeaders.includes('y_probability') || lowerHeaders.includes('y_prob');
+        if (hasTrue && hasPred && hasProb) {
+          return { role: r, dataset: ds };
+        }
+      }
+    }
+    return null;
+  }
+
+  function serializeDatasetToCsv(dataset: NonNullable<typeof datasets[typeof roles[number]]>): string {
+    const lines = [dataset.headers.join(',')];
+    for (const row of dataset.rows) {
+      lines.push(
+        row.map(val => (val.includes(',') || val.includes('"') || val.includes('\n') ? `"${val.replace(/"/g, '""')}"` : val)).join(',')
+      );
+    }
+    return lines.join('\n');
+  }
+
+  function handleInvestigateInAstra(e: React.MouseEvent) {
+    e.preventDefault();
+    const candidate = findEvaluationCandidate();
+    if (candidate) {
+      setGuidanceNotice(null);
+      const csvText = serializeDatasetToCsv(candidate.dataset);
+      onTransferToAstra?.({
+        name: candidate.dataset.name,
+        csv: csvText,
+        positive: '1',
+        negative: '0'
+      });
+      if (onNavigateToStage) {
+        onNavigateToStage('investigate');
+      } else {
+        document.getElementById('astra-lab')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      setGuidanceNotice(
+        "Astra autonomous investigation requires model evaluation outputs with columns: 'y_true', 'y_pred', and 'y_probability'. Your profiled dataset contains feature baseline data. To diagnose prediction errors, upload an evaluation CSV containing these columns or select a preset like 'ICU Sepsis Repair & Decision Policy'."
+      );
+    }
+  }
+
+  function handleOptimizeInRepair(e: React.MouseEvent) {
+    e.preventDefault();
+    const candidate = findEvaluationCandidate();
+    if (candidate) {
+      setGuidanceNotice(null);
+      if (onNavigateToStage) {
+        onNavigateToStage('repair');
+      } else {
+        document.getElementById('repair-lab')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      setGuidanceNotice(
+        "Repair Lab optimization requires ground truth and probability predictions ('y_true', 'y_probability'). Profile an evaluation dataset or load the repair preset to sweep decision thresholds."
+      );
     }
   }
 
@@ -253,6 +334,7 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
               <a
                 href="#astra-lab"
                 className="bridge-btn primary"
+                onClick={handleInvestigateInAstra}
                 title="Launch GPT-6 Astra autonomous investigation on this dataset (§4, §11)"
               >
                 🔬 Investigate in Astra Lab <span aria-hidden="true">→</span>
@@ -260,11 +342,29 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
               <a
                 href="#repair-lab"
                 className="bridge-btn secondary"
+                onClick={handleOptimizeInRepair}
                 title="Optimize operating thresholds and decision policies in Repair Lab (§9)"
               >
                 ⚙️ Optimize in Repair Lab <span aria-hidden="true">→</span>
               </a>
             </div>
+
+            {guidanceNotice && (
+              <div className="byom-guidance-banner" role="alert">
+                <div className="byom-guidance-icon">ℹ️</div>
+                <div className="byom-guidance-body">
+                  <strong>Evaluation Prediction Columns Required</strong>
+                  <p>{guidanceNotice}</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-dismiss-guidance"
+                  onClick={() => setGuidanceNotice(null)}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="dataset-options">
@@ -403,7 +503,15 @@ export default function DatasetLab({ evidence }: { evidence: Evidence | null }) 
         </div>
       )}
 
-      <DiagnosisPanel key={revision} evidence={evidence} datasets={datasets} target={target} task={task} />
+      <DiagnosisPanel
+        key={revision}
+        evidence={evidence}
+        datasets={datasets}
+        target={target}
+        task={task}
+        sharedToken={sharedToken}
+        onSharedTokenChange={onSharedTokenChange}
+      />
     </section>
   );
 }

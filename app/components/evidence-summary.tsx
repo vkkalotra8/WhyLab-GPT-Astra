@@ -203,7 +203,7 @@ export default function EvidenceSummary({ evidence }: { evidence: Evidence }) {
 
               <div className="basis-criteria-grid">
                 <div className="criteria-box criteria-missing">
-                  <span className="criteria-title">❓ On what basis are cells classified as "Missing"?</span>
+                  <span className="criteria-title">❓ On what basis are cells classified as &quot;Missing&quot;?</span>
                   <p>{basis.missingCells.criteriaDescription}</p>
                   <ul>
                     {basis.missingCells.sentinelRules.map((rule, idx) => (
@@ -212,7 +212,7 @@ export default function EvidenceSummary({ evidence }: { evidence: Evidence }) {
                   </ul>
                 </div>
                 <div className="criteria-box criteria-present">
-                  <span className="criteria-title">✅ On what basis are cells classified as "Having Values"?</span>
+                  <span className="criteria-title">✅ On what basis are cells classified as &quot;Having Values&quot;?</span>
                   <p>{basis.missingCells.validValueCriteria}</p>
                   <small>Cells contain non-whitespace text or numbers that do not match null sentinels.</small>
                 </div>
@@ -345,7 +345,7 @@ export default function EvidenceSummary({ evidence }: { evidence: Evidence }) {
               <div className="class-distribution-list">
                 {basis.targetBalance.classes.map(c => (
                   <div key={c.label} className="class-row">
-                    <span className="class-label">Class "{c.label}":</span>
+                    <span className="class-label">Class &quot;{c.label}&quot;:</span>
                     <strong className="class-count">{c.count} rows</strong>
                     <span className="class-pct">({c.percentage.toFixed(1)}%)</span>
                     <div className="class-bar-wrap">

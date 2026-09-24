@@ -469,7 +469,7 @@ export default function RepairLab({
 
         {(() => {
           const toolResult = prepared?.investigation.toolResults.find(r => r.tool === 'threshold_sweep');
-          const sweepPoints = (toolResult?.output as { points?: Array<{ threshold: number; confusion: { falseNegative: number; falsePositive: number; trueNegative: number; truePositive: number }; metrics: Array<{ name: string; value: number }> }> })?.points ?? [];
+          const sweepPoints = (toolResult && 'output' in toolResult ? (toolResult.output as { points?: Array<{ threshold: number; confusion: { falseNegative: number; falsePositive: number; trueNegative: number; truePositive: number }; metrics: Array<{ name: string; value: number }> }> })?.points : undefined) ?? [];
           let minCost: number | null = null;
           let bestThreshold: number | null = null;
           if (!prepared.suggested && sweepPoints.length > 0) {
@@ -491,22 +491,25 @@ export default function RepairLab({
           }
           if (minCost !== null && bestThreshold !== null) {
             const recommendedCeiling = Math.ceil(minCost * 1.1);
+            const baselineCostMetric = prepared.baseline.metrics.find(m => m.name === 'expected_cost');
+            const baselineCostVal = baselineCostMetric && baselineCostMetric.status === 'measured' ? baselineCostMetric.value : 3187;
+            const evalRowCount = prepared.dataset.metadata.rowCount;
             return (
-              <div className="policy-rejection-callout" style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '16px 20px', margin: '14px 0' }}>
+              <div className="policy-rejection-callout" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '16px 20px', margin: '14px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
-                    <strong style={{ color: '#f87171', display: 'block', fontSize: '14px' }}>
+                    <strong style={{ color: '#b91c1c', display: 'block', fontSize: '14px' }}>
                       ⚠️ Declared Target Cost Ceiling (≤ {prepared.input.maximumCost}) is too restrictive
                     </strong>
-                    <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#cbd5e1' }}>
-                      Baseline cost is <strong>{prepared.baseline.metrics.find(m => m.name === 'expected_cost')?.value ?? 3187}</strong>. 
-                      The lowest achievable cost on these {prepared.dataset.rowCount} rows is <strong>{minCost}</strong> (at optimal threshold {bestThreshold}).
+                    <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#475569' }}>
+                      Baseline cost is <strong style={{ color: '#0f172a' }}>{baselineCostVal}</strong>. 
+                      The lowest achievable cost on these {evalRowCount} rows is <strong style={{ color: '#0f172a' }}>{minCost}</strong> (at optimal threshold {bestThreshold}).
                     </p>
                   </div>
                   <button
                     type="button"
                     className="new-button"
-                    style={{ fontSize: '12px', padding: '8px 16px', background: '#0f766e', borderColor: '#14b8a6', color: '#ffffff' }}
+                    style={{ fontSize: '12px', padding: '8px 16px', background: '#2563eb', borderColor: '#2563eb', color: '#ffffff' }}
                     onClick={() => {
                       setTarget(String(recommendedCeiling));
                       const updatedInput = { ...prepared.input, maximumCost: recommendedCeiling };

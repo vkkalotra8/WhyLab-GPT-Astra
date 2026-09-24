@@ -144,8 +144,8 @@ export default function VisionLab() {
       const candidateConcepts: VisionConcept[] = [
         {
           id: 'c_watermark',
-          name: 'Absence of Scale Ruler / Watermark',
-          rubric: 'Absence of a calibrated millimeter ruler, circular stamp, or watermark on lesion captures.',
+          name: 'Corner Scale Ruler / Watermark',
+          rubric: 'Absence or corner presence of a calibrated millimeter ruler, circular stamp, or watermark on lesion captures.',
           positiveExampleIds: ['derm_val_002', 'derm_val_045'],
           negativeExampleIds: ['derm_train_014', 'derm_train_089'],
           whyPlausible: 'Clinical model learned ruler watermark as a shortcut for malignancy; without ruler, false-negative rate spikes.',
