@@ -340,7 +340,7 @@ export function buildLogDecisionBasis(
     evaluatedAt: new Date().toISOString(),
     sourceFile: filename,
     formatDetected: 'Training logs',
-    formatBasis: `Extracted regex pattern tokens from ${lines.length} lines of text logs.`,
+    formatBasis: `Extracted regex pattern tokens from ${lines.length} lines of text logs (${history.length} epochs, ${findings.length} heuristic findings).`,
     totalRecords: lines.length,
     totalFieldsOrCells: extractions.length,
     metricExtractions: extractions,

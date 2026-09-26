@@ -548,7 +548,11 @@ export default function RepairLab({
             </div>
             <EvidenceGraph investigation={applied.investigation} />
             <ReliabilityProfile investigation={applied.investigation} />
-            <ChallengeReview investigation={applied.investigation} />
+            <ChallengeReview
+              investigation={applied.investigation}
+              datasets={linked ? [linked.dataset] : []}
+              onUpdate={(inv) => linked?.onApply(inv)}
+            />
             <IncidentReportExport investigation={applied.investigation} />
           </div>
         )}

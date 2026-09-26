@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { analyzeEvidence } from '../app/lib/evidence.ts';
 import {
   buildCsvDecisionBasis,
-  buildLogDecisionBasis,
   generateDecisionAuditReport,
   isMissingCell,
   classifySentinel,

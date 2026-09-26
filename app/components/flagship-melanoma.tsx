@@ -251,7 +251,11 @@ export default function FlagshipMelanoma({
           <EvidenceGraph investigation={result.investigation} />
           <ClassroomLesson key={result.investigation.datasets[0].id} investigation={result.investigation} />
           <ReliabilityProfile investigation={result.investigation} />
-          <ChallengeReview investigation={result.investigation} />
+          <ChallengeReview
+            investigation={result.investigation}
+            datasets={result.dataset ? [result.dataset] : []}
+            onUpdate={(inv) => setResult(prev => prev ? { ...prev, investigation: inv } : null)}
+          />
           <IncidentReportExport investigation={result.investigation} />
         </div>}
       </div>

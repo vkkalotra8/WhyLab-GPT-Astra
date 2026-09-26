@@ -42,6 +42,11 @@ export default function AstraInvestigation({
   const [csv,setCsv]=useState(''),[files,setFiles]=useState<File[]>([]),[positive,setPositive]=useState('1'),[negative,setNegative]=useState('0');
   const [objective,setObjective]=useState('Investigate why classification accuracy may be misleading.'),[gap,setGap]=useState('10'),[consent,setConsent]=useState(false),[specialist,setSpecialist]=useState<'general'|'metrics'|'data_quality'|'shift'|'leakage'>('general'),[steering,setSteering]=useState('');
   const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[events,setEvents]=useState<string[]>([]),[result,setResult]=useState<Investigation|null>(null),[saveDraft,setSaveDraft]=useState(false),[sessionId,setSessionId]=useState<string|null>(null),[restoreSessionId,setRestoreSessionId]=useState('');
+  const [activeSteeringInput, setActiveSteeringInput] = useState('');
+  const [submittedSteering, setSubmittedSteering] = useState<string | null>(null);
+  const [steeringStatus, setSteeringStatus] = useState<'idle' | 'pending' | 'cancelling' | 'resumed' | 'error'>('idle');
+  const [steeringHistory, setSteeringHistory] = useState<string[]>([]);
+  const [steeringError, setSteeringError] = useState<string | null>(null);
   const [isRecordedExample, setIsRecordedExample] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const controller=useRef<AbortController|null>(null),generation=useRef(0),heading=useRef<HTMLHeadingElement>(null),fileInput=useRef<HTMLInputElement>(null);
@@ -137,9 +142,14 @@ export default function AstraInvestigation({
       setBusy(false);
     }
   }
-  async function start(){
+  async function start(updatedSteering?: string){
     if(!consent||!Number.isFinite(Number(gap))||Number(gap)<.001||Number(gap)>100){setNotice('Confirm consent and enter a gap between 0.001 and 100 percentage points.');return;}
-    const id=++generation.current,c=new AbortController();controller.current=c;setBusy(true);setNotice('');setEvents([]);setResult(null);setRepairDatasets([]);setRepairDatasetId('');
+    const id=++generation.current,c=new AbortController();controller.current=c;setBusy(true);setNotice('');setRepairDatasets([]);setRepairDatasetId('');
+    if (!updatedSteering) {
+      setEvents([]);
+      setResult(null);
+    }
+    const currentSteeringToUse = updatedSteering ?? (steering.trim() || null);
     try{
       const selected=files.length?await Promise.all(files.map(async f=>{if(f.size>2000000||!f.name.toLowerCase().endsWith('.csv'))throw new Error('Choose CSV files up to 2 MB each.');return {name:f.name,text:await f.text()};})):[{name:'pasted-evaluation.csv',text:csv}];
       if(c.signal.aborted)return;
@@ -147,7 +157,7 @@ export default function AstraInvestigation({
       const trainingLogs=trainingLog.trim()?[trainingLogSchema.parse({name:trainingLogName,text:trainingLog})]:[];
       for(const log of trainingLogs)ingestTrainingLog(log);
       const completed:Array<{investigation:Investigation;sessionId:string|null}>=[];
-      const response=await fetch('/api/investigate',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json','X-WhyLab-Access-Token':accessToken},body:JSON.stringify({objective,steering:steering.trim()||null,specialist,trainingLogs,files:selected,labels:{positive,negative},accuracyParadoxGap:Number(gap),consent:true})});
+      const response=await fetch('/api/investigate',{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json','X-WhyLab-Access-Token':accessToken},body:JSON.stringify({objective,steering:currentSteeringToUse,specialist,trainingLogs,files:selected,labels:{positive,negative},accuracyParadoxGap:Number(gap),consent:true})});
       await readInvestigationStream(response,event=>{if(generation.current!==id)return;if(event.type==='progress')setEvents(items=>[...items,event.message]);else if(event.type==='error')throw new Error(event.message);else completed.push(event);});
       const final=completed[0];
       if(generation.current===id&&final){
@@ -166,6 +176,42 @@ export default function AstraInvestigation({
         setRepairDatasets(bound);setRepairDatasetId(bound[0]?.metadata.id??'');setResult(final.investigation);setSessionId(final.sessionId);onInvestigationComplete?.(final.investigation, bound);setNotice(final.investigation.status==='failed'?'Investigation stopped. Available evidence is shown below.':final.investigation.diagnosis?.status==='inconclusive'?'Investigation is inconclusive. Review the missing evidence below.':final.sessionId?'Investigation finished and a 24-hour restore snapshot was saved.':'Investigation finished. Review the evidence and verification below.');requestAnimationFrame(()=>heading.current?.focus());}
     }catch(error){if(generation.current===id)setNotice(c.signal.aborted?'Investigation cancelled. No completed diagnosis was received.':error instanceof Error?error.message:'Investigation failed. Try again.');}
     finally{if(generation.current===id)setBusy(false);}
+  }
+
+  async function applyMidTurnSteering(directiveText?: string) {
+    const textToApply = (directiveText ?? activeSteeringInput).trim();
+    if (!textToApply) return;
+    if (textToApply === submittedSteering && steeringStatus === 'resumed') return;
+
+    setSteeringError(null);
+    setSteeringStatus('pending');
+    setSubmittedSteering(textToApply);
+    setActiveSteeringInput(textToApply);
+
+    try {
+      if (busy) {
+        setSteeringStatus('cancelling');
+        setEvents(items => [
+          ...items,
+          `⚡ User steering directive applied: "${textToApply}"`
+        ]);
+        setSteeringHistory(prev => [...prev, textToApply]);
+        setSteering(textToApply);
+
+        controller.current?.abort();
+        setSteeringStatus('resumed');
+        setTimeout(() => {
+          void start(textToApply);
+        }, 150);
+      } else {
+        setSteering(textToApply);
+        setSteeringHistory(prev => [...prev, textToApply]);
+        setSteeringStatus('resumed');
+      }
+    } catch (err: unknown) {
+      setSteeringStatus('error');
+      setSteeringError(err instanceof Error ? err.message : 'Failed to apply steering directive.');
+    }
   }
   async function restore(){
     if(!/^[a-f0-9]{32}$/.test(restoreSessionId)){setNotice('Enter a valid saved investigation ID.');return;}
@@ -532,6 +578,100 @@ export default function AstraInvestigation({
         {busy ? 'Investigation running…' : 'INVESTIGATE WITH ASTRA'}
       </button>
       {busy && <button className="cancel-btn" onClick={() => controller.current?.abort()}>Cancel investigation</button>}
+    </div>
+
+    {/* Interactive Mid-Turn Steering Console (§7, §116-117) */}
+    {/* Interactive Mid-Turn Steering Console (§7, §116-117) */}
+    <div className="mid-turn-steering-card">
+      <div className="steering-title-row">
+        <div className="steering-title-group">
+          <span className="steering-icon" aria-hidden="true">⚡</span>
+          <strong className="steering-card-title">Interactive Mid-Turn Steering</strong>
+          <span className={`steering-status-badge ${busy ? 'running' : 'idle'}`}>
+            {busy ? 'INVESTIGATION RUNNING' : 'READY TO STEER'}
+          </span>
+        </div>
+        {steeringStatus !== 'idle' && (
+          <span className={`steering-status-feedback ${steeringStatus}`}>
+            {steeringStatus === 'pending' && '⏳ Steering pending…'}
+            {steeringStatus === 'cancelling' && '🔄 Safely redirecting active turn…'}
+            {steeringStatus === 'resumed' && '✓ Directive applied'}
+            {steeringStatus === 'error' && (steeringError ?? 'Steering error')}
+          </span>
+        )}
+      </div>
+
+      <p className="steering-card-description">
+        Redirect Astra mid-flight without losing completed evidence or corrupting diagnostic state. Click a quick directive below or type a free-text instruction to adjust investigation priorities.
+      </p>
+
+      <div className="steering-presets-bar">
+        {[
+          'Prioritize false-negative risk',
+          'Investigate distribution shift first',
+          'Focus on data leakage',
+          'Compare production and validation evidence',
+          'Reconsider the leading hypothesis'
+        ].map(preset => (
+          <button
+            key={preset}
+            type="button"
+            className="steering-pill-btn"
+            onClick={() => {
+              setActiveSteeringInput(preset);
+              void applyMidTurnSteering(preset);
+            }}
+            disabled={steeringStatus === 'pending' || steeringStatus === 'cancelling'}
+          >
+            {preset}
+          </button>
+        ))}
+      </div>
+
+      <div className="steering-input-row">
+        <input
+          id="astra-mid-turn-steering-input"
+          className="steering-input"
+          aria-label="Interactive mid-turn steering directive"
+          type="text"
+          value={activeSteeringInput}
+          onChange={e => setActiveSteeringInput(e.target.value)}
+          placeholder="e.g. Prioritize checking whether distribution shift affects Site B..."
+          maxLength={2000}
+          disabled={steeringStatus === 'pending' || steeringStatus === 'cancelling'}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              void applyMidTurnSteering();
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="steering-submit-btn"
+          onClick={() => void applyMidTurnSteering()}
+          disabled={!activeSteeringInput.trim() || activeSteeringInput.trim() === submittedSteering || steeringStatus === 'pending' || steeringStatus === 'cancelling'}
+        >
+          {steeringStatus === 'pending' || steeringStatus === 'cancelling' ? 'Redirecting…' : 'Redirect Astra'}
+        </button>
+      </div>
+
+      {submittedSteering && (
+        <div className="steering-active-directive-bar">
+          <span>Active directive:</span> <strong>&ldquo;{submittedSteering}&rdquo;</strong>
+        </div>
+      )}
+
+      {steeringHistory.length > 1 && (
+        <div className="steering-history-list">
+          <span>Steering history:</span>
+          {steeringHistory.map((s, idx) => (
+            <span key={idx} className="steering-history-chip">
+              {idx + 1}. {s}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
 
     {notice && <p role="status" className="notice-banner">{notice}</p>}
