@@ -1,0 +1,127 @@
+import { spawn } from 'node:child_process';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+const base = 'http://localhost:3000';
+const browser = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const cdpPort = 9258;
+const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'whylab-diag-'));
+
+const child = spawn(
+  browser,
+  [
+    '--headless=new',
+    `--remote-debugging-port=${cdpPort}`,
+    `--user-data-dir=${profile}`,
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-background-networking',
+    '--disable-gpu',
+    '--no-sandbox',
+    'about:blank'
+  ],
+  { windowsHide: true, stdio: 'ignore' }
+);
+
+let socket;
+const pending = new Map();
+let serial = 0;
+
+const pause = ms => new Promise(r => setTimeout(r, ms));
+
+async function waitFor(fn, timeout = 25000) {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    if (await fn()) return;
+    await pause(200);
+  }
+  throw new Error('Timeout');
+}
+
+function command(method, params = {}) {
+  const id = ++serial;
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error('CDP timed out: ' + method));
+    }, 25000);
+    pending.set(id, {
+      resolve: v => { clearTimeout(timer); resolve(v); },
+      reject: e => { clearTimeout(timer); reject(e); }
+    });
+    socket.send(JSON.stringify({ id, method, params }));
+  });
+}
+
+async function evaluate(expression) {
+  const result = await command('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+  if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || 'Evaluation failed');
+  return result.result.value;
+}
+
+try {
+  await waitFor(async () => {
+    try {
+      const res = await fetch(`http://127.0.0.1:${cdpPort}/json/version`);
+      return res.ok;
+    } catch { return false; }
+  });
+
+  const target = await (await fetch(`http://127.0.0.1:${cdpPort}/json/new?about:blank`, { method: 'PUT' })).json();
+  socket = new WebSocket(target.webSocketDebuggerUrl);
+  socket.onmessage = event => {
+    const message = JSON.parse(event.data);
+    if (message.id) {
+      const entry = pending.get(message.id);
+      pending.delete(message.id);
+      if (message.error) entry?.reject(new Error(message.error.message));
+      else entry?.resolve(message.result);
+    }
+  };
+  await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
+
+  await command('Page.enable');
+  await command('Runtime.enable');
+  await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 950, deviceScaleFactor: 1, mobile: false });
+  await command('Page.navigate', { url: base });
+  await waitFor(() => evaluate(`Boolean(document.querySelector('.diagnosis-panel'))`));
+  await pause(1000);
+
+  const diagStyles = await evaluate(`(() => {
+    const el = document.querySelector('.diagnosis-panel');
+    if (!el) return null;
+    const cs = window.getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    const children = [...el.children].map(c => {
+      const ccs = window.getComputedStyle(c);
+      const cr = c.getBoundingClientRect();
+      return {
+        tag: c.tagName,
+        className: c.className,
+        rect: { top: cr.top, left: cr.left, width: cr.width, height: cr.height },
+        margin: ccs.margin,
+        padding: ccs.padding
+      };
+    });
+    return {
+      classes: el.className,
+      rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+      padding: cs.padding,
+      margin: cs.margin,
+      border: cs.border,
+      children
+    };
+  })()`);
+
+  console.log('Diagnosis Panel Computed Info:');
+  console.log(JSON.stringify(diagStyles, null, 2));
+
+} catch (e) {
+  console.error(e);
+} finally {
+  try { socket?.close(); } catch {}
+  child.kill();
+  await pause(400);
+  try { await fs.rm(profile, { recursive: true, force: true }); } catch {}
+}

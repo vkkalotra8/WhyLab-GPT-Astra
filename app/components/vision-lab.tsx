@@ -9,7 +9,6 @@ import { generateVisionIncidentReport, visionIncidentReportMarkdown } from '../l
 import {
   buildVisionDecisionBasis,
   generateVisionDecisionAuditReport,
-  type VisionDecisionBasis,
 } from '../lib/decision-basis.ts';
 import type {
   VisionPrediction,

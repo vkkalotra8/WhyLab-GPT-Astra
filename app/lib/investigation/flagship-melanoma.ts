@@ -1,4 +1,4 @@
-﻿import { ingestEvaluationCsv } from './evaluation-ingestion.ts';
+import { ingestEvaluationCsv } from './evaluation-ingestion.ts';
 import { evaluateClassification } from './classification-metrics.ts';
 import { runCounterfactualTest } from './counterfactual.ts';
 import { runThresholdSweep } from './threshold-sweep.ts';
@@ -49,5 +49,5 @@ export function investigateMelanoma(csv: string) {
   if (!proposal.candidate || proposal.candidate.kind !== 'operating_policy') throw new Error('No operating policy meets the declared cost target on these rows.');
   investigation = validateInvestigation({ ...investigation, repairs: [proposal.candidate] });
   const repair = reevaluateRepair(investigation, dataset, { repairId: proposal.candidate.id, baselinePolicy: { ...proposal.candidate.policy, threshold: .5 } });
-  return { ...repair, counter: counter.output, sampleSize: dataset.rows.length };
+  return { ...repair, counter: counter.output, sampleSize: dataset.rows.length, dataset };
 }
