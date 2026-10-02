@@ -50,7 +50,7 @@ export default function FlagshipMelanoma({
     const link = document.createElement('a'); link.href = url; link.download = 'whylab-melanoma-investigation.json'; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  return <section id="flagship" className="panel flagship" aria-labelledby="flagship-title" aria-busy={busy}>
+  return <section className="panel flagship" aria-labelledby="flagship-title" aria-busy={busy}>
     <div className="eyebrow cyan">FLAGSHIP CASE / REPRODUCIBLE LOCAL EXPERIMENT</div>
     <h2 id="flagship-title">High accuracy. Missed malignant cases.</h2>
     <p className="description">A synthetic melanoma classifier exposes the accuracy paradox. Follow the evidence, test competing explanations, then inspect a measured policy repair.</p>

@@ -11480,16 +11480,475 @@ footer {
   }
 }
 
+/* ==========================================================================
+   LANDING PAGE: MODERN SCIENTIFIC WORKBENCH & PIPELINE STYLING
+   ========================================================================== */
 
+/* Section Intros */
+.landing-section-intro {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto 36px;
+  position: relative;
+}
 
+.landing-section-intro .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  color: var(--brand-accent);
+  box-shadow: 0 1px 3px rgba(15, 118, 110, 0.06);
+}
 
+.landing-section-intro h2 {
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 750;
+  letter-spacing: -1.2px;
+  line-height: 1.2;
+  color: var(--foreground);
+  margin: 0 0 14px;
+}
 
+.landing-section-intro p {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-width: 640px;
+  margin: 0 auto;
+}
 
+/* Flagship Showcase & Bridge Callout */
+.landing-flagship-wrapper {
+  margin: 48px 0 56px;
+}
 
+.landing-demo-bridge-callout {
+  margin-top: 32px;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.8) 0%, rgba(240, 253, 250, 0.9) 100%);
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  border-radius: var(--radius-lg);
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
 
+.landing-demo-bridge-callout p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.5;
+}
 
+/* Case Studies Wrapper */
+.landing-cases-wrapper {
+  margin: 64px 0;
+  padding: 48px 0;
+  border-top: 1px dashed var(--line);
+  border-bottom: 1px dashed var(--line);
+}
 
+/* 4-Step Scientific Workflow Pipeline */
+.landing-workflow-section {
+  margin: 72px 0 88px;
+  position: relative;
+}
 
+.workflow-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  margin-top: 40px;
+}
 
+.workflow-step-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px 26px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+}
 
+/* Chromatic progression accent bar for each scientific step */
+.workflow-step-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3.5px;
+  opacity: 0.85;
+  transition: opacity 0.2s ease, height 0.2s ease;
+}
 
+.workflow-step-card:nth-child(1)::before {
+  background: linear-gradient(90deg, #0d9488, #06b6d4);
+}
+.workflow-step-card:nth-child(2)::before {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+.workflow-step-card:nth-child(3)::before {
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+.workflow-step-card:nth-child(4)::before {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.workflow-step-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 32px -8px rgba(15, 23, 42, 0.09), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  border-color: #cbd5e1;
+}
+
+.workflow-step-card:hover::before {
+  height: 5px;
+  opacity: 1;
+}
+
+.workflow-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.step-badge {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 1.2px;
+  color: #0f766e;
+  background: #f0fdfa;
+  border: 1px solid #ccfbf1;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+}
+
+.workflow-step-card:nth-child(2) .step-badge {
+  color: #5b21b6;
+  background: #f5f3ff;
+  border-color: #ede9fe;
+}
+
+.workflow-step-card:nth-child(3) .step-badge {
+  color: #0369a1;
+  background: #f0f9ff;
+  border-color: #e0f2fe;
+}
+
+.workflow-step-card:nth-child(4) .step-badge {
+  color: #15803d;
+  background: #f0fdf4;
+  border-color: #dcfce7;
+}
+
+.step-icon {
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.22s ease;
+}
+
+.workflow-step-card:hover .step-icon {
+  transform: scale(1.08) rotate(3deg);
+}
+
+.step-icon.text-cyan {
+  background: #f0fdfa;
+  color: #0d9488;
+  border: 1px solid #ccfbf1;
+}
+
+.step-icon.text-violet {
+  background: #f5f3ff;
+  color: #6366f1;
+  border: 1px solid #ede9fe;
+}
+
+.step-icon.text-green {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #dcfce7;
+}
+
+.workflow-step-card h3 {
+  font-size: 17.5px;
+  font-weight: 750;
+  letter-spacing: -0.4px;
+  color: #0f172a;
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+
+.workflow-step-card p {
+  font-size: 13.5px;
+  line-height: 1.68;
+  color: #475569;
+  margin: 0;
+  flex-grow: 1;
+}
+
+/* Global Call To Action Banner */
+.landing-cta-banner {
+  position: relative;
+  overflow: hidden;
+  margin: 72px 0 54px;
+  padding: 64px 44px;
+  border-radius: var(--radius-xl);
+  background: 
+    radial-gradient(circle at 12% 25%, rgba(37, 99, 235, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 88% 75%, rgba(13, 148, 136, 0.25) 0%, transparent 45%),
+    linear-gradient(135deg, #090e17 0%, #0f172a 50%, #1e293b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  text-align: center;
+}
+
+.landing-cta-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.cta-banner-content {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.cta-banner-content h2 {
+  font-size: clamp(28px, 3.6vw, 42px);
+  font-weight: 750;
+  letter-spacing: -1.2px;
+  color: #ffffff;
+  margin: 0 0 16px;
+  line-height: 1.2;
+}
+
+.cta-banner-content p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #94a3b8;
+  max-width: 580px;
+  margin: 0 auto 36px;
+}
+
+.cta-banner-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cta-banner-actions .hero-primary {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #3b82f6;
+  padding: 13px 24px;
+  font-size: 14.5px;
+  font-weight: 650;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.45);
+  transition: all 0.18s ease;
+}
+
+.cta-banner-actions .hero-primary:hover {
+  background: #1d4ed8;
+  border-color: #60a5fa;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.55);
+  color: #ffffff;
+}
+
+.cta-banner-actions .hero-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 13px 22px;
+  font-size: 14.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  transition: all 0.18s ease;
+}
+
+.cta-banner-actions .hero-secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+
+/* Site Footer */
+footer {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 750;
+  font-size: 15px;
+  color: var(--foreground);
+}
+
+.footer-brand svg {
+  color: var(--cyan);
+  width: 19px;
+  height: 19px;
+}
+
+.footer-brand span {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  border-left: 1px solid var(--line-strong);
+  padding-left: 10px;
+  margin-left: 4px;
+}
+
+.footer-dot {
+  display: inline-block;
+  margin: 0 4px;
+  opacity: 0.6;
+}
+
+/* Hero Distinction Banner & Lead */
+.hero-lead {
+  color: var(--text-secondary);
+  font-size: 16.5px;
+  line-height: 1.7;
+  max-width: 620px;
+  margin: 0 0 4px;
+}
+
+.hero-distinction-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  margin: 20px 0 24px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.distinction-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.distinction-tag {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10.5px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.distinction-tag.tag-local {
+  background: rgba(15, 118, 110, 0.1);
+  color: #0f766e;
+  border: 1px solid rgba(15, 118, 110, 0.25);
+}
+
+.distinction-tag.tag-astra {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.distinction-divider {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+/* Responsive Breakpoints for Landing Page Elements */
+@media (max-width: 1080px) {
+  .workflow-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .workflow-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .landing-cta-banner {
+    padding: 44px 24px;
+    margin: 48px 0 36px;
+  }
+  .landing-demo-bridge-callout {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .cta-banner-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .cta-banner-actions .hero-primary,
+  .cta-banner-actions .hero-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+  footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .footer-brand {
+    flex-wrap: wrap;
+  }
+}

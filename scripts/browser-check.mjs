@@ -176,6 +176,7 @@ try {
   // =========================================================================
   await command('Page.navigate', { url: base });
   await waitFor(() => evaluate(`Boolean(document.querySelector('h1'))`), 'homepage');
+  await pause(300);
   await command('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
   await command('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab' });
   assert.equal(await evaluate('document.activeElement.className'), 'skip-link');
@@ -388,6 +389,7 @@ try {
   assert.equal(await evaluate(`getComputedStyle(document.documentElement).scrollBehavior`), 'auto');
   pass('Reduced-motion preference');
 
+  await pause(300);
   await button('Run flagship investigation');
   await waitFor(() => evaluate("document.querySelector('.flagship-results')?.textContent.includes('92.0%')"), 'flagship measured baseline');
   await button('Show measured repair');
@@ -486,6 +488,8 @@ try {
   // 7. RESPONSIVE VIEWPORTS & ACCESSIBILITY AUDIT
   // =========================================================================
   await command('Page.navigate', { url: base });
+  await waitFor(() => evaluate("Boolean(document.querySelector('h1'))"), 'home responsive');
+  await pause(300);
   await screenshot('desktop.png');
   for (const width of [375, 768]) {
     await command('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: true });
@@ -502,6 +506,7 @@ try {
   pass('All form controls have associated labels');
 
   await evaluate("window.originalStorageWrite=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw new DOMException('Quota exceeded','QuotaExceededError')};document.querySelector('.case-manager details').open=true");
+  await pause(300);
   await button('Save case');
   await waitFor(() => evaluate("document.querySelector('.case-manager').textContent.includes('storage is unavailable or full')"), 'quota feedback');
   await evaluate('Storage.prototype.setItem=originalStorageWrite');

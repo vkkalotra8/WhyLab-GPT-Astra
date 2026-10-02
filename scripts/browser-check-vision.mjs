@@ -128,6 +128,7 @@ try {
   assert.ok(await evaluate(`Boolean(document.querySelector('a[href="/vision"]') || document.querySelector('a[href="#vision-lab"]'))`));
   await click('a[href="/vision"], a[href="#vision-lab"]');
   await waitFor(() => evaluate(`Boolean(document.querySelector('#vision-lab'))`), 'vision lab mounted');
+  await pause(1000);
   pass('Vision Lab section mounted and reachable via navigation');
 
   // Load Vision Flagship Case
