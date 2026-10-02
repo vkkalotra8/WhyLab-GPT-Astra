@@ -11952,3 +11952,93 @@ footer {
     flex-wrap: wrap;
   }
 }
+
+/* ==========================================================================
+   PAGE ROUTE TRANSITION & LANDING MOTION SYSTEM
+   ========================================================================== */
+
+.page-transition-wrapper {
+  animation: pageLandIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  width: 100%;
+  position: relative;
+  min-height: 100%;
+}
+
+@keyframes pageLandIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  99% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Luminous landing beam along top edge of viewport on page entry */
+.page-landing-beam {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, transparent 0%, #0d9488 25%, #2563eb 50%, #0d9488 75%, transparent 100%);
+  background-size: 200% 100%;
+  z-index: 9999;
+  pointer-events: none;
+  animation: landingBeamSweep 0.45s ease-out forwards;
+}
+
+@keyframes landingBeamSweep {
+  0% {
+    opacity: 1;
+    background-position: 100% 0;
+    transform: scaleX(0.3);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    background-position: 0 0;
+    transform: scaleX(1);
+  }
+}
+
+/* Internal Studio Stage Transition & Landing */
+.studio-stage-section {
+  animation: stageLandIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes stageLandIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  99% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reduced motion preference compliance (WCAG & Accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition-wrapper,
+  .studio-stage-section {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .page-landing-beam {
+    display: none !important;
+  }
+}

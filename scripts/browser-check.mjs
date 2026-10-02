@@ -389,7 +389,7 @@ try {
   assert.equal(await evaluate(`getComputedStyle(document.documentElement).scrollBehavior`), 'auto');
   pass('Reduced-motion preference');
 
-  await pause(300);
+  await pause(800);
   await button('Run flagship investigation');
   await waitFor(() => evaluate("document.querySelector('.flagship-results')?.textContent.includes('92.0%')"), 'flagship measured baseline');
   await button('Show measured repair');
