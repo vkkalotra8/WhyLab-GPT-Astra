@@ -263,6 +263,13 @@ export default function InvestigationStudio() {
     }
   }
 
+  // Ensure page scrolls cleanly to top whenever active stage changes (next, prev, stepper)
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  }, [activeStage]);
+
   const toggleCaseManager = () => {
     const details = document.querySelector(".case-manager details") as HTMLDetailsElement | null;
     if (details) details.open = !details.open;

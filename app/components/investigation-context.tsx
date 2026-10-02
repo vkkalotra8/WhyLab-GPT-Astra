@@ -102,6 +102,9 @@ export function InvestigationProvider({ children }: { children: ReactNode }) {
         const targetStage = stageMap[stageParam.toLowerCase()];
         if (targetStage && targetStage >= 1 && targetStage <= 6) {
           setActiveStage(targetStage);
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+          if (document.documentElement) document.documentElement.scrollTop = 0;
+          if (document.body) document.body.scrollTop = 0;
         }
       }
     };
@@ -164,6 +167,9 @@ export function InvestigationProvider({ children }: { children: ReactNode }) {
         url.searchParams.set("stage", slug);
         window.history.pushState({ stage: stageId }, "", url.toString());
       }
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
     }
   }, []);
 
@@ -177,6 +183,9 @@ export function InvestigationProvider({ children }: { children: ReactNode }) {
         url.searchParams.set("stage", "investigate");
         window.history.pushState({ stage: 3 }, "", url.toString());
       }
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
     }
   }, []);
 
