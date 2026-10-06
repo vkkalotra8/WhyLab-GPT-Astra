@@ -59,8 +59,8 @@ export default function ChallengeReview({ investigation, datasets = [], onUpdate
         <div>
           {primaryHypo && (
             <div className="challenge-primary-card" style={{ background: 'rgba(30, 41, 59, 0.5)', border: '1px solid var(--border, #283443)', borderRadius: '6px', padding: '0.8rem 1rem', marginTop: '1rem', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', color: 'var(--cyan, #56dfce)' }}>PRIMARY HYPOTHESIS UNDER REVIEW</span>
+              <div className="challenge-card-header">
+                <span className="challenge-card-header-title">PRIMARY HYPOTHESIS UNDER REVIEW</span>
                 <span className="badge" style={{ fontSize: '0.7rem' }}>{primaryHypo.status}</span>
               </div>
               <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary, #f1f5f9)' }}>{primaryHypo.statement}</strong>

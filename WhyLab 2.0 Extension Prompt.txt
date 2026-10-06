@@ -1,0 +1,1037 @@
+You are working as the senior software architect, senior ML engineer, MLOps engineer, and full-stack engineer for the WhyLab project.
+
+This task is about extending the existing WhyLab project into WhyLab 2.0.
+
+IMPORTANT:
+Do NOT immediately start modifying random features.
+
+You must first inspect the current repository carefully, understand the existing architecture, identify what is already implemented, and create a permanent implementation roadmap file inside the repository.
+
+============================================================
+PRIMARY OBJECTIVE
+============================================================
+
+There are two stages to this task.
+
+STAGE 1:
+Create a comprehensive WhyLab 2.0 extensions implementation roadmap file inside the project.
+
+STAGE 2:
+After the roadmap is created and validated, begin implementing the extensions ONE BY ONE in the correct dependency order.
+
+You are NOT permitted to implement multiple extensions together unless one is an unavoidable internal prerequisite of the current extension.
+
+After completing each extension, STOP and ask me for confirmation before moving to the next extension.
+
+============================================================
+ABSOLUTE GIT RESTRICTION
+============================================================
+
+You are NOT permitted to perform ANY Git-related operation.
+
+Do NOT:
+
+- git add
+- git commit
+- git push
+- git pull
+- git fetch
+- git merge
+- git rebase
+- git checkout
+- git switch
+- git branch
+- git reset
+- git restore
+- git stash
+- git tag
+- modify Git configuration
+- modify .git contents
+- create commits
+- create branches
+- stage files
+- discard user changes
+- rewrite history
+- perform any other Git operation
+
+Git work will be handled manually by me.
+
+You may READ repository files normally, but do not execute Git commands even for inspection.
+
+If repository state information would normally be obtained using Git, continue without it.
+
+============================================================
+GENERAL PERMISSIONS
+============================================================
+
+Except for Git-related operations, you are permitted to perform the work necessary to complete the implementation, including:
+
+- inspect source files
+- inspect project configuration
+- create files
+- edit files
+- delete files when genuinely required
+- create directories
+- install appropriate dependencies when necessary
+- run development commands
+- run builds
+- run linting
+- run type checking
+- run unit tests
+- run integration tests
+- run local application
+- inspect logs
+- inspect browser/runtime errors
+- create test fixtures
+- create database schemas/migrations if appropriate
+- refactor code when necessary for the current extension
+- add documentation
+- improve error handling
+- create APIs/routes/services/components/hooks/types/tests
+- run local validation
+
+Do not repeatedly ask permission for normal engineering actions.
+
+Use the technically safest and most maintainable option when multiple implementation choices exist.
+
+However, NEVER begin the NEXT EXTENSION without my explicit confirmation.
+
+============================================================
+FIRST: UNDERSTAND THE EXISTING WHYLAB PROJECT
+============================================================
+
+Before creating the roadmap:
+
+1. Inspect the complete relevant repository structure.
+
+2. Identify:
+   - framework and runtime
+   - frontend architecture
+   - backend/API architecture
+   - persistence/database approach
+   - current ML diagnostic engine
+   - existing Evidence Graph
+   - Repair Lab
+   - Vision Lab
+   - investigation workflow
+   - reporting/export functionality
+   - API routes
+   - types/interfaces/schemas
+   - testing setup
+   - state-management approach
+   - currently implemented monitoring functionality
+   - current Astra/OpenAI integration status
+   - existing model-related abstractions
+   - existing incident-related abstractions
+
+3. Search the codebase before assuming functionality is missing.
+
+4. Reuse existing code and architecture wherever practical.
+
+5. Do NOT duplicate functionality that already exists.
+
+6. Preserve all currently working WhyLab functionality.
+
+============================================================
+CREATE THE ROADMAP FILE
+============================================================
+
+Create the following file unless an equivalent project-planning file already exists:
+
+WHYLAB_2_EXTENSION_IMPLEMENTATION_PLAN.md
+
+If an equivalent file exists, improve that file instead of unnecessarily creating a duplicate.
+
+This file must become the source of truth for extension implementation.
+
+============================================================
+ROADMAP FILE CONTENT
+============================================================
+
+The roadmap must contain the following sections.
+
+# 1. WhyLab 2.0 Objective
+
+Explain briefly that WhyLab is evolving toward:
+
+"an autonomous AI reliability and root-cause investigation platform"
+
+The planned flow should build toward:
+
+Ingest
+→ Profile
+→ Monitor
+→ Detect Incident
+→ Investigate
+→ Verify
+→ Repair
+→ Re-evaluate
+→ Report
+→ Learn from previous incidents
+
+Do not falsely claim that unimplemented features already exist.
+
+------------------------------------------------------------
+
+# 2. Current Repository Baseline
+
+Based on actual repository inspection, document:
+
+- what already exists
+- what is partially implemented
+- what is missing
+- what can be reused
+- what requires extension
+- what requires external API access
+
+Use factual codebase evidence.
+
+Do not rely only on planning documents.
+
+------------------------------------------------------------
+
+# 3. Extension Status Labels
+
+Use these statuses consistently:
+
+NOT_STARTED
+IN_PROGRESS
+IMPLEMENTED
+PARTIAL
+BLOCKED_GPT6_API
+BLOCKED_EXTERNAL_API
+DEFERRED
+NOT_APPLICABLE
+
+Also add:
+
+DEPENDENCY_READY
+DEPENDENCY_BLOCKED
+
+------------------------------------------------------------
+
+# 4. Full Extension Catalogue
+
+Document ALL WhyLab 2.0 extensions below.
+
+For every extension include:
+
+- extension number
+- extension name
+- category
+- purpose
+- dependency type
+- dependencies on other WhyLab extensions
+- existing reusable components
+- implementation status
+- recommended implementation phase
+- acceptance criteria
+- expected tests
+- notes
+
+============================================================
+EXTENSION CATALOGUE
+============================================================
+
+CATEGORY A — LIVE ML MONITORING AND INCIDENT DETECTION
+
+#1 Live Model Monitoring
+#2 Automatic Incident Detection
+#3 Model Health Dashboard
+#4 Data Drift Timeline
+#5 Concept Drift Detection
+#6 Prediction Drift Monitor
+#7 Data Quality Monitoring
+#8 Delayed Ground Truth
+#9 Scheduled Investigation
+#10 Automatic Incident Creation
+#11 Alerting
+#12 Incident Timeline
+
+------------------------------------------------------------
+
+CATEGORY B — AUTONOMOUS INVESTIGATION
+
+#13 Autonomous Incident Investigator
+#14 Dynamic Investigation Planning
+#15 Multi-Agent Specialist Architecture
+#16 Investigation Memory
+#17 Cross-Incident Reasoning
+#18 Adaptive Tool Selection
+#19 Active Evidence Acquisition
+#20 Self-Correcting Investigation
+#21 Investigation Copilot
+#22 Mid-Turn Steering
+#23 Parallel Tool Execution
+#24 AI-Generated Verification Plans
+#25 Natural-Language Repair Objectives
+#26 Human Approval Gate
+
+------------------------------------------------------------
+
+CATEGORY C — ADVANCED ROOT-CAUSE INVESTIGATION
+
+#27 Competing Hypothesis Engine
+#28 Automated Experiment Design
+#29 Hypothesis Confidence Calibration
+#30 Root-Cause Dependency Graph
+#31 Causal Investigation
+#32 Counterfactual Testing
+#33 Statistical Power Analysis
+#34 Data Provenance Investigation
+#35 Cross-Dataset Adversarial Review
+#36 Reproducibility Package
+
+------------------------------------------------------------
+
+CATEGORY D — AUTO-REPAIR AND MLOPS
+
+#37 Auto-Repair Sandbox
+#38 Model Retraining Experiments
+#39 Class-Imbalance Repair
+#40 Calibration Repair
+#41 Preprocessing Repair
+#42 Model Version Comparison
+#43 Champion-Challenger Testing
+#44 Shadow Evaluation
+#45 Repair Recommendation Ranking
+#46 Deployment Approval Workflow
+#47 Rollback Recommendation
+#48 CI/CD Reliability Gate
+#49 MLflow Integration
+#50 Repair History
+
+------------------------------------------------------------
+
+CATEGORY E — EXPLAINABILITY, FAIRNESS AND RESPONSIBLE AI
+
+#51 SHAP Integration
+#52 Local Prediction Explanation
+#53 Global Feature Importance
+#54 Fairness Audit
+#55 Bias Investigation
+#56 Data Representativeness
+#57 Counterfactual Explanation
+#58 Uncertainty Analysis
+#59 Human Review Recommendations
+#60 Model Documentation
+
+------------------------------------------------------------
+
+CATEGORY F — LLM, RAG AND AI-AGENT RELIABILITY
+
+#61 LLM Evaluation Lab
+#62 RAG Reliability Investigator
+#63 Unsupported Claim Detection
+#64 Prompt Regression Testing
+#65 LLM Model Comparison
+#66 Agent Tool-Calling Audit
+#67 Structured Output Reliability
+#68 Prompt Injection Testing
+#69 Token and Cost Monitoring
+#70 Latency Monitoring
+#71 RAG Provenance Graph
+#72 AI Application Incident Report
+
+------------------------------------------------------------
+
+CATEGORY G — COMPUTER VISION AND MULTIMODAL INVESTIGATION
+
+#73 Image Label Error Detection
+#74 Image Distribution Drift
+#75 Grad-CAM Integration
+#76 Spurious Correlation Investigation
+#77 Image Embedding Analysis
+#78 Object Detection Evaluation
+#79 Segmentation Evaluation
+#80 Multimodal Evidence Graph
+
+------------------------------------------------------------
+
+CATEGORY H — STARTUP AND DEPLOYMENT
+
+#81 Organization Workspaces
+#82 User Authentication
+#83 Team Collaboration
+#84 Model Registry
+#85 Python SDK
+#86 REST API
+#87 Webhook Integration
+#88 GitHub Integration
+#89 Slack/Email Alerts
+#90 API Usage Dashboard
+#91 Data Retention Controls
+#92 Role-Based Access
+#93 SaaS Billing Architecture
+#94 On-Premises Deployment
+
+============================================================
+GPT-6 / ASTRA DEPENDENCY RULE
+============================================================
+
+GPT-6 / Astra API configuration is NOT currently the focus of this implementation phase.
+
+Therefore:
+
+Do NOT block all WhyLab 2.0 development simply because Astra is unavailable.
+
+Extensions whose intended core behavior REQUIRES live GPT-6/Astra must be marked:
+
+BLOCKED_GPT6_API
+
+They should remain in the roadmap but should NOT be implemented as fake production functionality.
+
+Mocks may only be used when they provide architectural preparation or testability.
+
+Never pretend a mock is a live Astra implementation.
+
+Extensions with an optional Astra component should have their deterministic/local implementation completed first.
+
+When Astra becomes available later, the AI layer can be integrated on top.
+
+============================================================
+IMPLEMENTATION PHASES AND WORKFLOW
+============================================================
+
+Do NOT simply implement extensions numerically from #1 to #94.
+
+Determine the actual dependency graph from the repository.
+
+The following should be used as the initial recommended implementation path unless repository inspection reveals a technically necessary adjustment.
+
+============================================================
+PHASE 0 — FOUNDATION REVIEW
+============================================================
+
+Before new extensions:
+
+- inspect existing architecture
+- identify reusable systems
+- run existing build/tests
+- document current baseline
+- ensure new architecture does not break current WhyLab
+
+No unnecessary redesign.
+
+============================================================
+PHASE 1 — MODEL + MONITORING FOUNDATION
+============================================================
+
+Start here.
+
+1. #84 Model Registry
+
+Then:
+
+2. #1 Live Model Monitoring
+
+Then:
+
+3. #7 Data Quality Monitoring
+
+Then:
+
+4. #6 Prediction Drift Monitor
+
+Then:
+
+5. #4 Data Drift Timeline
+
+Then:
+
+6. #5 Concept Drift Detection
+
+Then:
+
+7. #8 Delayed Ground Truth
+
+Reason:
+Monitoring functionality should have a stable model identity and telemetry foundation first.
+
+============================================================
+PHASE 2 — INCIDENT SYSTEM
+============================================================
+
+After Phase 1:
+
+8. #2 Automatic Incident Detection
+
+9. #10 Automatic Incident Creation
+
+10. #12 Incident Timeline
+
+11. #3 Model Health Dashboard
+
+12. #11 Alerting
+
+At this point WhyLab should be able to:
+
+registered model
+→ receive/consume monitoring data
+→ detect reliability condition
+→ create incident
+→ display incident history/current status
+
+============================================================
+PHASE 3 — INVESTIGATION FOUNDATION WITHOUT LIVE ASTRA
+============================================================
+
+Continue with deterministic/local infrastructure:
+
+13. #30 Root-Cause Dependency Graph
+
+14. #27 Competing Hypothesis Engine
+
+15. #34 Data Provenance Investigation
+
+16. #33 Statistical Power Analysis
+
+17. #32 Counterfactual Testing
+
+18. #35 Cross-Dataset Adversarial Review
+
+19. #36 Reproducibility Package
+
+20. #26 Human Approval Gate
+
+21. #23 Parallel Tool Execution
+
+22. #16 Investigation Memory
+
+23. #17 Cross-Incident Reasoning
+
+Do not implement the live Astra investigator yet if GPT-6 API configuration is unavailable.
+
+============================================================
+PHASE 4 — REPAIR FOUNDATION
+============================================================
+
+24. #37 Auto-Repair Sandbox
+
+25. #39 Class-Imbalance Repair
+
+26. #40 Calibration Repair
+
+27. #41 Preprocessing Repair
+
+28. #45 Repair Recommendation Ranking
+
+29. #50 Repair History
+
+30. #42 Model Version Comparison
+
+31. #43 Champion-Challenger Testing
+
+32. #46 Deployment Approval Workflow
+
+33. #47 Rollback Recommendation
+
+34. #38 Model Retraining Experiments
+
+============================================================
+PHASE 5 — EXPLAINABILITY / RESPONSIBLE AI
+============================================================
+
+35. #51 SHAP Integration
+36. #52 Local Prediction Explanation
+37. #53 Global Feature Importance
+38. #56 Data Representativeness
+39. #54 Fairness Audit
+40. #55 Bias Investigation
+41. #57 Counterfactual Explanation
+42. #58 Uncertainty Analysis
+43. #59 Human Review Recommendations
+44. #60 Model Documentation
+
+============================================================
+PHASE 6 — PLATFORM / DEVELOPER INTERFACES
+============================================================
+
+45. #86 REST API
+46. #85 Python SDK
+47. #90 API Usage Dashboard
+48. #91 Data Retention Controls
+49. #81 Organization Workspaces
+50. #82 User Authentication
+51. #92 Role-Based Access
+52. #83 Team Collaboration
+
+Only implement these at this phase if they align with the current project architecture and prototype needs.
+
+============================================================
+PHASE 7 — LLM / AI RELIABILITY LOCAL FOUNDATION
+============================================================
+
+Where meaningful without live GPT-6:
+
+53. #66 Agent Tool-Calling Audit
+54. #69 Token and Cost Monitoring
+55. #70 Latency Monitoring
+56. #71 RAG Provenance Graph
+57. #72 AI Application Incident Report
+
+Mark extensions requiring actual live LLM execution appropriately.
+
+============================================================
+PHASE 8 — COMPUTER VISION
+============================================================
+
+Only after the core WhyLab monitoring/investigation workflow is stable:
+
+58. #73 Image Label Error Detection
+59. #74 Image Distribution Drift
+60. #75 Grad-CAM Integration
+61. #76 Spurious Correlation Investigation
+62. #77 Image Embedding Analysis
+63. #78 Object Detection Evaluation
+64. #79 Segmentation Evaluation
+65. #80 Multimodal Evidence Graph
+
+Reuse the existing Vision Lab wherever possible.
+
+============================================================
+PHASE 9 — EXTERNAL INTEGRATIONS
+============================================================
+
+Implement only after the core local product is stable:
+
+#49 MLflow Integration
+#87 Webhook Integration
+#88 GitHub Integration
+#89 Slack/Email Alerts
+#44 Shadow Evaluation
+#48 CI/CD Reliability Gate
+
+External credentials may be required.
+
+Do not fabricate working integrations when credentials are unavailable.
+
+============================================================
+PHASE 10 — LIVE GPT-6 / ASTRA EXTENSIONS
+============================================================
+
+DO NOT begin this phase until GPT-6/Astra API configuration is available and I explicitly approve starting it.
+
+This phase includes:
+
+#13 Autonomous Incident Investigator
+#14 Dynamic Investigation Planning
+#15 Multi-Agent Specialist Architecture
+#18 Adaptive Tool Selection
+#19 Active Evidence Acquisition
+#20 Self-Correcting Investigation
+#21 Investigation Copilot
+#24 AI-Generated Verification Plans
+#25 Natural-Language Repair Objectives
+
+Also complete the live Astra portions of:
+
+#9 Scheduled Investigation
+#17 Cross-Incident Reasoning
+#22 Mid-Turn Steering
+#23 Parallel Tool Execution
+#27 Competing Hypothesis Engine
+#28 Automated Experiment Design
+#35 Cross-Dataset Adversarial Review
+#45 Repair Recommendation Ranking
+#47 Rollback Recommendation
+#55 Bias Investigation
+#60 Model Documentation
+#61 LLM Evaluation Lab
+#62 RAG Reliability Investigator
+#63 Unsupported Claim Detection
+#64 Prompt Regression Testing
+#67 Structured Output Reliability
+#68 Prompt Injection Testing
+#72 AI Application Incident Report
+#80 Multimodal Evidence Graph
+
+============================================================
+PHASE 11 — OPTIONAL COMMERCIAL / DEPLOYMENT FEATURES
+============================================================
+
+Only after explicit approval:
+
+#93 SaaS Billing Architecture
+#94 On-Premises Deployment
+
+Do not prioritize SaaS billing for the current prototype unless requested.
+
+============================================================
+DEPENDENCY GRAPH
+============================================================
+
+Inside the roadmap file, create a clear dependency section such as:
+
+Model Registry (#84)
+    ↓
+Live Model Monitoring (#1)
+    ↓
+Monitoring Signals (#7, #6, #4, #5, #8)
+    ↓
+Automatic Incident Detection (#2)
+    ↓
+Automatic Incident Creation (#10)
+    ↓
+Incident Timeline (#12)
+    ↓
+Model Health Dashboard (#3)
+    ↓
+Investigation Infrastructure
+    ↓
+Investigation Memory (#16)
+    ↓
+Repair Sandbox (#37)
+    ↓
+Repair Evaluation
+    ↓
+Reporting / Platform Integrations
+    ↓
+GPT-6 Astra Autonomous Investigation
+
+Add more detailed dependencies based on actual repository architecture.
+
+============================================================
+ROADMAP CHECKLIST
+============================================================
+
+The roadmap file must contain a table like:
+
+| Order | Extension | Status | Depends On | API Required | Current Phase |
+|------|-----------|--------|------------|--------------|---------------|
+
+Update this table every time an extension is completed.
+
+Also maintain:
+
+CURRENT_EXTENSION:
+NEXT_EXTENSION:
+LAST_COMPLETED_EXTENSION:
+BLOCKED_EXTENSIONS:
+LAST_UPDATED:
+
+============================================================
+AFTER CREATING THE ROADMAP
+============================================================
+
+After creating WHYLAB_2_EXTENSION_IMPLEMENTATION_PLAN.md:
+
+1. Review it against the actual repository.
+2. Correct inaccurate assumptions.
+3. Run existing project validation where appropriate.
+4. Report the roadmap file created/updated.
+5. Briefly report:
+   - total extensions
+   - extensions already implemented
+   - extensions partially implemented
+   - extensions available to work on now
+   - extensions blocked by GPT-6/Astra
+   - extensions blocked by third-party services
+   - recommended first extension
+
+Then BEGIN implementation of the first extension:
+
+#84 MODEL REGISTRY
+
+Do not ask me again before starting #84 because this prompt explicitly authorizes starting the FIRST extension after roadmap preparation.
+
+============================================================
+EXTENSION IMPLEMENTATION PROTOCOL
+============================================================
+
+For EVERY extension, follow this exact lifecycle.
+
+------------------------------------------------------------
+STEP 1 — INVESTIGATE
+------------------------------------------------------------
+
+Before editing:
+
+- inspect relevant current implementation
+- identify reusable modules
+- identify dependencies
+- identify affected frontend/backend/API/types/tests
+- check whether some or all functionality already exists
+- check for architectural conflicts
+
+Do not start coding before understanding the existing implementation.
+
+------------------------------------------------------------
+STEP 2 — DEFINE ACCEPTANCE CRITERIA
+------------------------------------------------------------
+
+Before implementation, internally establish measurable acceptance criteria.
+
+For example:
+
+- expected user behavior
+- data persistence behavior
+- API behavior
+- error behavior
+- UI behavior
+- tests
+- backwards compatibility
+
+Add/update these criteria in the roadmap file.
+
+------------------------------------------------------------
+STEP 3 — IMPLEMENT ONLY THE CURRENT EXTENSION
+------------------------------------------------------------
+
+Do not opportunistically implement unrelated extensions.
+
+Shared infrastructure may be created when genuinely required, but keep scope controlled.
+
+Prefer:
+
+- modular architecture
+- typed interfaces
+- schema validation
+- reusable services
+- deterministic logic
+- explicit error states
+- clear loading/empty states
+- testable functions
+- minimal coupling
+- backward compatibility
+
+Avoid:
+
+- duplicated logic
+- giant components
+- unnecessary rewrites
+- speculative architecture
+- placeholder functionality presented as finished
+- hard-coded demo-only behavior unless explicitly identified as a fixture
+
+------------------------------------------------------------
+STEP 4 — TEST THOROUGHLY
+------------------------------------------------------------
+
+After implementation:
+
+Run the most relevant available validation:
+
+- type checking
+- linting
+- unit tests
+- integration tests
+- build
+- runtime smoke test
+- API checks
+- UI checks
+- regression checks
+
+Fix issues caused by the implementation.
+
+Do not leave known critical errors unresolved.
+
+------------------------------------------------------------
+STEP 5 — UPDATE ROADMAP
+------------------------------------------------------------
+
+Update WHYLAB_2_EXTENSION_IMPLEMENTATION_PLAN.md.
+
+Change current extension status appropriately.
+
+Document:
+
+- what was implemented
+- important files changed
+- architectural decisions
+- acceptance criteria result
+- tests run
+- known limitations
+- follow-up dependencies
+- next recommended extension
+
+Update:
+
+CURRENT_EXTENSION
+NEXT_EXTENSION
+LAST_COMPLETED_EXTENSION
+LAST_UPDATED
+
+------------------------------------------------------------
+STEP 6 — REPORT TO ME
+------------------------------------------------------------
+
+When the extension is finished, provide a concise but complete report:
+
+EXTENSION COMPLETED:
+<extension number + name>
+
+IMPLEMENTED:
+- ...
+
+FILES CREATED:
+- ...
+
+FILES MODIFIED:
+- ...
+
+TESTS / VALIDATION:
+- ...
+
+RESULT:
+- ...
+
+KNOWN LIMITATIONS:
+- ...
+
+NEXT RECOMMENDED EXTENSION:
+<number + name>
+
+WHY IT IS NEXT:
+<dependency explanation>
+
+Then ask:
+
+"Extension <number> — <name> is complete and validated.
+The next recommended extension is <number> — <name>.
+Do you want me to continue with it?"
+
+============================================================
+MANDATORY STOP RULE
+============================================================
+
+After completing ONE extension:
+
+STOP.
+
+Do NOT start the next extension automatically.
+
+Wait for my explicit confirmation.
+
+Acceptable confirmation examples:
+
+"continue"
+"yes"
+"start next"
+"proceed"
+"work on #X"
+
+Without confirmation, do nothing further.
+
+============================================================
+QUALITY STANDARD
+============================================================
+
+Treat this as a serious engineering project, not a hackathon mock-up.
+
+Every extension should aim for:
+
+- correctness
+- maintainability
+- good architecture
+- reuse of existing code
+- clear data contracts
+- deterministic validation
+- graceful error handling
+- security-conscious implementation
+- responsive UX
+- accessibility where relevant
+- strong regression safety
+- realistic data flows
+- measurable behavior
+- truthful UI claims
+
+Do not sacrifice correctness merely to mark an extension complete.
+
+============================================================
+PRESERVE EXISTING WHYLAB
+============================================================
+
+Existing functionality must continue to work.
+
+Do not unnecessarily redesign:
+
+- existing investigation workflows
+- Evidence Graph
+- Repair Lab
+- Vision Lab
+- CSV analysis
+- current reports
+- existing diagnostics
+- current frontend navigation
+
+Extend them carefully.
+
+If a refactor is required, preserve observable behavior unless the extension specifically requires a change.
+
+============================================================
+NO FAKE AI
+============================================================
+
+Never label deterministic logic as GPT-6/Astra reasoning.
+
+Never claim live AI execution without actual successful API execution.
+
+If Astra is unavailable:
+
+- implement local infrastructure
+- build typed interfaces
+- build adapter boundaries
+- build tests/mocks where useful
+- mark live functionality BLOCKED_GPT6_API
+
+The roadmap must make this distinction obvious.
+
+============================================================
+NO CHAIN-OF-THOUGHT UI
+============================================================
+
+If investigation/audit interfaces are created, expose only:
+
+- executed action
+- tool called
+- evidence gathered
+- measurements
+- hypothesis status
+- test result
+- recommendation
+- timestamps/status
+
+Do not expose hidden/private reasoning or simulated chain-of-thought.
+
+============================================================
+EFFICIENCY RULES
+============================================================
+
+To minimize wasted work:
+
+1. Search before creating.
+2. Reuse before rewriting.
+3. Extend before replacing.
+4. Test the smallest affected scope first.
+5. Run broader regression validation after.
+6. Do not repeatedly scan the entire repository unnecessarily.
+7. Keep a clear internal understanding of architecture.
+8. Keep the roadmap current so later work does not require rediscovery.
+9. Do not repeatedly ask me questions whose answer can be safely inferred from the repository.
+10. If multiple reasonable technical options exist, choose the safest maintainable option.
+11. Ask me only when a decision materially changes product scope, external cost, destructive behavior, or API credentials.
+
+============================================================
+CURRENT EXECUTION
+============================================================
+
+Start now with:
+
+1. Inspect existing WhyLab architecture.
+2. Create/update WHYLAB_2_EXTENSION_IMPLEMENTATION_PLAN.md.
+3. Populate all 94 extensions.
+4. Determine actual implementation/dependency status from the repository.
+5. Establish the ordered implementation workflow.
+6. Mark GPT-6/Astra-dependent functionality appropriately.
+7. Validate the roadmap.
+8. Begin Extension #84 — Model Registry.
+9. Fully implement and test #84.
+10. Update the roadmap.
+11. Report completion.
+12. STOP and request my confirmation before starting the next extension.
+
+Remember:
+
+NO GIT OPERATIONS OF ANY KIND.
+DO NOT IMPLEMENT MORE THAN ONE EXTENSION BEFORE CONFIRMATION.
