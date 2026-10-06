@@ -37,7 +37,7 @@ export default function CaseStudies() {
   }
 
   return (
-    <section id="case-studies" className="panel flagship case-studies-panel">
+    <section className="panel flagship case-studies-panel">
       <div className="section-header">
         <span className="eyebrow cyan">ADDITIONAL INVESTIGATIONS</span>
         <h2>More investigations</h2>

@@ -421,47 +421,85 @@ export default function DatasetLab({
                 {profiles.map(p => (
                   <tr key={p.name}>
                     <th scope="row" className="col-name-cell">
-                      <span>{p.name}</span>
-                      {p.name === target && <span className="target-pill">Target</span>}
+                      <div className="col-name-wrapper">
+                        <span className="col-name-text">{p.name}</span>
+                        {p.name === target && <span className="target-pill">Target</span>}
+                      </div>
                     </th>
                     <td>
-                      <span className="type-badge">{p.type}</span>
+                      <span
+                        className={`type-badge type-badge-${
+                          p.type.toLowerCase().includes('numeric')
+                            ? 'numeric'
+                            : p.type.toLowerCase().includes('empty')
+                            ? 'empty'
+                            : 'categorical'
+                        }`}
+                      >
+                        {p.type}
+                      </span>
                     </td>
                     <td className="mono-cell">
-                      {p.missing} ({(p.missing / training.rows.length * 100).toFixed(1)}%)
+                      <span className="mono-val">{p.missing}</span>
+                      <span className="cell-sub">({((p.missing / training.rows.length) * 100).toFixed(1)}%)</span>
                     </td>
-                    <td className="mono-cell">{p.distinct}</td>
+                    <td className="mono-cell">
+                      <span className="mono-val">{p.distinct}</span>
+                    </td>
                     <td>
                       {p.mean !== undefined && (
                         <div className="numeric-range">
-                          <span>Min {p.min?.toPrecision(4)}</span>
-                          <span className="range-divider">/</span>
-                          <span className="mean-val">Mean {p.mean.toPrecision(4)}</span>
-                          <span className="range-divider">/</span>
-                          <span>Max {p.max?.toPrecision(4)}</span>
+                          <span className="range-stat">
+                            <span className="range-label">Min</span>
+                            <span className="range-number">{p.min?.toPrecision(4)}</span>
+                          </span>
+                          <span className="range-divider" aria-hidden="true">/</span>
+                          <span className="range-stat mean-stat">
+                            <span className="range-label">Mean</span>
+                            <span className="range-number">{p.mean.toPrecision(4)}</span>
+                          </span>
+                          <span className="range-divider" aria-hidden="true">/</span>
+                          <span className="range-stat">
+                            <span className="range-label">Max</span>
+                            <span className="range-number">{p.max?.toPrecision(4)}</span>
+                          </span>
                         </div>
                       )}
-                      {(p.mean === undefined || (p.name === target && task === 'classification')) &&
-                        p.top.map(([value, count]) => (
-                          <div key={value} className="class-frequency">
-                            <div className="freq-labels">
-                              <span className="freq-val">{value}</span>
-                              <span className="freq-count">{count}</span>
+                      {p.mean === undefined && (p.warnings.some(w => w.startsWith('Unique identifier')) || p.distinct === (training.rows.length - p.missing)) ? (
+                        <div className="unique-id-display">
+                          <span className="unique-id-badge">
+                            <span className="unique-id-icon" aria-hidden="true">#</span>
+                            All {p.distinct} values unique (identifier)
+                          </span>
+                        </div>
+                      ) : (
+                        (p.mean === undefined || (p.name === target && task === 'classification')) &&
+                          p.top.map(([value, count]) => (
+                            <div key={value} className="class-frequency">
+                              <div className="freq-labels">
+                                <span className="freq-val">{value}</span>
+                                <span className="freq-count">
+                                  {count} <span className="freq-pct">({(((count / (training.rows.length - p.missing)) * 100) || 0).toFixed(1)}%)</span>
+                                </span>
+                              </div>
+                              <meter min={0} max={training.rows.length - p.missing} value={count}>
+                                {count}
+                              </meter>
                             </div>
-                            <meter min={0} max={training.rows.length - p.missing} value={count}>
-                              {count}
-                            </meter>
-                          </div>
-                        ))}
+                          ))
+                      )}
                     </td>
                     <td>
                       {p.warnings.length ? (
                         <div className="signal-warning">
-                          <span className="warning-dot" />
+                          <span className="warning-dot" aria-hidden="true" />
                           <span>{p.warnings.join(' ')}</span>
                         </div>
                       ) : (
-                        <span className="signal-ok">No rule triggered</span>
+                        <span className="signal-ok">
+                          <span className="signal-ok-icon" aria-hidden="true">✓</span>
+                          <span>No rule triggered</span>
+                        </span>
                       )}
                     </td>
                   </tr>
